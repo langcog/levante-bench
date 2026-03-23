@@ -41,6 +41,15 @@ softmax_images <- function(data, beta = 1) {
     select(-rowsum)
 }
 
+## Single-row KL: human (p) and model (q) as vectors; returns KL(p || q)
+kl_one_row <- function(p, q) {
+  p <- replace_na(as.numeric(p), 0)
+  q <- replace_na(as.numeric(q), 0)
+  if (length(p) != length(q)) return(NA_real_)
+  m <- rbind(p, q)
+  suppressWarnings(philentropy::KL(m, unit = "log"))
+}
+
 get_mean_kl_img <- function(human_probs_wide, model_probs_wide, return_distribs = FALSE) {
   combined_distribs <- bind_rows(human_probs_wide, model_probs_wide) %>%
     mutate(across(starts_with("image"), function(i) replace_na(i, 0))) %>%

@@ -1,8 +1,10 @@
 #!/usr/bin/env Rscript
 # Download LEVANTE trials from Redivis and write to data/raw/<version>/.
-# Usage: Rscript download_levante_data.R [--dataset DATASET] [--table TABLE] [--version VERSION]
-#   or set env: LEVANTE_DATASET, LEVANTE_TABLE, LEVANTE_VERSION
-# Default dataset: levante_data_pilots:68kn:v2_0, table: trials:ztnm, version: derived from dataset or "current"
+# Joins scores (age) on run_id, filters 5 <= age <= 12.99, bins age by year,
+# and writes per-task human response proportions by item_uid and age_bin.
+# Usage: Rscript download_levante_data.R [--dataset DATASET] [--table TABLE] [--scores-table TABLE] [--version VERSION]
+#   or set env: LEVANTE_DATASET, LEVANTE_TABLE, LEVANTE_SCORES_TABLE, LEVANTE_VERSION
+# Default dataset: levante_data_pilots:68kn:v2_0, table: trials:ztnm, scores-table: scores:pgms
 
 suppressPackageStartupMessages({
   library(tidyverse)
@@ -17,9 +19,10 @@ get_arg <- function(name, default = NA_character_) {
   args[i + 1L]
 }
 
-dataset_id <- get_arg("dataset", "levante_data_pilots:68kn:v2_0")
-table_name <- get_arg("table", "trials:ztnm")
-version    <- get_arg("version", NA_character_)
+dataset_id   <- get_arg("dataset", "levante_data_pilots:68kn:v2_0")
+table_name   <- get_arg("table", "trials:ztnm")
+scores_table <- get_arg("scores-table", "scores:pgms")
+version      <- get_arg("version", NA_character_)
 
 if (is.na(version) || nchar(version) == 0L) {
   # Derive version from dataset id (e.g. v2_0 -> v2_0) or use "current"
@@ -63,12 +66,20 @@ key_cols <- c(
 present <- intersect(key_cols, names(d))
 trials  <- d %>% select(any_of(present))
 
-# Write global trials CSV
+# Load scores (run_id, age) and join
+scores_tbl <- dataset$table(scores_table)
+scores_df  <- scores_tbl$to_tibble()
+if (!"run_id" %in% names(scores_df)) stop("Scores table must have run_id")
+if (!"age" %in% names(scores_df)) stop("Scores table must have age")
+scores_df <- scores_df %>% select(run_id, age) %>% distinct(run_id, .keep_all = TRUE)
+trials <- trials %>% left_join(scores_df, by = "run_id")
+
+# Write global trials CSV (with age if present)
 trials_path <- file.path(data_raw, "trials.csv")
 readr::write_csv(trials, trials_path)
 message("Wrote ", trials_path, " (", nrow(trials), " rows)")
 
-# Optionally write per-task trials (and human aggregates later)
+# Per-task trials
 tasks <- unique(trials$task_id)
 tasks_dir <- file.path(data_raw, "tasks")
 dir.create(tasks_dir, recursive = TRUE, showWarnings = FALSE)
@@ -80,10 +91,70 @@ for (tid in tasks) {
 }
 message("Wrote per-task trials to ", tasks_dir)
 
-# Optional: human response aggregates (per trial/option proportions by age_bin)
-# For now we only write raw trials; R comparison scripts can aggregate from trials.csv
-# or we can add a human/ subdir with pre-aggregated CSVs per task (see docs/data_schema.md)
-human_dir <- file.path(data_raw, "human")
-dir.create(human_dir, recursive = TRUE, showWarnings = FALSE)
-# Placeholder: no aggregate files written by default; comparison scripts read trials and aggregate as needed.
+# Human response proportions by item_uid and age_bin (5 <= age <= 12.99, 1-year bins)
+# Exclude age < 5.0 and age > 12.99; age_bin e.g. "5-6", "6-7", ..., "12-13"
+human_by_age_dir <- file.path(data_raw, "human_by_age")
+dir.create(human_by_age_dir, recursive = TRUE, showWarnings = FALSE)
+n_opts <- 4L
+
+for (tid in tasks) {
+  if (is.na(tid)) next
+  safe_name <- gsub("[^a-zA-Z0-9_-]", "_", tid)
+  task_trials <- trials %>%
+    filter(task_id == !!tid, !is.na(response), response != "")
+  if (!"age" %in% names(task_trials) || all(is.na(task_trials$age))) {
+    message("  ", tid, ": no age column or all NA, skipping human_by_age")
+    next
+  }
+  # Age-binned aggregates (5--12.99 only)
+  task_trials_binned <- task_trials %>%
+    filter(age >= 5, age <= 12.99) %>%
+    mutate(age_bin = paste0(floor(age), "-", floor(age) + 1L))
+  resp_levels <- sort(unique(task_trials$response))
+  if (length(resp_levels) > n_opts) resp_levels <- resp_levels[seq_len(n_opts)]
+  agg_binned <- if (nrow(task_trials_binned) > 0L) {
+    task_trials_binned %>%
+      mutate(option = match(response, resp_levels)) %>%
+      filter(!is.na(option)) %>%
+      group_by(item_uid, age_bin) %>%
+      count(option, name = "n") %>%
+      mutate(prop = n / sum(n, na.rm = TRUE)) %>%
+      ungroup() %>%
+      select(item_uid, age_bin, option, prop) %>%
+      tidyr::pivot_wider(names_from = option, values_from = prop, names_prefix = "image") %>%
+      mutate(across(starts_with("image"), ~ replace_na(., 0)))
+  } else {
+    tibble(item_uid = character(), age_bin = character())
+  }
+  # "all" age_bin: aggregate over all trials with response (so every item_uid has at least one row)
+  task_trials_all <- task_trials %>% mutate(age_bin = "all")
+  agg_all <- task_trials_all %>%
+    mutate(option = match(response, resp_levels)) %>%
+    filter(!is.na(option)) %>%
+    group_by(item_uid, age_bin) %>%
+    count(option, name = "n") %>%
+    mutate(prop = n / sum(n, na.rm = TRUE)) %>%
+    ungroup() %>%
+    select(item_uid, age_bin, option, prop) %>%
+    tidyr::pivot_wider(names_from = option, values_from = prop, names_prefix = "image") %>%
+    mutate(across(starts_with("image"), ~ replace_na(., 0)))
+  agg <- bind_rows(agg_binned, agg_all)
+  if (nrow(agg) == 0L) {
+    message("  ", tid, ": no rows, skipping human_by_age")
+    next
+  }
+  for (j in seq_len(n_opts)) {
+    col <- paste0("image", j)
+    if (!col %in% names(agg)) agg[[col]] <- 0
+  }
+  agg <- agg %>% select(item_uid, age_bin, paste0("image", seq_len(n_opts)))
+  n_uids_binned <- n_distinct(agg_binned$item_uid)
+  n_uids_all <- n_distinct(agg_all$item_uid)
+  if (nrow(agg_binned) > 0L && n_uids_binned <= 2L)
+    message("  ", tid, ": only ", n_uids_binned, " item_uids in age bins 5--12.99 (check scores table run_id match)")
+  out_path <- file.path(human_by_age_dir, paste0(safe_name, "_proportions_by_age.csv"))
+  readr::write_csv(agg, out_path)
+  message("Wrote ", out_path, " (", nrow(agg), " rows; ", n_uids_all, " item_uids with age_bin=all)")
+}
+
 message("Data version: ", version, " at ", data_raw)

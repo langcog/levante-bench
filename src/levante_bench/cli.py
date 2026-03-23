@@ -74,9 +74,12 @@ def cmd_run_comparison(args: argparse.Namespace) -> int:
         "--version", args.version or "current",
         "--results-dir", args.results_dir or "results",
         "--project-root", str(root),
+        "--output-dir", str(root / (args.output_dir or "results/comparison")),
     ]
-    if args.output:
-        cmd.extend(["--output", args.output])
+    if getattr(args, "output_dkl", None):
+        cmd.extend(["--output-dkl", args.output_dkl])
+    if getattr(args, "output_accuracy", None):
+        cmd.extend(["--output-accuracy", args.output_accuracy])
     r = subprocess.run(cmd, cwd=str(root))
     return r.returncode
 
@@ -96,12 +99,14 @@ def main() -> int:
     pe.add_argument("--device", default="cpu", help="Device for model")
     pe.add_argument("--output-dir", help="Output directory (default: results/<version>)")
     # run-comparison
-    pc = sub.add_parser("run-comparison", help="Run R comparison (D_KL, accuracy)")
+    pc = sub.add_parser("run-comparison", help="Run R comparison (D_KL by age+item_uid, accuracy by item_uid)")
     pc.add_argument("--task", required=True, help="Task ID")
     pc.add_argument("--model", required=True, help="Model ID")
     pc.add_argument("--version", default="current", help="Data version")
     pc.add_argument("--results-dir", default="results", help="Results directory name")
-    pc.add_argument("--output", help="Output CSV path")
+    pc.add_argument("--output-dir", default="results/comparison", help="Directory for D_KL and accuracy CSVs")
+    pc.add_argument("--output-dkl", help="Output path for D_KL CSV (default: <output-dir>/<task>_<model>_d_kl.csv)")
+    pc.add_argument("--output-accuracy", help="Output path for accuracy CSV (default: <output-dir>/<task>_<model>_accuracy.csv)")
     args = parser.parse_args()
     if args.command == "list-tasks":
         return cmd_list_tasks(args)

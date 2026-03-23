@@ -1,44 +1,69 @@
 # LEVANTE comparison (R)
 
-Statistical comparison of model outputs to human response data: D_KL, accuracy, optional RSA.
+Statistical comparison of model outputs to human response data by **item_uid** and (for D_KL) **age_bin**. Model runs once per item_uid; human data is pre-aggregated by item_uid and 1-year age bins (5–6, 6–7, …, 12–13).
 
 ## Dependencies
 
-- **R** with: `tidyverse`, `philentropy`, `nloptr`, `reticulate` (for reading Python .npy)
-- Install: `install.packages(c("tidyverse", "philentropy", "nloptr", "reticulate"))`
+- **R** with: `tidyverse`, `philentropy`, `nloptr`, `reticulate` (for .npy), `jsonlite` (for asset index)
+- Install: `install.packages(c("tidyverse", "philentropy", "nloptr", "reticulate", "jsonlite"))`
 
 ## Scripts
 
-- **stats-helper.R** – Softmax over options, KL divergence, beta optimization, RSA (adapted from DevBench).
-- **compare_levante.R** – Read human data from `data/raw/<version>/` and model outputs from `results/<version>/<model>/<task>.npy`; compute D_KL and accuracy; write metrics to CSV.
+- **stats-helper.R** – Softmax, KL, beta optimization, RSA (adapted from DevBench).
+- **compare_levante.R** – Reads `data/raw/<version>/human_by_age/<task>_proportions_by_age.csv` (item_uid, age_bin, image1..image4) and `results/<version>/<model>/<task>.npy` (one row per item_uid). Writes **D_KL** (per item_uid × age_bin) and **accuracy** (per item_uid) to separate CSVs.
 
 ## Usage
 
-From the project root:
+1. **Preprocess human data (once):** Run the R download script so trials are joined with scores (age) and human_by_age aggregates are written:
 
-```bash
-Rscript comparison/compare_levante.R --task egma-math --model clip_base --version current --results-dir results --project-root . --output comparison/metrics.csv
-```
+   ```bash
+   Rscript scripts/download_levante_data.R [--version 2026-02-22] [--scores-table scores:pgms]
+   ```
 
-Or set env: `LEVANTE_TASK`, `LEVANTE_MODEL`, `LEVANTE_VERSION`, `LEVANTE_RESULTS_DIR`, `LEVANTE_PROJECT_ROOT`, `LEVANTE_OUTPUT`.
+   This writes `data/raw/<version>/human_by_age/<task>_proportions_by_age.csv` (item_uid, age_bin, image1..image4), with age 5–12.99 and 1-year bins.
 
-Human data: either pre-aggregated `data/raw/<version>/human/<task>_proportions.csv` (columns: trial, image1..image4) or trials CSV; the script aggregates by trial to proportions. Model .npy: shape (n_trials, n_options) of logits or similarity scores.
+2. **Run evaluation (Python):** One row per item_uid:
+
+   ```bash
+   levante-bench run-eval --task trog --model clip_base --version 2026-02-22
+   ```
+
+3. **Run comparison:**
+
+   ```bash
+   levante-bench run-comparison --task trog --model clip_base --version 2026-02-22 [--output-dir results/comparison]
+   ```
+
+   Or directly: `Rscript comparison/compare_levante.R --task trog --model clip_base --version 2026-02-22 --project-root .`
+
+   Outputs (disaggregated):
+   - **D_KL:** `results/comparison/<task>_<model>_d_kl.csv` — columns: task, model, item_uid, age_bin, D_KL.
+   - **Accuracy:** `results/comparison/<task>_<model>_accuracy.csv` — columns: task, model, item_uid, correct (0/1).
 
 ## Debugging the comparison flow
 
-1. **Use one version for both trials and assets**  
-   The runner and R comparison use a single `--version` for both `data/raw/<version>/` (trials) and `data/assets/<version>/` (asset index). So either run the R data script with that same version (e.g. `--version 2026-02-22`) so trials land in `data/raw/2026-02-22/`, or use the version you already have for raw (e.g. `v2_0`) and ensure assets were downloaded to `data/assets/<that_version>/` (or re-run the asset script with `--version v2_0`).
+1. **Use one version everywhere**  
+   Use the same `--version` for: R download (trials + scores → human_by_age), Python run-eval, and run-comparison.
 
-2. **Run evaluation (Python)**  
-   From project root with venv activated:
-   ```bash
-   levante-bench run-eval --task egma-math --model clip_base --version <VERSION>
-   ```
-   Check that `results/<VERSION>/clip_base/egma-math.npy` (or `results/<VERSION>/clip_base/egma_math.npy`) is created. If it fails, check: trials exist under `data/raw/<VERSION>/`; asset index exists at `data/assets/<VERSION>/item_uid_index.json`; `item_uid` in trials matches index keys.
+2. **Human-by-age must exist**  
+   Run `Rscript scripts/download_levante_data.R [--version VERSION]` so `data/raw/<version>/human_by_age/<task>_proportions_by_age.csv` exists. The download script joins trials with the scores table (run_id, age), filters 5 ≤ age ≤ 12.99, bins by year, and aggregates response proportions by item_uid and age_bin.
 
-3. **Run comparison (R)**  
-   ```bash
-   levante-bench run-comparison --task egma-math --model clip_base --version <VERSION>
-   ```
-   Or: `Rscript comparison/compare_levante.R --task egma-math --model clip_base --version <VERSION> --project-root . --output comparison/out.csv`  
-   If R fails, check: trials (or human aggregates) have a `response` column; .npy has shape (n_trials, n_options); task id matches (e.g. `egma-math` vs `egma_math` in filenames).
+3. **Run evaluation (Python)**  
+   `levante-bench run-eval --task <TASK> --model <MODEL> --version <VERSION>`. The loader deduplicates by **item_uid**, so the .npy has one row per item_uid. Check `results/<VERSION>/<model>/<task>.npy`.
+
+4. **Run comparison (R)**  
+   `levante-bench run-comparison --task <TASK> --model <MODEL> --version <VERSION>`. Writes D_KL and accuracy CSVs to `--output-dir` (default: results/comparison/). If R fails: ensure human_by_age files exist; .npy row count = number of unique item_uids in trials for that task.
+
+## Sanity-checking the comparison
+
+- **Item_uid alignment**  
+  The loader deduplicates by **item_uid**, so the model runs once per item and the .npy has one row per item_uid. The comparison aligns by item_uid (order from trials = order in .npy).
+
+- **Accuracy**  
+  One row per item_uid: correct = 1 if model argmax (after softmax with fitted β) equals the correct option from the asset index (answer), else 0. Overall accuracy = mean(correct). For 4 options, chance = 0.25.
+
+- **D_KL**  
+  One row per (item_uid, age_bin): KL(human proportions ‖ model softmax) for that age bin and item. β is fitted once to minimize mean D_KL across all (item_uid, age_bin) pairs. Use the disaggregated D_KL CSV for per-age or per-item analysis.
+
+- **Spot-check**  
+  Inspect a few item_uids: in the accuracy CSV check that correct matches your expectation; in the D_KL CSV compare D_KL across age bins or items.

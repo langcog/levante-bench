@@ -80,7 +80,10 @@ def run_eval(
 def _get_scores(model: Any, dataloader: DataLoader, n_options: int) -> np.ndarray | None:
     """Get (n_trials, n_options) scores from model (EvalModel or GenEvalModel)."""
     if hasattr(model, "get_all_sim_scores"):
-        raw = model.get_all_sim_scores(dataloader)
+        try:
+            raw = model.get_all_sim_scores(dataloader, n_options=n_options)
+        except TypeError:
+            raw = model.get_all_sim_scores(dataloader)
     else:
         return None
     # raw shape: (n_batches, ...) e.g. (n_trials, 4, 1) for CLIP image-text

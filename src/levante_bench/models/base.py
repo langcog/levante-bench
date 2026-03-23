@@ -46,12 +46,21 @@ class EvalModel(ABC):
                 all_feats.append(feats)
         return np.concatenate(all_feats, axis=0)
 
-    def get_all_sim_scores(self, dataloader: Any) -> np.ndarray:
+    def get_all_sim_scores(
+        self, dataloader: Any, n_options: int | None = None
+    ) -> np.ndarray:
         all_sims = []
         with torch.no_grad():
             for d in dataloader:
+                images = d.get("images") or []
+                if not images:
+                    if n_options is not None:
+                        all_sims.append(
+                            np.full((1, n_options), np.nan, dtype=np.float64)
+                        )
+                    continue
                 inputs = self.processor(
-                    images=d["images"],
+                    images=images,
                     text=d["text"],
                     return_tensors="pt",
                     padding=True,
@@ -60,7 +69,7 @@ class EvalModel(ABC):
                 if sims is not None:
                     sims = sims.detach().cpu().numpy()
                 all_sims.append(sims)
-        return np.stack(all_sims, axis=0)
+        return np.stack(all_sims, axis=0) if all_sims else np.array([]).reshape(0, 0)
 
 
 class GenEvalModel(ABC):

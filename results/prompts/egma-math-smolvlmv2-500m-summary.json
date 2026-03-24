@@ -1,0 +1,10 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "input_jsonl": "results/prompts/egma-math-smolvlmv2.jsonl",
+  "output_jsonl": "results/prompts/egma-math-smolvlmv2-500m-preds.jsonl",
+  "n_total": 155,
+  "n_parsed": 155,
+  "accuracy_all": 0.5096774193548387,
+  "accuracy_parsed_only": 0.5096774193548387,
+  "parse_rate": 1.0
+}

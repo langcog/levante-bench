@@ -1,3 +1,4 @@
 # Optional: CLIP/transformers support (install after requirements.txt)
 -r requirements.txt
-transformers==4.45.0
+# SmolVLMv2 requires a newer Transformers with `smolvlm` support.
+transformers>=4.57.0,<5

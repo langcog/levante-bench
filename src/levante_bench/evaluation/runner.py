@@ -46,7 +46,9 @@ def run_eval(
             print(f"  Skip {task_id}: no trials or item_uid (check data/raw/{version}/)", file=sys.stderr)
             continue
         base_path = data_root / "assets" / version
-        dataset = LevanteDataset(manifest, base_path=base_path)
+        dataset = LevanteDataset(
+            manifest, base_path=base_path, n_options=task_def.n_options
+        )
         if len(dataset) == 0:
             print(f"  Skip {task_id}: dataset empty (check data/assets/{version}/ item_uid index)", file=sys.stderr)
             continue

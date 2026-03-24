@@ -12,6 +12,8 @@ pip install -e .            # install this package
 # Optional: pip install -r requirements-transformers.txt   # for CLIP
 ```
 
+Use **Python 3.10–3.13**. On **3.13**, `requirements.txt` pins `torch>=2.6` and newer numpy/pandas so pip can install wheels (older torch/pandas often have no `cp313` builds).
+
 Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](requirements-dev.txt).
 
 ## Quick start

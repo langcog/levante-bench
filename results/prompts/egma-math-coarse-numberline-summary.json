@@ -1,0 +1,10 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "input_jsonl": "results/prompts/egma-math-coarse-numberline.jsonl",
+  "output_jsonl": "results/prompts/egma-math-coarse-numberline-preds.jsonl",
+  "n_total": 36,
+  "n_parsed": 36,
+  "accuracy_all": 0.2777777777777778,
+  "accuracy_parsed_only": 0.2777777777777778,
+  "parse_rate": 1.0
+}

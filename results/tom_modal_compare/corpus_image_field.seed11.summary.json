@@ -1,0 +1,12 @@
+{
+  "mode": "corpus_image_field",
+  "seed": 11,
+  "n": 37,
+  "accuracy": 0.4864864864864865,
+  "parse_rate": 1.0,
+  "chance": 0.3963963963963964,
+  "lift_vs_chance": 0.09009009009009011,
+  "images_used": 37,
+  "device": "cuda:0",
+  "cuda_available": true
+}

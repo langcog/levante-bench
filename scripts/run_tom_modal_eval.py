@@ -19,7 +19,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--visual-dir", type=Path, required=True)
     p.add_argument("--output-jsonl", type=Path, required=True)
     p.add_argument("--summary-json", type=Path, required=True)
-    p.add_argument("--mode", choices=["no_screenshots", "screen_descriptions", "screenshots"], required=True)
+    p.add_argument(
+        "--mode",
+        choices=[
+            "no_screenshots",
+            "screen_descriptions",
+            "screenshots",
+            "corpus_image_field",
+        ],
+        required=True,
+    )
     p.add_argument("--model-id", default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct")
     p.add_argument("--device", default="cuda", choices=["auto", "cpu", "cuda"])
     p.add_argument("--max-new-tokens", type=int, default=8)
@@ -49,6 +58,23 @@ def _find_image(item_value: str, visual_dir: Path) -> Path | None:
         p = visual_dir / f"{stem}{ext}"
         if p.exists():
             return p
+    return None
+
+
+def _resolve_corpus_image(image_value: str, visual_dir: Path) -> Path | None:
+    image_value = (image_value or "").strip()
+    if not image_value:
+        return None
+    direct = Path(image_value)
+    if direct.exists():
+        return direct
+    base = Path(image_value).name
+    candidate = visual_dir / base
+    if candidate.exists():
+        return candidate
+    stem = Path(base).stem
+    if stem:
+        return _find_image(stem, visual_dir)
     return None
 
 
@@ -114,8 +140,8 @@ def main() -> None:
     model, processor = _load_model(args.model_id, args.device)
     records = []
 
-    include_desc = args.mode in ("screen_descriptions", "screenshots")
-    include_img = args.mode == "screenshots"
+    include_desc = args.mode in ("screen_descriptions", "screenshots", "corpus_image_field")
+    include_img = args.mode in ("screenshots", "corpus_image_field")
     context: list[str] = []
     current_block = None
     test_seen = 0
@@ -153,7 +179,10 @@ def main() -> None:
 
         image_path = None
         if include_img:
-            image_path = _find_image((row.get("item") or "").strip(), args.visual_dir)
+            if args.mode == "corpus_image_field":
+                image_path = _resolve_corpus_image((row.get("image") or "").strip(), args.visual_dir)
+            else:
+                image_path = _find_image((row.get("item") or "").strip(), args.visual_dir)
             if image_path is not None:
                 image_used += 1
 

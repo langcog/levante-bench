@@ -1,0 +1,23 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "corpus_csv": "data/assets/2026-03-24/corpus/vocab/vocab-item-bank.csv",
+  "visual_dir": "data/assets/2026-03-24/visual/vocab",
+  "audio_dir": null,
+  "output_jsonl": "results/prompts/vocab-smolvlmv2-smoke-preds.jsonl",
+  "n_total": 8,
+  "n_skipped": 0,
+  "n_parsed": 8,
+  "accuracy_all": 0.5,
+  "accuracy_parsed_only": 0.5,
+  "parse_rate": 1.0,
+  "chance_rate": 0.25,
+  "lift_vs_chance": 0.25,
+  "quadrant_counts": {
+    "top-left": 2,
+    "top-right": 2,
+    "bottom-left": 2,
+    "bottom-right": 2
+  },
+  "audio_available_count": 0,
+  "seed": 11
+}

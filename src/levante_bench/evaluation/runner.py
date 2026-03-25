@@ -14,6 +14,19 @@ from levante_bench.evaluation.outputs import write_task_output
 from levante_bench.models import get_model_class
 
 
+def resolve_device(requested_device: str | None) -> str:
+    """Resolve execution device with local GPU availability checks."""
+    import torch
+
+    requested = (requested_device or "auto").strip().lower()
+    if requested == "auto":
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    if requested == "cuda" and not torch.cuda.is_available():
+        print("Requested --device cuda but no local GPU detected; falling back to cpu.", file=sys.stderr)
+        return "cpu"
+    return requested
+
+
 def run_eval(
     task_ids: list[str] | None = None,
     model_ids: list[str] | None = None,
@@ -27,6 +40,7 @@ def run_eval(
     Returns dict of (task_id, model_id) -> output path.
     """
     data_root = data_root or get_data_root()
+    resolved_device = resolve_device(device)
     output_dir = Path(output_dir) if output_dir else data_root.parent / "results" / version
     output_dir.mkdir(parents=True, exist_ok=True)
     task_ids = task_ids or list_tasks()
@@ -65,7 +79,7 @@ def run_eval(
                 print(f"  Skip {task_id} / {model_id}: model not registered (list-models to see available)", file=sys.stderr)
                 continue
             try:
-                model = model_cls(device=device)
+                model = model_cls(device=resolved_device)
             except Exception as e:
                 print(f"  Skip {task_id} / {model_id}: model load failed — {e}", file=sys.stderr)
                 continue

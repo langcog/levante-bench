@@ -8,6 +8,7 @@ Version defaults to today (YYYY-MM-DD). Idempotent.
 import argparse
 import csv
 import json
+import os
 import re
 import time
 import xml.etree.ElementTree as ET
@@ -36,7 +37,16 @@ def _add_src_to_path() -> None:
 
 _add_src_to_path()
 
-from levante_bench.config import get_assets_base_url, get_task_mapping_path  # noqa: E402
+try:
+    # Import defaults from package when available.
+    from levante_bench.config.defaults import get_assets_base_url, get_task_mapping_path  # noqa: E402
+except ModuleNotFoundError:
+    # Fallback for lean branches where levante_bench.config package side-imports missing modules.
+    def get_task_mapping_path() -> Path:
+        return _REPO_ROOT / "src" / "levante_bench" / "config" / "task_name_mapping.csv"
+
+    def get_assets_base_url() -> str:
+        return os.environ.get("LEVANTE_ASSETS_BUCKET_URL", "https://storage.googleapis.com/levante-assets-prod")
 
 
 def _bucket_name_from_base(base: str) -> str:

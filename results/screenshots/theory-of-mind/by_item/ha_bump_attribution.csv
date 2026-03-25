@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-067-step-65.png,67,65,Do you think that the boy bumped you on purpose or by accident?,Do you think that the boy bumped you on purpose or by accident?,test_response,True,index,64,7,test_response,attribution_question,ha_bump_attribution,Do you think that the boy bumped you on purpose or by accident?

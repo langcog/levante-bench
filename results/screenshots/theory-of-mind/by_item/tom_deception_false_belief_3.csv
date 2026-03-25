@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-038-step-36.png,38,36,Is Joshua mad at Isabel?,Is Joshua mad at Isabel?,test_response,True,index,35,4,test_response,false_belief_question,tom_deception_false_belief_3,Is Joshua mad at Isabel?

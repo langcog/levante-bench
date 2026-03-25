@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-017-step-15.png,17,15,Is Ethan being mean and naughty for taking Hannah's book?,Is Ethan being mean and naughty for taking Hannah's book?,test_response,True,index,14,2,test_response,false_belief_question,tom_moral_reasoning_false_belief_1,Is Ethan being mean and naughty for taking Hannah's book?

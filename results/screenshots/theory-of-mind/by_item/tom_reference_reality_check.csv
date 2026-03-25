@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-048-step-46.png,48,46,Which cup does Katie want?,Which cup does Katie want?,test_response,True,index,45,5,test_response,reality_check_question,tom_reference_reality_check,Which cup does Katie want?

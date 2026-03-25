@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-032-step-30.png,32,30,How does Joshua feel about losing his truck?,Screen showing prompt: How does Joshua feel about losing his truck?,test_response,True,index,29,4,test_response,emotion_reasoning_question,tom_deception_emotion_reasoning_1,How does Joshua feel about losing his truck?

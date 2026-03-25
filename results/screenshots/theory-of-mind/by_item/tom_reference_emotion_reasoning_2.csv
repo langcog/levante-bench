@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-050-step-48.png,50,48,How would Katie feel if she had received the cup she wanted?,How would Katie feel if she had received the cup she wanted?,test_response,True,index,47,5,test_response,emotion_reasoning_question,tom_reference_emotion_reasoning_2,How would Katie feel if she had received the cup she wanted?

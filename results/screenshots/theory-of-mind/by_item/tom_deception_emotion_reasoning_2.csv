@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-033-step-31.png,33,31,How would Joshua feel if he found his truck?,How would Joshua feel if he found his truck?,test_response,True,index,30,4,test_response,emotion_reasoning_question,tom_deception_emotion_reasoning_2,How would Joshua feel if he found his truck?

@@ -1,0 +1,11 @@
+{
+  "screenshots_dir": "screenshots/theory-of-mind",
+  "corpus_csv": "data/assets/2026-03-24/corpus/theory-of-mind/theory-of-mind-item-bank.csv",
+  "sequence_trace_csv": "results/benchmark/v1/20260324-212526/tom/tom-v1-none-s1-sequence-trace.csv",
+  "n_screenshots": 80,
+  "n_matched": 77,
+  "n_item_csvs": 34,
+  "master_csv": "results/screenshots/theory-of-mind/theory-of-mind-screenshot-descriptions.csv",
+  "by_item_dir": "results/screenshots/theory-of-mind/by_item",
+  "cleaned": true
+}

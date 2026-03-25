@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-028-step-26.png,28,26,Can you help them find where Joshua really is?,Can you help them find where Joshua really is?,test_response,True,index,25,3,test_response,reality_check_question,tom_interpretation_reality_check_2,Can you help them find where Joshua really is?

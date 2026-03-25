@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-036-step-34.png,36,34,Is it fair that Mother is mad at Joshua for losing his truck?,Is it fair that Mother is mad at Joshua for losing his truck?,test_response,True,index,33,4,test_response,false_belief_question,tom_deception_false_belief_1,Is it fair that Mother is mad at Joshua for losing his truck?

@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-015-step-13.png,15,13,How do you think Hannah feels about Ethan reaching for that book?,How do you think Hannah feels about Ethan reaching for that book?,test_response,True,index,12,2,test_response,emotion_reasoning_question,tom_moral_reasoning_emotion_reasoning_1,How do you think Hannah feels about Ethan reaching for that book?

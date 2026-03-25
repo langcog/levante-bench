@@ -1,0 +1,3 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-057-step-55.png,57,55,What does Sam think they are selling at the shop?,What does Sam think they are selling at the shop?,test_response,True,index,54,6,test_response,false_belief_question,tom_second_order_false_belief_2,What does Sam think they are selling at the shop?
+2025-07-02T04-13-18-theory-of-mind-061-step-59.png,61,59,What does Maria tell dad?,What does Maria tell Dad?,test_response,True,index,58,6,test_response,false_belief_question,tom_second_order_false_belief_2,What does Maria tell dad?

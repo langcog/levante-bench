@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-054-step-52.png,54,52,Does Maria know that they are selling shoes in the shop?,Does Maria know that they are selling shoes in the shop?,test_response,True,index,51,6,test_response,reality_check_question,tom_second_order_reality_check,Does Maria know that they are selling shoes in the shop?

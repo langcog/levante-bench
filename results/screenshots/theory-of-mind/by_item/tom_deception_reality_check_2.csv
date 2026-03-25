@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-041-step-39.png,41,39,Is Mother mad at Isabel now?,Is Mother mad at Isabel now?,test_response,True,index,38,4,test_response,reality_check_question,tom_deception_reality_check_2,Is Mother mad at Isabel now?

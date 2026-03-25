@@ -1,0 +1,2 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-007-step-5.png,7,5,Where will Madison look for her book first?,Where will Madison look first for her book?,test_response,True,index,4,1,test_response,false_belief_question,tom_reality_known_false_belief,Where will Madison look for her book first?

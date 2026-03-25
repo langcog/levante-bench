@@ -1,0 +1,3 @@
+screenshot_file,screenshot_index,step_label,extracted_prompt_text,image_description,stage_guess,matched,match_method,corpus_row_index,block_index,assessment_stage,trial_type,item_uid,corpus_prompt
+2025-07-02T04-13-18-theory-of-mind-056-step-54.png,56,54,Does Sam know that Maria bought some socks?,Does Sam know that Maria bought some socks?,test_response,True,index,53,6,test_response,false_belief_question,tom_second_order_false_belief_1,Does Sam know that Maria bought some socks?
+2025-07-02T04-13-18-theory-of-mind-059-step-57.png,59,57,What does Maria tell dad?,What does Maria tell Dad?,test_response,True,index,56,6,test_response,false_belief_question,tom_second_order_false_belief_1,What does Maria tell dad?

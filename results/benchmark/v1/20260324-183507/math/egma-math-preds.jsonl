@@ -1,0 +1,155 @@
+{"item_uid": "math_compare_7_5", "gold_letter": "A", "pred_text": "The answer is A. 7", "pred_letter": "A", "correct": true, "options": ["7", "5"]}
+{"item_uid": "math_compare_11_24", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["24", "11"]}
+{"item_uid": "math_compare_39_23", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["39", "23"]}
+{"item_uid": "math_compare_58_49", "gold_letter": "A", "pred_text": "The answer is B. 49", "pred_letter": "B", "correct": false, "options": ["58", "49"]}
+{"item_uid": "math_compare_65_67", "gold_letter": "A", "pred_text": "The answer is A. 67", "pred_letter": "A", "correct": true, "options": ["67", "65"]}
+{"item_uid": "math_compare_94_78", "gold_letter": "A", "pred_text": "The answer is B. 78", "pred_letter": "B", "correct": false, "options": ["94", "78"]}
+{"item_uid": "math_compare_146_153", "gold_letter": "A", "pred_text": "The answer is B. 14", "pred_letter": "B", "correct": false, "options": ["153", "146"]}
+{"item_uid": "math_compare_287_534", "gold_letter": "A", "pred_text": "The answer is B. 28", "pred_letter": "B", "correct": false, "options": ["534", "287"]}
+{"item_uid": "math_compare_623_632", "gold_letter": "A", "pred_text": "The answer is A. 63", "pred_letter": "A", "correct": true, "options": ["632", "623"]}
+{"item_uid": "math_compare_867_965", "gold_letter": "A", "pred_text": "The answer is B. 86", "pred_letter": "B", "correct": false, "options": ["965", "867"]}
+{"item_uid": "math_missing_5_6_7_x", "gold_letter": "A", "pred_text": "The answer is A\n\nExplanation:", "pred_letter": "A", "correct": true, "options": ["8", "9", "10", "12"]}
+{"item_uid": "math_missing_14_15_x_17", "gold_letter": "A", "pred_text": "The answer is A\n\nExplanation:", "pred_letter": "A", "correct": true, "options": ["16", "18", "20", "19"]}
+{"item_uid": "math_missing_20_x_40_50", "gold_letter": "A", "pred_text": "The answer is B", "pred_letter": "B", "correct": false, "options": ["30", "10", "60", "35"]}
+{"item_uid": "math_missing_x_300_400_500", "gold_letter": "A", "pred_text": "The answer is B. 10", "pred_letter": "B", "correct": false, "options": ["200", "100", "150", "600"]}
+{"item_uid": "math_missing_2_4_6_x", "gold_letter": "A", "pred_text": "The answer is C. 10", "pred_letter": "C", "correct": false, "options": ["8", "9", "10", "7"]}
+{"item_uid": "math_missing_348_349_x_351", "gold_letter": "A", "pred_text": "The answer is B. 34", "pred_letter": "B", "correct": false, "options": ["350", "347", "346", "352"]}
+{"item_uid": "math_missing_28_x_24_22", "gold_letter": "A", "pred_text": "The answer is B", "pred_letter": "B", "correct": false, "options": ["26", "27", "20", "29"]}
+{"item_uid": "math_missing_30_35_x_45", "gold_letter": "A", "pred_text": "The correct answer is B. 5", "pred_letter": "B", "correct": false, "options": ["40", "50", "25", "55"]}
+{"item_uid": "math_missing_550_540_530_x", "gold_letter": "A", "pred_text": "The answer is A. 52", "pred_letter": "A", "correct": true, "options": ["520", "510", "500", "525"]}
+{"item_uid": "math_missing_3_8_x_18", "gold_letter": "A", "pred_text": "The answer is B. 16", "pred_letter": "B", "correct": false, "options": ["13", "16", "14", "10"]}
+{"item_uid": "math_add_1_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["4", "5", "6", "2"]}
+{"item_uid": "math_add_2_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["5", "7", "6", "4"]}
+{"item_uid": "math_add_6_2", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["8", "9", "7", "12"]}
+{"item_uid": "math_add_4_5", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["9", "7", "8", "11"]}
+{"item_uid": "math_add_3_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["6", "4", "7", "8"]}
+{"item_uid": "math_add_8_1", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["9", "7", "10", "11"]}
+{"item_uid": "math_add_7_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["10", "11", "9", "8"]}
+{"item_uid": "math_add_3_9", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["12", "11", "13", "14"]}
+{"item_uid": "math_add_2_8", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["10", "9", "11", "12"]}
+{"item_uid": "math_add_9_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["12", "13", "10", "14"]}
+{"item_uid": "math_add_7_8", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["15", "13", "17", "19"]}
+{"item_uid": "math_add_4_7", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["11", "12", "13", "10"]}
+{"item_uid": "math_add_7_5", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["12", "14", "13", "11"]}
+{"item_uid": "math_add_8_6", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["14", "16", "18", "12"]}
+{"item_uid": "math_add_9_8", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["17", "19", "15", "16"]}
+{"item_uid": "math_add_6_7", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["13", "15", "11", "12"]}
+{"item_uid": "math_add_8_8", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["16", "14", "18", "17"]}
+{"item_uid": "math_add_8_5", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["13", "15", "11", "16"]}
+{"item_uid": "math_add_10_2", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["12", "14", "13", "11"]}
+{"item_uid": "math_add_8_10", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["18", "19", "17", "16"]}
+{"item_uid": "math_add_13_6", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["19", "18", "17", "20"]}
+{"item_uid": "math_add_18_7", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["25", "23", "24", "26"]}
+{"item_uid": "math_add_12_14", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["26", "24", "28", "25"]}
+{"item_uid": "math_add_22_37", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["59", "69", "51", "49"]}
+{"item_uid": "math_add_38_26", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["64", "54", "66", "56"]}
+{"item_uid": "math_subtract_4_3", "gold_letter": "A", "pred_text": "The answer is B", "pred_letter": "B", "correct": false, "options": ["1", "2", "3", "4"]}
+{"item_uid": "math_subtract_5_3", "gold_letter": "A", "pred_text": "The answer is A", "pred_letter": "A", "correct": true, "options": ["2", "3", "4", "5"]}
+{"item_uid": "math_subtract_8_2", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["6", "5", "4", "7"]}
+{"item_uid": "math_subtract_9_5", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["4", "6", "5", "3"]}
+{"item_uid": "math_subtract_6_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["3", "9", "5", "4"]}
+{"item_uid": "math_subtract_9_1", "gold_letter": "A", "pred_text": "The answer is B", "pred_letter": "B", "correct": false, "options": ["8", "7", "9", "10"]}
+{"item_uid": "math_subtract_10_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["7", "6", "8", "5"]}
+{"item_uid": "math_subtract_12_9", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["3", "4", "2", "5"]}
+{"item_uid": "math_subtract_10_8", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["2", "3", "4", "5"]}
+{"item_uid": "math_subtract_12_3", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["9", "8", "7", "10"]}
+{"item_uid": "math_subtract_15_8", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["7", "6", "8", "9"]}
+{"item_uid": "math_subtract_11_7", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["4", "2", "3", "5"]}
+{"item_uid": "math_subtract_12_5", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["7", "6", "8", "9"]}
+{"item_uid": "math_subtract_14_6", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["8", "7", "6", "9"]}
+{"item_uid": "math_subtract_17_8", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["9", "8", "11", "7"]}
+{"item_uid": "math_subtract_13_7", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["6", "7", "8", "9"]}
+{"item_uid": "math_subtract_16_8", "gold_letter": "A", "pred_text": "The answer is B. 9", "pred_letter": "B", "correct": false, "options": ["8", "9", "7", "6"]}
+{"item_uid": "math_subtract_13_5", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["8", "7", "9", "6"]}
+{"item_uid": "math_subtract_12_2", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["10", "9", "11", "8"]}
+{"item_uid": "math_subtract_18_10", "gold_letter": "A", "pred_text": "The answer is B. 7", "pred_letter": "B", "correct": false, "options": ["8", "7", "10", "9"]}
+{"item_uid": "math_subtract_19_6", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["13", "11", "12", "14"]}
+{"item_uid": "math_subtract_25_7", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["18", "19", "17", "16"]}
+{"item_uid": "math_subtract_26_14", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["12", "13", "11", "15"]}
+{"item_uid": "math_subtract_59_37", "gold_letter": "A", "pred_text": "The answer is B. 21", "pred_letter": "B", "correct": false, "options": ["22", "21", "19", "23"]}
+{"item_uid": "math_subtract_64_26", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["38", "36", "37", "34"]}
+{"item_uid": "math_line_1_10", "gold_letter": "A", "pred_text": "The correct answer is B.", "pred_letter": "B", "correct": false, "options": ["1", "4", "3", "5"]}
+{"item_uid": "math_line_2_10", "gold_letter": "A", "pred_text": "The correct answer is B. 0", "pred_letter": "B", "correct": false, "options": ["2", "0", "4", "5"]}
+{"item_uid": "math_line_4_10", "gold_letter": "A", "pred_text": "The correct answer is A. 4", "pred_letter": "A", "correct": true, "options": ["4", "6", "1", "2"]}
+{"item_uid": "math_line_5_10", "gold_letter": "A", "pred_text": "The correct answer is B. 6", "pred_letter": "B", "correct": false, "options": ["5", "6", "4", "3"]}
+{"item_uid": "math_line_7_10", "gold_letter": "A", "pred_text": "The correct answer is B. 5", "pred_letter": "B", "correct": false, "options": ["7", "5", "4", "9"]}
+{"item_uid": "math_line_8_10", "gold_letter": "A", "pred_text": "The correct answer is B. 1", "pred_letter": "B", "correct": false, "options": ["8", "10", "6", "5"]}
+{"item_uid": "math_line_50_100", "gold_letter": "A", "pred_text": "The correct answer is B. 4", "pred_letter": "B", "correct": false, "options": ["50", "40", "60", "30"]}
+{"item_uid": "math_line_30_100", "gold_letter": "A", "pred_text": "The correct answer is B. 5", "pred_letter": "B", "correct": false, "options": ["30", "50", "15", "45"]}
+{"item_uid": "math_line_98_100", "gold_letter": "A", "pred_text": "The correct answer is B. 6", "pred_letter": "B", "correct": false, "options": ["98", "68", "83", "71"]}
+{"item_uid": "math_line_7_100", "gold_letter": "A", "pred_text": "The correct answer is B. 3", "pred_letter": "B", "correct": false, "options": ["7", "33", "41", "25"]}
+{"item_uid": "math_line_25_100", "gold_letter": "A", "pred_text": "The correct answer is B. 1", "pred_letter": "B", "correct": false, "options": ["25", "10", "45", "5"]}
+{"item_uid": "math_line_67_100", "gold_letter": "A", "pred_text": "The correct answer is B. 5", "pred_letter": "B", "correct": false, "options": ["67", "51", "83", "89"]}
+{"item_uid": "math_line_33_100", "gold_letter": "A", "pred_text": "The correct answer is B. 2", "pred_letter": "B", "correct": false, "options": ["33", "22", "44", "11"]}
+{"item_uid": "math_line_79_100", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["79", "95", "59", "63"]}
+{"item_uid": "math_line_14_100", "gold_letter": "A", "pred_text": "The correct answer is B. 4", "pred_letter": "B", "correct": false, "options": ["14", "43", "29", "36"]}
+{"item_uid": "math_line_42_100", "gold_letter": "A", "pred_text": "The correct answer is B. 6", "pred_letter": "B", "correct": false, "options": ["42", "64", "27", "57"]}
+{"item_uid": "math_line_59_100", "gold_letter": "A", "pred_text": "The correct answer is B. 8", "pred_letter": "B", "correct": false, "options": ["59", "81", "44", "76"]}
+{"item_uid": "math_line_71_100", "gold_letter": "A", "pred_text": "The correct answer is B. 9", "pred_letter": "B", "correct": false, "options": ["71", "91", "55", "86"]}
+{"item_uid": "math_line_258_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["258", "112", "473", "413"]}
+{"item_uid": "math_line_461_1000", "gold_letter": "A", "pred_text": "The correct answer is B. 3", "pred_letter": "B", "correct": false, "options": ["461", "304", "611", "193"]}
+{"item_uid": "math_line_507_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["507", "352", "674", "705"]}
+{"item_uid": "math_line_417_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["417", "256", "592", "202"]}
+{"item_uid": "math_line_310_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["310", "150", "460", "210"]}
+{"item_uid": "math_line_5_1000", "gold_letter": "A", "pred_text": "The correct answer is B. 1", "pred_letter": "B", "correct": false, "options": ["5", "155", "205", "275"]}
+{"item_uid": "math_line_649_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["639", "449", "789", "859"]}
+{"item_uid": "math_line_831_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["831", "781", "931", "631"]}
+{"item_uid": "math_line_542_1000", "gold_letter": "A", "pred_text": "The correct answer is B. 3", "pred_letter": "B", "correct": false, "options": ["542", "392", "732", "273"]}
+{"item_uid": "math_line_941_1000", "gold_letter": "A", "pred_text": "A", "pred_letter": "A", "correct": true, "options": ["941", "791", "735", "690"]}
+{"item_uid": "math_line_644_1000", "gold_letter": "A", "pred_text": "The correct answer is B. 7", "pred_letter": "B", "correct": false, "options": ["644", "795", "451", "910"]}
+{"item_uid": "math_line_126_1000", "gold_letter": "A", "pred_text": "The correct answer is B. 5", "pred_letter": "B", "correct": false, "options": ["126", "520", "917", "722"]}
+{"item_uid": "math_line_01_1", "gold_letter": "A", "pred_text": "The correct answer is A. 0", "pred_letter": "A", "correct": true, "options": ["0.1", "0.25", "0.3", "0.4"]}
+{"item_uid": "math_line_045_1", "gold_letter": "A", "pred_text": "The correct answer is B. 0", "pred_letter": "B", "correct": false, "options": ["0.45", "0.6", "0.25", "0.3"]}
+{"item_uid": "math_line_034_1", "gold_letter": "A", "pred_text": "The correct answer is B. 0", "pred_letter": "B", "correct": false, "options": ["0.34", "0.19", "0.5", "0.05"]}
+{"item_uid": "math_line_075_1", "gold_letter": "A", "pred_text": "The correct answer is B. 0", "pred_letter": "B", "correct": false, "options": ["0.75", "0.6", "0.55", "0.9"]}
+{"item_uid": "math_line_09_1", "gold_letter": "A", "pred_text": "The correct answer is B. 0", "pred_letter": "B", "correct": false, "options": ["0.9", "0.7", "0.8", "0.75"]}
+{"item_uid": "math_line_02_1", "gold_letter": "A", "pred_text": "The correct answer is B. 0", "pred_letter": "B", "correct": false, "options": ["0.2", "0.45", "0.05", "0.35"]}
+{"item_uid": "math_multiply_2_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["6", "5", "9", "8"]}
+{"item_uid": "math_multiply_4_2", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["8", "6", "10", "4"]}
+{"item_uid": "math_multiply_3_6", "gold_letter": "A", "pred_text": "The answer is A. 18", "pred_letter": "A", "correct": true, "options": ["18", "20", "14", "9"]}
+{"item_uid": "math_multiply_8_1", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["8", "9", "16", "1"]}
+{"item_uid": "math_multiply_7_3", "gold_letter": "A", "pred_text": "The answer is A. 21", "pred_letter": "A", "correct": true, "options": ["21", "11", "20", "19"]}
+{"item_uid": "math_multiply_2_14", "gold_letter": "A", "pred_text": "The answer is A. 28", "pred_letter": "A", "correct": true, "options": ["28", "24", "26", "16"]}
+{"item_uid": "math_multiply_4_6", "gold_letter": "A", "pred_text": "The answer is A. 24", "pred_letter": "A", "correct": true, "options": ["24", "22", "32", "12"]}
+{"item_uid": "math_multiply_4_8", "gold_letter": "A", "pred_text": "The answer is A. 32", "pred_letter": "A", "correct": true, "options": ["32", "34", "28", "40"]}
+{"item_uid": "math_multiply_5_7", "gold_letter": "A", "pred_text": "The answer is A. 35", "pred_letter": "A", "correct": true, "options": ["35", "30", "45", "55"]}
+{"item_uid": "math_multiply_7_6", "gold_letter": "A", "pred_text": "The answer is A. 42", "pred_letter": "A", "correct": true, "options": ["42", "24", "44", "32"]}
+{"item_uid": "math_multiply_3_13", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["39", "37", "36", "42"]}
+{"item_uid": "math_multiply_7_8", "gold_letter": "A", "pred_text": "The answer is A. 56", "pred_letter": "A", "correct": true, "options": ["56", "57", "65", "54"]}
+{"item_uid": "math_multiply_21_4", "gold_letter": "A", "pred_text": "The answer is A. 84", "pred_letter": "A", "correct": true, "options": ["84", "86", "64", "25"]}
+{"item_uid": "math_multiply_26_3", "gold_letter": "A", "pred_text": "The answer is B. 68", "pred_letter": "B", "correct": false, "options": ["78", "68", "76", "88"]}
+{"item_uid": "math_multiply_8_9", "gold_letter": "A", "pred_text": "The answer is A. 72", "pred_letter": "A", "correct": true, "options": ["72", "63", "92", "84"]}
+{"item_uid": "math_multiply_9_11", "gold_letter": "A", "pred_text": "The answer is A. 99", "pred_letter": "A", "correct": true, "options": ["99", "89", "91", "96"]}
+{"item_uid": "math_multiply_10_7", "gold_letter": "A", "pred_text": "The answer is A. 70", "pred_letter": "A", "correct": true, "options": ["70", "77", "107", "67"]}
+{"item_uid": "math_multiply_6_100", "gold_letter": "A", "pred_text": "The answer is B. 10", "pred_letter": "B", "correct": false, "options": ["600", "106", "500", "900"]}
+{"item_uid": "math_multiply_10_48", "gold_letter": "A", "pred_text": "The answer is A. 48", "pred_letter": "A", "correct": true, "options": ["480", "408", "840", "464"]}
+{"item_uid": "math_multiply_20_42", "gold_letter": "A", "pred_text": "The answer is A. 84", "pred_letter": "A", "correct": true, "options": ["840", "820", "860", "880"]}
+{"item_uid": "math_multiply_7_23", "gold_letter": "A", "pred_text": "The answer is B. 11", "pred_letter": "B", "correct": false, "options": ["161", "116", "121", "187"]}
+{"item_uid": "math_multiply_351_4", "gold_letter": "A", "pred_text": "The answer is A. 14", "pred_letter": "A", "correct": true, "options": ["1404", "1414", "1384", "1435"]}
+{"item_uid": "math_multiply_346_10", "gold_letter": "A", "pred_text": "The answer is A. 34", "pred_letter": "A", "correct": true, "options": ["3460", "356", "3640", "3046"]}
+{"item_uid": "math_multiply_45_9", "gold_letter": "A", "pred_text": "The answer is A. 40", "pred_letter": "A", "correct": true, "options": ["405", "365", "409", "393"]}
+{"item_uid": "math_multiply_219_20", "gold_letter": "A", "pred_text": "The answer is B. 21", "pred_letter": "B", "correct": false, "options": ["4380", "2190", "4830", "4240"]}
+{"item_uid": "math_fraction_14_24", "gold_letter": "A", "pred_text": "The answer is B. 2/", "pred_letter": "B", "correct": false, "options": ["3/4", "2/4", "1", "3/8"]}
+{"item_uid": "math_fraction_13_23", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["1", "3", "2", "2/3"]}
+{"item_uid": "math_fraction_16_13", "gold_letter": "A", "pred_text": "The answer is A. 1/", "pred_letter": "A", "correct": true, "options": ["1/2", "2/9", "2/3", "5/6"]}
+{"item_uid": "math_fraction_17_314", "gold_letter": "A", "pred_text": "The answer is A. 5/", "pred_letter": "A", "correct": true, "options": ["5/14", "1/2", "2/7", "3/7"]}
+{"item_uid": "math_fraction_512_16", "gold_letter": "A", "pred_text": "The answer is A. 7/", "pred_letter": "A", "correct": true, "options": ["7/12", "1/3", "6/12", "2/3"]}
+{"item_uid": "math_fraction_39_13", "gold_letter": "A", "pred_text": "The answer is B. 4/", "pred_letter": "B", "correct": false, "options": ["2/3", "4/12", "5/9", "7/9"]}
+{"item_uid": "math_fraction_13_25", "gold_letter": "A", "pred_text": "The answer is B. 2/", "pred_letter": "B", "correct": false, "options": ["11/15", "2/3", "3/8", "4/5"]}
+{"item_uid": "math_fraction_28_39", "gold_letter": "A", "pred_text": "The answer is B. 5/", "pred_letter": "B", "correct": false, "options": ["7/12", "5/17", "5/9", "45/72"]}
+{"item_uid": "math_fraction_48_18", "gold_letter": "A", "pred_text": "The answer is A. 3/", "pred_letter": "A", "correct": true, "options": ["3/8", "3", "3/4", "3/0"]}
+{"item_uid": "math_fraction_710_25", "gold_letter": "A", "pred_text": "The answer is A. 3/", "pred_letter": "A", "correct": true, "options": ["3/10", "5/10", "1/5", "5/5"]}
+{"item_uid": "math_fraction_13_17", "gold_letter": "A", "pred_text": "The answer is B. 6/", "pred_letter": "B", "correct": false, "options": ["4/21", "6/21", "1/4", "1/7"]}
+{"item_uid": "math_fraction_512_16", "gold_letter": "A", "pred_text": "The answer is B. 4/", "pred_letter": "B", "correct": false, "options": ["1/4", "4/12", "4/6", "5/12"]}
+{"item_uid": "math_fraction_19_110", "gold_letter": "A", "pred_text": "The answer is B. 9/", "pred_letter": "B", "correct": false, "options": ["1/90", "9/90", "8/90", "1/30"]}
+{"item_uid": "math_fraction_12_13", "gold_letter": "A", "pred_text": "The answer is B. 2/", "pred_letter": "B", "correct": false, "options": ["1/6", "2/6", "1/3", "3/6"]}
+{"item_uid": "math_fraction_34_7_16", "gold_letter": "A", "pred_text": "The answer is B. 1/", "pred_letter": "B", "correct": false, "options": ["5/16", "1/4", "3/8", "7/16"]}
+{"item_uid": "math_fraction_178_54", "gold_letter": "A", "pred_text": "The answer is A. 7/", "pred_letter": "A", "correct": true, "options": ["7/8", "12/4", "7/4", "12/8"]}
+{"item_uid": "math_compare_6_4", "gold_letter": "A", "pred_text": "The answer is A. 6.", "pred_letter": "A", "correct": true, "options": ["6", "4"]}
+{"item_uid": "math_compare_7_5", "gold_letter": "A", "pred_text": "The answer is A. 8", "pred_letter": "A", "correct": true, "options": ["8", "5"]}
+{"item_uid": "math_compare_10_12", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["12", "10"]}
+{"item_uid": "math_compare_11_24", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["24", "11"]}
+{"item_uid": "math_add_2_2", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["4", "5", "2", "0"]}
+{"item_uid": "math_add_1_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["4", "5", "6", "2"]}
+{"item_uid": "math_add_2_3", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["5", "7", "6", "4"]}
+{"item_uid": "math_add_6_2", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["8", "9", "7", "12"]}

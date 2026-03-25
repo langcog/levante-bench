@@ -1,0 +1,10 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "input_jsonl": "/home/david/levante/levante-bench/results/benchmark/v1/20260324-175306/math/egma-math-prompts-eval.jsonl",
+  "output_jsonl": "/home/david/levante/levante-bench/results/benchmark/v1/20260324-175306/math/egma-math-preds.jsonl",
+  "n_total": 12,
+  "n_parsed": 12,
+  "accuracy_all": 0.5,
+  "accuracy_parsed_only": 0.5,
+  "parse_rate": 1.0
+}

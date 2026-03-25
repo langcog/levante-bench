@@ -1,0 +1,5 @@
+variant,seed,n_total,accuracy_all,parse_rate
+none,1,12,0.8333333333333334,1.0
+none,2,12,0.75,1.0
+state_model,1,12,0.5,1.0
+state_model,2,12,0.6666666666666666,1.0

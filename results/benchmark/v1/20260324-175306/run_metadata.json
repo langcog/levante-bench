@@ -1,0 +1,25 @@
+{
+  "benchmark_version": "v1",
+  "timestamp": "20260324-175306",
+  "data_version": "2026-03-24",
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "device": "cuda",
+  "tom_variants": [
+    "none",
+    "state_model"
+  ],
+  "tom_seeds": [
+    1,
+    2
+  ],
+  "max_items_math": 12,
+  "max_items_tom": 12,
+  "git_commit": "3c3b90c05dcadebc8ae88fa9e517d1caa1dd2b2e",
+  "paths": {
+    "math_summary_json": "results/benchmark/v1/20260324-175306/math/egma-math-summary.json",
+    "math_by_type_csv": "results/benchmark/v1/20260324-175306/math/egma-math-by-type.csv",
+    "tom_summary_csv": "results/benchmark/v1/20260324-175306/tom/tom-v1-summary.csv",
+    "tom_per_run_csv": "results/benchmark/v1/20260324-175306/tom/tom-v1-per-run.csv",
+    "tom_summary_vs_chance_csv": "results/benchmark/v1/20260324-175306/tom/tom-v1-summary-vs-chance.csv"
+  }
+}

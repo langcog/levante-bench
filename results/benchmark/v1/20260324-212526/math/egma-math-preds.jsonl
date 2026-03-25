@@ -1,0 +1,8 @@
+{"item_uid": "math_compare_7_5", "gold_letter": "A", "pred_text": "The answer is A. 7", "pred_letter": "A", "correct": true, "options": ["7", "5"]}
+{"item_uid": "math_compare_11_24", "gold_letter": "A", "pred_text": "The answer is A.", "pred_letter": "A", "correct": true, "options": ["24", "11"]}
+{"item_uid": "math_compare_39_23", "gold_letter": "A", "pred_text": "The answer is B.", "pred_letter": "B", "correct": false, "options": ["39", "23"]}
+{"item_uid": "math_compare_58_49", "gold_letter": "A", "pred_text": "The answer is B. 49", "pred_letter": "B", "correct": false, "options": ["58", "49"]}
+{"item_uid": "math_compare_65_67", "gold_letter": "A", "pred_text": "The answer is A. 67", "pred_letter": "A", "correct": true, "options": ["67", "65"]}
+{"item_uid": "math_compare_94_78", "gold_letter": "A", "pred_text": "The answer is B. 78", "pred_letter": "B", "correct": false, "options": ["94", "78"]}
+{"item_uid": "math_compare_146_153", "gold_letter": "A", "pred_text": "The answer is B. 14", "pred_letter": "B", "correct": false, "options": ["153", "146"]}
+{"item_uid": "math_compare_287_534", "gold_letter": "A", "pred_text": "The answer is B. 28", "pred_letter": "B", "correct": false, "options": ["534", "287"]}

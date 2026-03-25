@@ -1,0 +1,12 @@
+metric,value
+math_accuracy_all,0.5741935483870968
+math_chance_baseline,0.2725806451612903
+math_lift_vs_chance,0.3016129032258065
+tom_none_mean_accuracy,0.49729729729729727
+tom_none_std_accuracy,0.07171080627795458
+tom_none_chance_baseline,0.4166666666666667
+tom_none_lift_vs_chance,0.08063063063063058
+tom_state_model_mean_accuracy,0.5459459459459459
+tom_state_model_std_accuracy,0.0464990554975277
+tom_state_model_chance_baseline,0.4166666666666667
+tom_state_model_lift_vs_chance,0.12927927927927924

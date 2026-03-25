@@ -1,0 +1,51 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "corpus_csv": "/home/david/levante/levante-bench/data/assets/2026-03-24/corpus/theory-of-mind/theory-of-mind-item-bank.csv",
+  "output_jsonl": "/home/david/levante/levante-bench/results/benchmark/v1/20260324-183507/tom/tom-v1-none-s4-preds.jsonl",
+  "memory_mode": "none",
+  "memory_format": "detailed",
+  "history_window": 8,
+  "reasoning_instruction": "standard",
+  "trial_type_filter": null,
+  "template_style": "standard",
+  "two_stage": false,
+  "analysis_max_new_tokens": 64,
+  "shuffle_options": true,
+  "seed": 4,
+  "n_total": 37,
+  "n_parsed": 37,
+  "accuracy_all": 0.4594594594594595,
+  "parse_rate": 1.0,
+  "by_trial_type": {
+    "action_question": {
+      "n": 3,
+      "accuracy": 0.3333333333333333,
+      "parse_rate": 1.0
+    },
+    "attribution_question": {
+      "n": 3,
+      "accuracy": 0.3333333333333333,
+      "parse_rate": 1.0
+    },
+    "emotion_reasoning_question": {
+      "n": 7,
+      "accuracy": 0.2857142857142857,
+      "parse_rate": 1.0
+    },
+    "false_belief_question": {
+      "n": 13,
+      "accuracy": 0.6923076923076923,
+      "parse_rate": 1.0
+    },
+    "reality_check_question": {
+      "n": 10,
+      "accuracy": 0.4,
+      "parse_rate": 1.0
+    },
+    "reference_question": {
+      "n": 1,
+      "accuracy": 0.0,
+      "parse_rate": 1.0
+    }
+  }
+}

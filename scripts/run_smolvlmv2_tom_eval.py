@@ -85,6 +85,17 @@ def parse_args() -> argparse.Namespace:
         default=64,
         help="Generation length for stage-1 notes when --two-stage is enabled.",
     )
+    p.add_argument(
+        "--sequence-trace-csv",
+        type=Path,
+        default=None,
+        help="Optional CSV path to write processed row order for auditability.",
+    )
+    p.add_argument(
+        "--strict-order-check",
+        action="store_true",
+        help="Fail if test_response appears in a block before any instruction context.",
+    )
     return p.parse_args()
 
 
@@ -450,6 +461,8 @@ def run(args: argparse.Namespace) -> None:
     rng = random.Random(args.seed)
     args.output_jsonl.parent.mkdir(parents=True, exist_ok=True)
     args.summary_json.parent.mkdir(parents=True, exist_ok=True)
+    if args.sequence_trace_csv is not None:
+        args.sequence_trace_csv.parent.mkdir(parents=True, exist_ok=True)
 
     n_total = 0
     n_parsed = 0
@@ -459,6 +472,9 @@ def run(args: argparse.Namespace) -> None:
     current_block = None
     context_lines: list[str] = []
     state = _new_state()
+    seen_instruction_in_block = False
+    trace_rows: list[dict[str, Any]] = []
+    global_row_index = -1
 
     allowed_types = None
     if args.trial_type_filter:
@@ -469,19 +485,31 @@ def run(args: argparse.Namespace) -> None:
     ) as f_out:
         reader = csv.DictReader(f_in)
         for row in reader:
+            global_row_index += 1
             block = (row.get("block_index") or "").strip()
             if block != current_block:
                 current_block = block
                 context_lines = []
                 state = _new_state()
+                seen_instruction_in_block = False
 
             stage = (row.get("assessment_stage") or "").strip().lower()
             prompt = (row.get("prompt") or "").strip()
             trial_type = (row.get("trial_type") or "").strip()
             item_uid = (row.get("item_uid") or "").strip()
+            trace_rows.append(
+                {
+                    "row_index": global_row_index,
+                    "block_index": block,
+                    "assessment_stage": stage,
+                    "trial_type": trial_type,
+                    "item_uid": item_uid,
+                }
+            )
 
             # Keep narrative context from instruction rows.
             if stage == "instructions" and prompt:
+                seen_instruction_in_block = True
                 if _is_state_mode(args.memory_mode):
                     _update_state_with_instruction(state, prompt, limit=max(args.max_context_lines, 1))
                 elif args.memory_format == "belief_state":
@@ -494,6 +522,10 @@ def run(args: argparse.Namespace) -> None:
             # Evaluate only answerable test rows.
             if stage != "test_response":
                 continue
+            if args.strict_order_check and not seen_instruction_in_block:
+                raise ValueError(
+                    f"Order check failed: test_response before instructions in block={block}, row_index={global_row_index}"
+                )
             if allowed_types is not None and trial_type not in allowed_types:
                 continue
             answer = (row.get("answer") or "").strip()
@@ -663,6 +695,16 @@ def run(args: argparse.Namespace) -> None:
     }
     with open(args.summary_json, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
+    if args.sequence_trace_csv is not None:
+        import csv as _csv
+
+        with open(args.sequence_trace_csv, "w", newline="", encoding="utf-8") as f:
+            w = _csv.DictWriter(
+                f,
+                fieldnames=["row_index", "block_index", "assessment_stage", "trial_type", "item_uid"],
+            )
+            w.writeheader()
+            w.writerows(trace_rows)
     print(json.dumps(summary, indent=2))
 
 

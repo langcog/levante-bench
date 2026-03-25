@@ -1,0 +1,36 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "corpus_csv": "/home/david/levante/levante-bench/data/assets/2026-03-24/corpus/theory-of-mind/theory-of-mind-item-bank.csv",
+  "output_jsonl": "/home/david/levante/levante-bench/results/benchmark/v1/20260324-212526/tom/tom-v1-state_model-s2-preds.jsonl",
+  "memory_mode": "state_model",
+  "memory_format": "detailed",
+  "history_window": 8,
+  "reasoning_instruction": "standard",
+  "trial_type_filter": null,
+  "template_style": "standard",
+  "two_stage": false,
+  "analysis_max_new_tokens": 64,
+  "shuffle_options": true,
+  "seed": 2,
+  "n_total": 8,
+  "n_parsed": 8,
+  "accuracy_all": 0.75,
+  "parse_rate": 1.0,
+  "by_trial_type": {
+    "emotion_reasoning_question": {
+      "n": 2,
+      "accuracy": 0.0,
+      "parse_rate": 1.0
+    },
+    "false_belief_question": {
+      "n": 4,
+      "accuracy": 1.0,
+      "parse_rate": 1.0
+    },
+    "reality_check_question": {
+      "n": 2,
+      "accuracy": 1.0,
+      "parse_rate": 1.0
+    }
+  }
+}

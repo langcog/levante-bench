@@ -44,6 +44,23 @@ def parse_args() -> argparse.Namespace:
         choices=["standard", "facts_only"],
         help="Prompt instruction style.",
     )
+    p.add_argument(
+        "--template-style",
+        default="standard",
+        choices=["standard", "trial_aware"],
+        help="Template style forwarded to ToM evaluator.",
+    )
+    p.add_argument(
+        "--two-stage",
+        action="store_true",
+        help="Enable two-stage reasoning in ToM evaluator.",
+    )
+    p.add_argument(
+        "--analysis-max-new-tokens",
+        type=int,
+        default=64,
+        help="Stage-1 token budget when two-stage is enabled.",
+    )
     p.add_argument("--max-items", type=int, default=None, help="Optional cap for quick smoke runs")
     p.add_argument(
         "--output-prefix",
@@ -62,6 +79,7 @@ def parse_args() -> argparse.Namespace:
 def _run_one(args: argparse.Namespace, variant: str, seed: int) -> Path:
     out_pred = args.results_dir / f"{args.output_prefix}-{variant}-s{seed}-preds.jsonl"
     out_sum = args.results_dir / f"{args.output_prefix}-{variant}-s{seed}-summary.json"
+    out_trace = args.results_dir / f"{args.output_prefix}-{variant}-s{seed}-sequence-trace.csv"
     cmd = [
         sys.executable,
         "scripts/run_smolvlmv2_tom_eval.py",
@@ -79,6 +97,8 @@ def _run_one(args: argparse.Namespace, variant: str, seed: int) -> Path:
         str(args.history_window),
         "--reasoning-instruction",
         args.reasoning_instruction,
+        "--template-style",
+        args.template_style,
         "--shuffle-options",
         "--seed",
         str(seed),
@@ -86,7 +106,12 @@ def _run_one(args: argparse.Namespace, variant: str, seed: int) -> Path:
         args.device,
         "--model-id",
         args.model_id,
+        "--strict-order-check",
+        "--sequence-trace-csv",
+        str(out_trace),
     ]
+    if args.two_stage:
+        cmd.extend(["--two-stage", "--analysis-max-new-tokens", str(args.analysis_max_new_tokens)])
     if args.max_items is not None:
         cmd.extend(["--max-items", str(args.max_items)])
     subprocess.run(cmd, check=True)

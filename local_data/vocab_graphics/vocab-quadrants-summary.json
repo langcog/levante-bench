@@ -1,8 +1,8 @@
 {
   "corpus_csv": "data/assets/2026-03-24/corpus/vocab/vocab-item-bank.csv",
   "visual_dir": "data/assets/2026-03-24/visual/vocab",
-  "out_dir": "comparison/vocab-graphics/images",
-  "manifest_csv": "comparison/vocab-graphics/vocab-quadrants-manifest.csv",
+  "out_dir": "local_data/vocab_graphics/images",
+  "manifest_csv": "local_data/vocab_graphics/vocab-quadrants-manifest.csv",
   "n_total_graphics": 170,
   "n_skipped": 0,
   "quadrant_counts": {

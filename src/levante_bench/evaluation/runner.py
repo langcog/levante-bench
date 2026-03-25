@@ -4,32 +4,104 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
-from levante_bench.config import get_task_def, load_model_config, load_task_config
+from levante_bench.config import get_data_root, get_task_def, load_model_config, load_task_config
 from levante_bench.evaluation.cache import load_cache, save_cache, trial_hash
 from levante_bench.evaluation.outputs import write_task_csv, write_summary_csv
 from levante_bench.models import get_model_class
 from levante_bench.tasks import get_task_dataset
 
 
-def run_eval(cfg: DictConfig) -> dict[str, Any]:
-    """Evaluate each model across all tasks using experiment config.
+def run_eval(cfg: DictConfig) -> dict[str, Path]:
+    """Evaluate each model across all tasks using experiment config."""
+    data_root = get_data_root()
+    version = cfg.get("version", "current")
+    output_base = Path(cfg.get("output_dir", "results"))
+    device = cfg.get("device", "cpu")
+    results = {}
 
-    Flow:
-        for model in cfg.models:
-            load model config + model once
-            cache at results/<model>/<version>/cache/responses.json
-            for task in cfg.tasks:
-                check model capabilities vs task context_type
-                load task dataset
-                for trial in dataset:
-                    check cache → skip if exists
-                    model.evaluate_trial(trial)
-                    write to cache
-                write per-task CSV to results/<model>/<version>/<task_id>.csv
-            write summary CSV to results/<model>/<version>/summary.csv
+    for model_name in cfg.models:
+        model_cfg = load_model_config(model_name)
+        if model_cfg is None:
+            print(f"  Skip model {model_name}: no config found", file=sys.stderr)
+            continue
 
-    Returns dict of model_id -> summary CSV path.
-    """
-    pass
+        # Resolve model config (handles ${size} interpolation etc.)
+        model_cfg = OmegaConf.to_container(model_cfg, resolve=True)
+
+        # Load model once for all tasks
+        model_cls = get_model_class(model_name)
+        if model_cls is None:
+            print(f"  Skip model {model_name}: not registered", file=sys.stderr)
+            continue
+
+        model = model_cls(model_name=model_cfg["hf_name"], device=device)
+        model.load()
+
+        model_dir = output_base / model_name / version
+        cache_path = model_dir / "cache" / "responses.json"
+        cache = load_cache(cache_path)
+        task_accuracies = {}
+
+        for task_id in cfg.tasks:
+            task_cfg = load_task_config(task_id)
+            if task_cfg is None:
+                print(f"  Skip task {task_id}: no config found", file=sys.stderr)
+                continue
+
+            # Check model capabilities vs task context_type
+            capabilities = model_cfg.get("capabilities", [])
+            context_type = task_cfg.get("context_type", "none")
+            if capabilities and context_type not in capabilities and context_type != "none":
+                print(f"  Skip {task_id}: model {model_name} lacks capability '{context_type}'", file=sys.stderr)
+                continue
+
+            # Load task dataset
+            task_def = get_task_def(task_id, version)
+            if task_def is None:
+                print(f"  Skip {task_id}: no task def for version={version}", file=sys.stderr)
+                continue
+
+            dataset_cls = get_task_dataset(task_id)
+            if dataset_cls is None:
+                print(f"  Skip {task_id}: no dataset registered", file=sys.stderr)
+                continue
+
+            dataset = dataset_cls(task_def=task_def, version=version, data_root=data_root)
+            if len(dataset) == 0:
+                print(f"  Skip {task_id}: empty dataset", file=sys.stderr)
+                continue
+
+            # Evaluate each trial
+            task_results = []
+            max_new_tokens = model_cfg.get("max_new_tokens", 64)
+
+            for i in range(len(dataset)):
+                trial = dataset[i]
+                trial["max_new_tokens"] = max_new_tokens
+                h = trial_hash(trial)
+
+                if h in cache:
+                    task_results.append(cache[h])
+                    continue
+
+                result = model.evaluate_trial(trial)
+                cache[h] = result
+                save_cache(cache_path, cache)
+                task_results.append(result)
+
+            # Write per-task CSV
+            write_task_csv(model_dir, task_id, task_results)
+
+            # Compute accuracy
+            correct = sum(1 for r in task_results if r["is_correct"])
+            task_accuracies[task_id] = correct / len(task_results) if task_results else 0.0
+            print(f"  {model_name}/{task_id}: {task_accuracies[task_id]:.4f} ({correct}/{len(task_results)})")
+
+        # Write cross-task summary
+        summary_path = write_summary_csv(model_dir, task_accuracies)
+        results[model_name] = summary_path
+        print(f"  Summary: {summary_path}")
+
+    return results

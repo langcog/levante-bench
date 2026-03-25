@@ -1,7 +1,8 @@
 # SmolVLM2 model config.
 
 name: smolvlm2
-hf_name: HuggingFaceTB/SmolVLM2-256M-Video-Instruct
+hf_name: HuggingFaceTB/SmolVLM2-${size}-Video-Instruct
+size: 256M  # 256M | 500M | 2.2B
 max_new_tokens: 64
 dtype: float32
 

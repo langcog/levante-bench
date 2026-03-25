@@ -96,6 +96,30 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fail if test_response appears in a block before any instruction context.",
     )
+    p.add_argument(
+        "--scene-descriptions-csv",
+        type=Path,
+        default=None,
+        help=(
+            "Optional CSV with scene descriptions aligned to corpus row order. "
+            "If it includes corpus_row_index, that is used; otherwise row order is used."
+        ),
+    )
+    p.add_argument(
+        "--scene-description-column",
+        default="visual_scene_description",
+        help="Column name in --scene-descriptions-csv containing the scene description text.",
+    )
+    p.add_argument(
+        "--scene-instructions-mode",
+        default="current_and_context",
+        choices=["off", "current_only", "current_and_context"],
+        help=(
+            "How to use scene descriptions: "
+            "off=ignore; current_only=add current scene to question prompt; "
+            "current_and_context=also append scene notes to instruction context."
+        ),
+    )
     return p.parse_args()
 
 
@@ -152,6 +176,7 @@ def _build_prompt(
     reasoning_instruction: str,
     template_style: str,
     stage1_notes: str | None = None,
+    current_scene_description: str | None = None,
 ) -> str:
     lines = ["You are answering a story understanding question."]
     if reasoning_instruction == "facts_only":
@@ -163,6 +188,8 @@ def _build_prompt(
         lines.append("Story so far:")
         for ln in context_lines:
             lines.append(f"- {ln}")
+    if current_scene_description:
+        lines.append(f"Current scene: {current_scene_description}")
     prompt = (row.get("prompt") or "").strip()
     if prompt:
         lines.append(f"Question: {prompt}")
@@ -433,6 +460,7 @@ def _build_stage1_prompt(
     memory_mode: str,
     reasoning_instruction: str,
     template_style: str,
+    current_scene_description: str | None = None,
 ) -> str:
     trial_type = (row.get("trial_type") or "").strip()
     prompt = (row.get("prompt") or "").strip()
@@ -443,6 +471,8 @@ def _build_stage1_prompt(
         lines.append("Story so far:")
         for ln in context_lines:
             lines.append(f"- {ln}")
+    if current_scene_description:
+        lines.append(f"Current scene: {current_scene_description}")
     if prompt:
         lines.append(f"Question: {prompt}")
     if trial_type:
@@ -454,6 +484,31 @@ def _build_stage1_prompt(
     lines.append("- key_fact: ...")
     lines.append("Do not output any option letter.")
     return "\n".join(lines)
+
+
+def _load_scene_descriptions(path: Path, text_col: str) -> dict[int, str]:
+    scene_by_row: dict[int, str] = {}
+    if not path.exists():
+        raise FileNotFoundError(f"Scene descriptions CSV not found: {path}")
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        has_index = "corpus_row_index" in (reader.fieldnames or [])
+        for i, row in enumerate(reader):
+            txt = (row.get(text_col) or "").strip()
+            if not txt:
+                continue
+            if has_index:
+                raw_idx = (row.get("corpus_row_index") or "").strip()
+                if not raw_idx:
+                    continue
+                try:
+                    idx = int(raw_idx)
+                except ValueError:
+                    continue
+            else:
+                idx = i
+            scene_by_row[idx] = txt
+    return scene_by_row
 
 
 def run(args: argparse.Namespace) -> None:
@@ -475,6 +530,19 @@ def run(args: argparse.Namespace) -> None:
     seen_instruction_in_block = False
     trace_rows: list[dict[str, Any]] = []
     global_row_index = -1
+    last_scene_description = ""
+    scene_test_rows_used = 0
+    scene_instruction_rows_used = 0
+
+    scene_by_row: dict[int, str] = {}
+    use_scenes = (
+        args.scene_descriptions_csv is not None
+        and args.scene_instructions_mode != "off"
+    )
+    if use_scenes and args.scene_descriptions_csv is not None:
+        scene_by_row = _load_scene_descriptions(
+            args.scene_descriptions_csv, args.scene_description_column
+        )
 
     allowed_types = None
     if args.trial_type_filter:
@@ -497,6 +565,9 @@ def run(args: argparse.Namespace) -> None:
             prompt = (row.get("prompt") or "").strip()
             trial_type = (row.get("trial_type") or "").strip()
             item_uid = (row.get("item_uid") or "").strip()
+            current_scene = scene_by_row.get(global_row_index, "").strip() if use_scenes else ""
+            if current_scene:
+                last_scene_description = current_scene
             trace_rows.append(
                 {
                     "row_index": global_row_index,
@@ -516,6 +587,13 @@ def run(args: argparse.Namespace) -> None:
                     context_lines.append(f"Story fact: {prompt}")
                 else:
                     context_lines.append(prompt)
+                if (
+                    use_scenes
+                    and args.scene_instructions_mode == "current_and_context"
+                    and current_scene
+                ):
+                    context_lines.append(f"Scene detail: {current_scene}")
+                    scene_instruction_rows_used += 1
                 context_lines = context_lines[-args.max_context_lines :]
                 continue
 
@@ -541,6 +619,11 @@ def run(args: argparse.Namespace) -> None:
             prompt_context = (
                 _state_to_context_lines(state) if _is_state_mode(args.memory_mode) else context_lines
             )
+            scene_for_question = ""
+            if use_scenes:
+                scene_for_question = current_scene or last_scene_description
+                if scene_for_question:
+                    scene_test_rows_used += 1
             prompt_text = _build_prompt(
                 row,
                 options,
@@ -548,6 +631,11 @@ def run(args: argparse.Namespace) -> None:
                 memory_mode=args.memory_mode,
                 reasoning_instruction=args.reasoning_instruction,
                 template_style=args.template_style,
+                current_scene_description=(
+                    scene_for_question
+                    if args.scene_instructions_mode in {"current_only", "current_and_context"}
+                    else None
+                ),
             )
             stage1_notes = None
             if args.two_stage:
@@ -557,6 +645,11 @@ def run(args: argparse.Namespace) -> None:
                     memory_mode=args.memory_mode,
                     reasoning_instruction=args.reasoning_instruction,
                     template_style=args.template_style,
+                    current_scene_description=(
+                        scene_for_question
+                        if args.scene_instructions_mode in {"current_only", "current_and_context"}
+                        else None
+                    ),
                 )
                 stage1_notes = _generate_one(
                     model=model,
@@ -573,6 +666,11 @@ def run(args: argparse.Namespace) -> None:
                     reasoning_instruction=args.reasoning_instruction,
                     template_style=args.template_style,
                     stage1_notes=stage1_notes,
+                    current_scene_description=(
+                        scene_for_question
+                        if args.scene_instructions_mode in {"current_only", "current_and_context"}
+                        else None
+                    ),
                 )
             pred_text = _generate_one(
                 model=model,
@@ -609,6 +707,7 @@ def run(args: argparse.Namespace) -> None:
                 "stage1_notes": stage1_notes,
                 "correct": is_correct,
                 "memory_mode": args.memory_mode,
+                "scene_description": scene_for_question if use_scenes else None,
             }
             f_out.write(json.dumps(out, ensure_ascii=True) + "\n")
 
@@ -692,6 +791,12 @@ def run(args: argparse.Namespace) -> None:
         "accuracy_all": (n_correct / n_total) if n_total else None,
         "parse_rate": (n_parsed / n_total) if n_total else None,
         "by_trial_type": summary_by_type,
+        "scene_descriptions_csv": str(args.scene_descriptions_csv) if args.scene_descriptions_csv else None,
+        "scene_description_column": args.scene_description_column if args.scene_descriptions_csv else None,
+        "scene_instructions_mode": args.scene_instructions_mode,
+        "n_scene_rows_loaded": len(scene_by_row) if use_scenes else 0,
+        "n_scene_test_rows_used": scene_test_rows_used if use_scenes else 0,
+        "n_scene_instruction_rows_used": scene_instruction_rows_used if use_scenes else 0,
     }
     with open(args.summary_json, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)

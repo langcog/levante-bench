@@ -1,0 +1,57 @@
+{
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "corpus_csv": "data/assets/2026-03-25/corpus/theory-of-mind/theory-of-mind-item-bank.csv",
+  "output_jsonl": "results/prompts/tom-scenecomp-visual2p2b-preds.jsonl",
+  "memory_mode": "none",
+  "memory_format": "detailed",
+  "history_window": 8,
+  "reasoning_instruction": "standard",
+  "trial_type_filter": null,
+  "template_style": "trial_aware",
+  "two_stage": false,
+  "analysis_max_new_tokens": 64,
+  "shuffle_options": false,
+  "seed": 0,
+  "n_total": 37,
+  "n_parsed": 37,
+  "accuracy_all": 0.6486486486486487,
+  "parse_rate": 1.0,
+  "by_trial_type": {
+    "action_question": {
+      "n": 3,
+      "accuracy": 1.0,
+      "parse_rate": 1.0
+    },
+    "attribution_question": {
+      "n": 3,
+      "accuracy": 0.0,
+      "parse_rate": 1.0
+    },
+    "emotion_reasoning_question": {
+      "n": 7,
+      "accuracy": 0.7142857142857143,
+      "parse_rate": 1.0
+    },
+    "false_belief_question": {
+      "n": 13,
+      "accuracy": 0.7692307692307693,
+      "parse_rate": 1.0
+    },
+    "reality_check_question": {
+      "n": 10,
+      "accuracy": 0.5,
+      "parse_rate": 1.0
+    },
+    "reference_question": {
+      "n": 1,
+      "accuracy": 1.0,
+      "parse_rate": 1.0
+    }
+  },
+  "scene_descriptions_csv": "results/screenshots/theory-of-mind/theory-of-mind-visual-only-descriptions-2.2b.csv",
+  "scene_description_column": "visual_scene_description",
+  "scene_instructions_mode": "current_and_context",
+  "n_scene_rows_loaded": 80,
+  "n_scene_test_rows_used": 37,
+  "n_scene_instruction_rows_used": 40
+}

@@ -1,6 +1,10 @@
 # Data and secrets (do not commit)
 # Leading / = only repo-root data/ (not src/levante_bench/data/ package code)
-/data/
+/data/*
+!/data/assets/
+/data/assets/*
+!/data/assets/manifest.csv
+!/data/assets/manifest_notes.md
 .secrets
 
 # Generated evaluation artifacts

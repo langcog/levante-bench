@@ -1,0 +1,9 @@
+# trog task config.
+
+task_id: trog
+benchmark_name: Sentence Understanding
+internal_name: trog
+corpus_file: trog-item-bank-full-params.csv
+context_type: single_image
+option_type: text
+n_options: 4

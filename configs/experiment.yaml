@@ -1,0 +1,12 @@
+# Experiment config — references model and task configs to run.
+
+models:
+  - smolvlm2
+
+tasks:
+  - vocab
+
+data_root: data
+output_dir: results
+version: 2026-03-24
+device: cpu

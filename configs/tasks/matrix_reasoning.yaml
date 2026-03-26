@@ -1,0 +1,9 @@
+# matrix-reasoning task config.
+
+task_id: matrix-reasoning
+benchmark_name: Pattern Matching
+internal_name: matrix-reasoning
+corpus_file: matrix-reasoning-corpus-retest.csv
+context_type: multi_image
+option_type: image
+n_options: 4

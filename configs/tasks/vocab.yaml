@@ -1,0 +1,9 @@
+# vocab task config.
+
+task_id: vocab
+benchmark_name: Vocabulary
+internal_name: vocab
+corpus_file: vocab-item-bank.csv
+context_type: none
+option_type: image
+n_options: 4

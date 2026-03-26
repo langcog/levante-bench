@@ -1,0 +1,9 @@
+# egma-math task config.
+
+task_id: egma-math
+benchmark_name: Math
+internal_name: egma-math
+corpus_file: test-combined-math-cat.csv
+context_type: none
+option_type: text
+n_options: 4

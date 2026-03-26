@@ -36,6 +36,31 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
    - `scripts/validate_r.sh --run-comparison-smoke --version 2026-03-24`  # optional R comparison smoke test
 5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with IRT item difficulty) and D_KL (by ability bin) to `results/comparison/`.
 
+## Experiment YAML mode (eval-style)
+
+You can run experiment configs directly using the eval-style command structure:
+
+```bash
+# Direct
+python -m levante_bench.cli experiment=configs/experiment.yaml
+
+# Wrapper (same behavior)
+bash run_experiment.sh configs/experiment.yaml
+```
+
+Use dotlist-style overrides to change task subsets and smoke caps:
+
+```bash
+# Vocab smoke
+python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu
+
+# Math smoke
+python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu
+
+# ToM smoke
+python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu
+```
+
 ## Recent updates (March 2026)
 
 - **Framework integration:** SmolVLM benchmark scripts are now integrated under the `levante-bench` CLI (`run-workflow` and `run-benchmark`), including first-class `v1` and `vocab` benchmark presets.

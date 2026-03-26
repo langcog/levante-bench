@@ -6,6 +6,11 @@ from levante_bench.config.defaults import (
     get_data_root,
     get_task_mapping_path,
 )
+from levante_bench.config.loader import (
+    load_experiment,
+    load_model_config,
+    load_task_config,
+)
 from levante_bench.config.tasks import get_task_def, list_tasks
 
 __all__ = [
@@ -15,4 +20,7 @@ __all__ = [
     "get_task_def",
     "get_task_mapping_path",
     "list_tasks",
+    "load_experiment",
+    "load_model_config",
+    "load_task_config",
 ]

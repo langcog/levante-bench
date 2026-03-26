@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from levante_bench.cli_workflows import (
@@ -19,6 +20,207 @@ from levante_bench.cli_workflows import (
 
 def _project_root() -> Path:
     return project_root()
+
+
+def _run_experiment_style_args(cli_args: list[str]) -> int:
+    """Compatibility path for eval-style CLI args: experiment=... overrides."""
+    from omegaconf import OmegaConf
+
+    from levante_bench.config.loader import (
+        load_experiment,
+        load_model_config,
+        load_task_config,
+    )
+    from levante_bench.evaluation.runner import resolve_device
+
+    experiment_path: str | None = None
+    overrides: list[str] = []
+    for arg in cli_args:
+        if arg.startswith("experiment="):
+            experiment_path = arg.split("=", 1)[1]
+        else:
+            overrides.append(arg)
+
+    if not experiment_path:
+        print("Required: experiment=<path_to_config.yaml>", file=sys.stderr)
+        return 1
+
+    cfg = load_experiment(experiment_path=experiment_path, cli_overrides=overrides)
+    tasks = [str(t) for t in (cfg.get("tasks") or [])]
+    models = [str(m) for m in (cfg.get("models") or [])]
+    version = str(cfg.get("version") or "current")
+    device = resolve_device(str(cfg.get("device") or "auto"))
+    output_dir = str(cfg.get("output_dir") or "results")
+    root = _project_root()
+
+    if not tasks:
+        print("No tasks configured in experiment YAML.", file=sys.stderr)
+        return 1
+    if not models:
+        print("No models configured in experiment YAML.", file=sys.stderr)
+        return 1
+
+    for task_id in tasks:
+        if load_task_config(task_id) is None:
+            print(f"No task config found for '{task_id}' in configs/tasks.", file=sys.stderr)
+            return 1
+
+    resolved_models: dict[str, dict] = {}
+    for model_name in models:
+        model_cfg = load_model_config(model_name)
+        if model_cfg is None:
+            print(f"No model config found for '{model_name}' in configs/models.", file=sys.stderr)
+            return 1
+        resolved_models[model_name] = OmegaConf.to_container(model_cfg, resolve=True)
+
+    # For vocab-only experiments, route through benchmark vocab so hf_name from YAML is used.
+    if tasks == ["vocab"]:
+        exit_code = 0
+        max_items_vocab = cfg.get("max_items_vocab")
+        for _, model_cfg in resolved_models.items():
+            hf_name = model_cfg.get("hf_name")
+            if not hf_name:
+                print("Missing hf_name in model config for vocab experiment.", file=sys.stderr)
+                return 1
+            cmd = benchmark_command(
+                root=root,
+                benchmark="vocab",
+                data_version=version,
+                model_id=str(hf_name),
+                device=device,
+                max_items_vocab=int(max_items_vocab) if max_items_vocab is not None else None,
+                extra_args=[],
+            )
+            print("Running experiment:", " ".join(cmd))
+            exit_code = exit_code or run_command(cmd, cwd=root)
+        return exit_code
+
+    # For SmolVLM task workflows, route to dedicated script pipelines and use YAML hf_name.
+    smol_tasks = {"egma-math", "theory-of-mind"}
+    if set(tasks).issubset(smol_tasks):
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        out_root = Path(output_dir) / "experiments" / version / timestamp
+        out_root.mkdir(parents=True, exist_ok=True)
+        exit_code = 0
+        max_items_math = cfg.get("max_items_math")
+        max_items_tom = cfg.get("max_items_tom")
+        for _, model_cfg in resolved_models.items():
+            hf_name = model_cfg.get("hf_name")
+            if not hf_name:
+                print("Missing hf_name in model config for SmolVLM experiment.", file=sys.stderr)
+                return 1
+            if "egma-math" in tasks:
+                math_dir = out_root / "math"
+                math_dir.mkdir(parents=True, exist_ok=True)
+                prompts = math_dir / "egma-math-prompts.jsonl"
+                prompts_eval = math_dir / "egma-math-prompts-eval.jsonl"
+                preds = math_dir / "egma-math-preds.jsonl"
+                summary = math_dir / "egma-math-summary.json"
+                by_type_csv = math_dir / "egma-math-by-type.csv"
+                by_type_png = math_dir / "egma-math-by-type.png"
+                math_corpus = root / "data" / "assets" / version / "corpus" / "egma-math" / "test-combined-math-cat.csv"
+                numberline_graphics = root / "local_data" / "numberline-graphics" / "egma-math"
+                cmd_build = [
+                    sys.executable,
+                    str(root / "scripts" / "build_math_prompts.py"),
+                    "--corpus-csv",
+                    str(math_corpus),
+                    "--output",
+                    str(prompts),
+                    "--numberline-graphics-dir",
+                    str(numberline_graphics),
+                    "--numberline-hint",
+                    "none",
+                    "--numberline-instruction-style",
+                    "minimal",
+                ]
+                cmd_eval = [
+                    sys.executable,
+                    str(root / "scripts" / "run_smolvlmv2_math_eval.py"),
+                    "--input-jsonl",
+                    str(prompts_eval),
+                    "--output-jsonl",
+                    str(preds),
+                    "--summary-json",
+                    str(summary),
+                    "--model-id",
+                    str(hf_name),
+                    "--device",
+                    device,
+                ]
+                if max_items_math is not None:
+                    cmd_eval.extend(["--max-items", str(int(max_items_math))])
+                cmd_analyze = [
+                    sys.executable,
+                    str(root / "scripts" / "analyze_math_type_accuracy.py"),
+                    "--prompts-jsonl",
+                    str(prompts),
+                    "--preds-jsonl",
+                    str(preds),
+                    "--output-csv",
+                    str(by_type_csv),
+                    "--output-png",
+                    str(by_type_png),
+                ]
+                print("Running experiment:", " ".join(cmd_build))
+                exit_code = exit_code or run_command(cmd_build, cwd=root)
+                if exit_code:
+                    continue
+                if max_items_math is not None:
+                    prompt_lines = [
+                        line
+                        for line in prompts.read_text(encoding="utf-8").splitlines()
+                        if line.strip()
+                    ]
+                    prompt_lines = prompt_lines[: int(max_items_math)]
+                    prompts_eval.write_text("\n".join(prompt_lines) + "\n", encoding="utf-8")
+                else:
+                    prompts_eval = prompts
+                print("Running experiment:", " ".join(cmd_eval))
+                exit_code = exit_code or run_command(cmd_eval, cwd=root)
+                if exit_code:
+                    continue
+                print("Running experiment:", " ".join(cmd_analyze))
+                cmd_analyze[3] = str(prompts_eval)
+                exit_code = exit_code or run_command(cmd_analyze, cwd=root)
+            if "theory-of-mind" in tasks:
+                tom_dir = out_root / "tom"
+                tom_dir.mkdir(parents=True, exist_ok=True)
+                tom_corpus = root / "data" / "assets" / version / "corpus" / "theory-of-mind" / "theory-of-mind-item-bank.csv"
+                preds = tom_dir / "tom-preds.jsonl"
+                summary = tom_dir / "tom-summary.json"
+                cmd_tom = [
+                    sys.executable,
+                    str(root / "scripts" / "run_smolvlmv2_tom_eval.py"),
+                    "--corpus-csv",
+                    str(tom_corpus),
+                    "--output-jsonl",
+                    str(preds),
+                    "--summary-json",
+                    str(summary),
+                    "--model-id",
+                    str(hf_name),
+                    "--device",
+                    device,
+                ]
+                if max_items_tom is not None:
+                    cmd_tom.extend(["--max-items", str(int(max_items_tom))])
+                print("Running experiment:", " ".join(cmd_tom))
+                exit_code = exit_code or run_command(cmd_tom, cwd=root)
+        return exit_code
+
+    print(
+        "Experiment YAML fallback: non-vocab tasks use run-eval with model IDs from configs.models.",
+        file=sys.stderr,
+    )
+    run_eval_ns = argparse.Namespace(
+        task=tasks,
+        model=models,
+        version=version,
+        device=device,
+        output_dir=output_dir,
+    )
+    return cmd_run_eval(run_eval_ns)
 
 
 def cmd_list_tasks(_: argparse.Namespace) -> int:
@@ -207,6 +409,12 @@ def add_run_comparison_parser(sub: argparse._SubParsersAction) -> None:
 
 
 def main() -> int:
+    # Eval-branch compatibility mode:
+    # python -m levante_bench.cli experiment=configs/experiment.yaml device=cuda
+    raw_args = sys.argv[1:]
+    if any(arg.startswith("experiment=") for arg in raw_args):
+        return _run_experiment_style_args(raw_args)
+
     parser = argparse.ArgumentParser(prog="levante-bench", description="LEVANTE VLM benchmark")
     sub = parser.add_subparsers(dest="command", required=True)
     add_list_tasks_parser(sub)

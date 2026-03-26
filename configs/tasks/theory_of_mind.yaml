@@ -1,0 +1,9 @@
+# theory-of-mind task config.
+
+task_id: theory-of-mind
+benchmark_name: Stories
+internal_name: theory-of-mind
+corpus_file: theory-of-mind-item-bank.csv
+context_type: none
+option_type: text
+n_options: 4

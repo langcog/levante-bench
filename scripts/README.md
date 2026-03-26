@@ -19,6 +19,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--data-version`, `--model-id`, `--device`, `--max-items-*`
   - **Outputs:** `results/benchmark/v1/<timestamp>/...`
   - **Example:** `python scripts/run_benchmark_v1.py --device auto --max-items-math 2 --max-items-tom 2`
+- `run_experiment.sh`
+  - **Purpose:** eval-style wrapper for experiment YAML runs
+  - **Inputs:** experiment YAML path + OmegaConf dotlist overrides
+  - **Outputs:** task-dependent experiment artifacts under configured output dirs
+  - **Example:** `bash run_experiment.sh configs/experiment.yaml tasks=[vocab] max_items_vocab=8`
 - `run_smolvlmv2_vocab_eval.py`
   - **Purpose:** run vocab image-grid evaluation
   - **Inputs:** `--corpus-csv`, `--visual-dir`, `--model-id`

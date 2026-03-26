@@ -14,6 +14,7 @@ dependencies = [
     "torch>=2.2",
     "Pillow>=10",
     "requests>=2.31",
+    "omegaconf>=2.3",
 ]
 # Pinned versions for reproducible installs: see requirements.txt
 

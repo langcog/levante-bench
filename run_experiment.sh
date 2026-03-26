@@ -5,7 +5,16 @@
 #   ./run_experiment.sh configs/experiment.yaml device=cuda
 #   ./run_experiment.sh configs/my_custom_exp.yaml models=[smolvlm2] device=cuda
 
-set -e
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
+if [[ -x ".venv/bin/python" ]]; then
+    PYTHON_BIN=".venv/bin/python"
+else
+    PYTHON_BIN="python3"
+fi
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <experiment_config.yaml> [overrides...]"
@@ -15,4 +24,4 @@ fi
 EXPERIMENT_CONFIG="$1"
 shift
 
-python -m levante_bench.cli experiment="$EXPERIMENT_CONFIG" "$@"
+"$PYTHON_BIN" -m levante_bench.cli experiment="$EXPERIMENT_CONFIG" "$@"

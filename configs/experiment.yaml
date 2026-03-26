@@ -4,9 +4,16 @@ models:
   - smolvlm2
 
 tasks:
+  - egma-math
+  - theory-of-mind
   - vocab
 
 data_root: data
 output_dir: results
 version: 2026-03-24
 device: cpu
+
+# Optional smoke caps (useful while iterating):
+# max_items_math: 2
+# max_items_tom: 2
+# max_items_vocab: 8

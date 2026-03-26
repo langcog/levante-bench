@@ -51,6 +51,25 @@ The file `src/levante_bench/config/irt_model_mapping.csv` maps each task to its 
    - **D_KL:** `results/comparison/<task>_<model>_d_kl.csv` — columns: task, model, item_uid, ability_bin, D_KL.
    - **Accuracy:** `results/comparison/<task>_<model>_accuracy.csv` — columns: task, model, item_uid, correct (0/1), difficulty.
 
+4. **Optional: run full validation + benchmark smoke checks before comparison**
+
+   ```bash
+   scripts/validate_all.sh
+   ```
+
+5. **Optional: validate R/Redivis dependencies and comparison flow**
+
+   ```bash
+   scripts/validate_r.sh --check-packages-only
+   scripts/validate_r.sh --run-comparison-smoke --task trog --model clip_base --version 2026-03-24
+   ```
+
+6. **Optional: inspect benchmark/prompt run history and metric deltas**
+
+   ```bash
+   python3 scripts/list_benchmark_results.py --limit 20
+   ```
+
 ## Debugging the comparison flow
 
 1. **Use one version everywhere**

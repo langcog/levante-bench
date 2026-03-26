@@ -12,8 +12,23 @@ This directory contains user-facing and developer documentation for the LEVANTE 
 1. Install R and the `redivis` package; configure auth per [releases.md](releases.md).
 2. Run `scripts/download_levante_assets.py` (optional `--version YYYY-MM-DD`) to download corpus and images from the public LEVANTE assets bucket.
 3. Run `scripts/download_levante_data.R` to fetch trials from Redivis into `data/responses/<version>/`.
-4. Run evaluation: `levante-bench run-eval --task <task> --model <model> [--version <version>]`.
-5. Run comparison (R): execute the scripts in `comparison/` or use `run-comparison` if implemented.
+4. Validate environment and GPU:
+   - `levante-bench list-tasks`
+   - `levante-bench list-models`
+   - `levante-bench check-gpu`
+5. Run evaluation and benchmarks:
+   - `levante-bench run-eval --task <task> --model <model> [--version <version>]`
+   - `levante-bench run-benchmark --benchmark v1 --device auto`
+   - `levante-bench run-benchmark --benchmark vocab --device auto`
+6. Run comparison (R):
+   - `levante-bench run-comparison --task <task> --model <model> --version <version>`
+   - or run `comparison/compare_levante.R` directly
+7. Use validation and result-history helpers:
+   - `scripts/validate_all.sh` (smoke validations)
+   - `scripts/validate_all.sh --full-benchmarks`
+   - `scripts/validate_all.sh --with-r-validation` (adds R package checks)
+   - `scripts/validate_r.sh --run-comparison-smoke --version <version>` (R comparison smoke test)
+   - `python3 scripts/list_benchmark_results.py --limit 20`
 
 ## Citing
 

@@ -32,6 +32,8 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
    - `levante-bench run-workflow --workflow benchmark-v1 -- --help`
    - `scripts/validate_all.sh`  # ruff + pytest + GPU check + benchmark smoke runs
    - `scripts/validate_all.sh --full-benchmarks`  # same checks + full v1 and vocab benchmarks
+   - `scripts/validate_all.sh --with-r-validation`  # include R/Redivis package checks
+   - `scripts/validate_r.sh --run-comparison-smoke --version 2026-03-24`  # optional R comparison smoke test
 5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with IRT item difficulty) and D_KL (by ability bin) to `results/comparison/`.
 
 ## Recent updates (March 2026)
@@ -57,6 +59,9 @@ scripts/validate_all.sh
 
 # Run full benchmarks instead of smoke.
 scripts/validate_all.sh --full-benchmarks
+
+# Include R package validation in the full validation pass.
+scripts/validate_all.sh --with-r-validation
 ```
 
 ## Comparison approach

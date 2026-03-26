@@ -11,6 +11,8 @@ Usage:
 Options:
   --full-benchmarks         Run full v1 and vocab benchmarks.
   --skip-benchmarks         Only run lint/tests/gpu check.
+  --with-r-validation       Run R package validation via scripts/validate_r.sh.
+  --with-r-smoke            Run R package validation + comparison smoke test.
   --device <auto|cpu|cuda>  Device for benchmark commands (default: auto).
   --data-version <version>  Data/assets version (default: 2026-03-24).
   --model-id <hf-model-id>  Model id override for benchmark runs.
@@ -21,6 +23,9 @@ Default behavior:
   - Runs benchmark smoke tests:
       v1:    --max-items-math 2 --max-items-tom 2
       vocab: --max-items-vocab 8
+  - R validation is opt-in:
+      scripts/validate_all.sh --with-r-validation
+      scripts/validate_all.sh --with-r-smoke
 EOF
 }
 
@@ -29,6 +34,8 @@ SKIP_BENCHMARKS=0
 DEVICE="auto"
 DATA_VERSION="2026-03-24"
 MODEL_ID=""
+WITH_R_VALIDATION=0
+WITH_R_SMOKE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,6 +50,15 @@ while [[ $# -gt 0 ]]; do
     --device)
       DEVICE="${2:-}"
       shift 2
+      ;;
+    --with-r-validation)
+      WITH_R_VALIDATION=1
+      shift
+      ;;
+    --with-r-smoke)
+      WITH_R_VALIDATION=1
+      WITH_R_SMOKE=1
+      shift
       ;;
     --data-version)
       DATA_VERSION="${2:-}"
@@ -94,6 +110,16 @@ fi
 
 echo "==> GPU check"
 levante-bench check-gpu
+
+if [[ "$WITH_R_VALIDATION" -eq 1 ]]; then
+  if [[ "$WITH_R_SMOKE" -eq 1 ]]; then
+    echo "==> R validation (packages + comparison smoke)"
+    scripts/validate_r.sh --run-comparison-smoke --version "$DATA_VERSION"
+  else
+    echo "==> R validation (package checks)"
+    scripts/validate_r.sh --check-packages-only
+  fi
+fi
 
 if [[ "$SKIP_BENCHMARKS" -eq 1 ]]; then
   echo "==> Skipping benchmarks (--skip-benchmarks)"

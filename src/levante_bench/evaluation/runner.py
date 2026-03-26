@@ -1,112 +1,107 @@
-"""Run one or all tasks for one or many models; write model outputs to disk."""
+"""Run evaluation: for each model, evaluate all tasks, write results."""
 
 import sys
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-from torch.utils.data import DataLoader
+from omegaconf import DictConfig, OmegaConf
 
-from levante_bench.config import get_data_root, get_task_def, list_tasks
-from levante_bench.data.datasets import LevanteDataset, collate_levante
-from levante_bench.data.loaders import load_trials_for_task
-from levante_bench.evaluation.outputs import write_task_output
+from levante_bench.config import get_task_def, load_model_config, load_task_config
+from levante_bench.evaluation.cache import load_cache, save_cache, trial_hash
+from levante_bench.evaluation.outputs import write_task_csv, write_summary_csv
 from levante_bench.models import get_model_class
+from levante_bench.tasks import get_task_dataset
 
 
-def resolve_device(requested_device: str | None) -> str:
-    """Resolve execution device with local GPU availability checks."""
-    import torch
+def run_eval(cfg: DictConfig) -> dict[str, Path]:
+    """Evaluate each model across all tasks using experiment config."""
+    data_root = Path(cfg.data_root)
+    version = cfg.get("version", "current")
+    output_base = Path(cfg.get("output_dir", "results"))
+    device = cfg.get("device", "cpu")
+    results = {}
 
-    requested = (requested_device or "auto").strip().lower()
-    if requested == "auto":
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    if requested == "cuda" and not torch.cuda.is_available():
-        print("Requested --device cuda but no local GPU detected; falling back to cpu.", file=sys.stderr)
-        return "cpu"
-    return requested
-
-
-def run_eval(
-    task_ids: list[str] | None = None,
-    model_ids: list[str] | None = None,
-    version: str = "current",
-    device: str = "cpu",
-    output_dir: Path | str | None = None,
-    data_root: Path | None = None,
-) -> dict[str, Any]:
-    """
-    Run evaluation for given tasks and models; write .npy per task/model to output_dir.
-    Returns dict of (task_id, model_id) -> output path.
-    """
-    data_root = data_root or get_data_root()
-    resolved_device = resolve_device(device)
-    output_dir = Path(output_dir) if output_dir else data_root.parent / "results" / version
-    output_dir.mkdir(parents=True, exist_ok=True)
-    task_ids = task_ids or list_tasks()
-    if not model_ids:
-        from levante_bench.models import list_models
-        model_ids = list_models()
-    if not model_ids:
-        return {}
-    results: dict[tuple[str, str], Path] = {}
-    for task_id in task_ids:
-        task_def = get_task_def(task_id, version)
-        if not task_def:
-            print(f"  Skip {task_id}: no task_def for version={version}", file=sys.stderr)
+    for model_name in cfg.models:
+        model_cfg = load_model_config(model_name)
+        if model_cfg is None:
+            print(f"  Skip model {model_name}: no config found", file=sys.stderr)
             continue
-        manifest = load_trials_for_task(task_id, version, data_root=data_root)
-        if manifest.empty:
-            print(f"  Skip {task_id}: no trials or item_uid (check data/responses/{version}/)", file=sys.stderr)
+
+        # Resolve model config (handles ${size} interpolation etc.)
+        model_cfg = OmegaConf.to_container(model_cfg, resolve=True)
+
+        # Load model once for all tasks
+        model_cls = get_model_class(model_name)
+        if model_cls is None:
+            print(f"  Skip model {model_name}: not registered", file=sys.stderr)
             continue
-        base_path = data_root / "assets" / version
-        dataset = LevanteDataset(
-            manifest, base_path=base_path, n_options=task_def.n_options
-        )
-        if len(dataset) == 0:
-            print(f"  Skip {task_id}: dataset empty (check data/assets/{version}/ item_uid index)", file=sys.stderr)
-            continue
-        dataloader = DataLoader(
-            dataset,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=collate_levante,
-        )
-        for model_id in model_ids:
-            model_cls = get_model_class(model_id)
-            if not model_cls:
-                print(f"  Skip {task_id} / {model_id}: model not registered (list-models to see available)", file=sys.stderr)
+
+        model = model_cls(model_name=model_cfg["hf_name"], device=device)
+        model.load()
+
+        model_dir = output_base / model_name / version
+        cache_path = model_dir / "cache" / "responses.json"
+        cache = load_cache(cache_path)
+        task_accuracies = {}
+
+        for task_id in cfg.tasks:
+            task_cfg = load_task_config(task_id)
+            if task_cfg is None:
+                print(f"  Skip task {task_id}: no config found", file=sys.stderr)
                 continue
-            try:
-                model = model_cls(device=resolved_device)
-            except Exception as e:
-                print(f"  Skip {task_id} / {model_id}: model load failed — {e}", file=sys.stderr)
+
+            # Check model capabilities vs task context_type
+            capabilities = model_cfg.get("capabilities", [])
+            context_type = task_cfg.get("context_type", "none")
+            if capabilities and context_type not in capabilities and context_type != "none":
+                print(f"  Skip {task_id}: model {model_name} lacks capability '{context_type}'", file=sys.stderr)
                 continue
-            scores = _get_scores(model, dataloader, task_def.n_options)
-            if scores is None:
-                print(f"  Skip {task_id} / {model_id}: no scores from model", file=sys.stderr)
+
+            # Load task dataset
+            task_def = get_task_def(task_id, version, data_root=data_root)
+            if task_def is None:
+                print(f"  Skip {task_id}: no task def for version={version}", file=sys.stderr)
                 continue
-            path = write_task_output(output_dir, task_id, model_id, scores)
-            results[(task_id, model_id)] = path
-            print(f"  Wrote {path} ({scores.shape[0]} trials, {scores.shape[1]} options)")
+
+            dataset_cls = get_task_dataset(task_id)
+            if dataset_cls is None:
+                print(f"  Skip {task_id}: no dataset registered", file=sys.stderr)
+                continue
+
+            dataset = dataset_cls(task_def=task_def, version=version, data_root=data_root)
+            if len(dataset) == 0:
+                print(f"  Skip {task_id}: empty dataset", file=sys.stderr)
+                continue
+
+            # Evaluate each trial
+            task_results = []
+            max_new_tokens = model_cfg.get("max_new_tokens", 64)
+
+            for i in range(len(dataset)):
+                trial = dataset[i]
+                trial["max_new_tokens"] = max_new_tokens
+                h = trial_hash(trial)
+
+                if h in cache:
+                    task_results.append(cache[h])
+                    continue
+
+                result = model.evaluate_trial(trial)
+                cache[h] = result
+                save_cache(cache_path, cache)
+                task_results.append(result)
+
+            # Write per-task CSV
+            write_task_csv(model_dir, task_id, task_results)
+
+            # Compute accuracy
+            correct = sum(1 for r in task_results if r["is_correct"])
+            task_accuracies[task_id] = correct / len(task_results) if task_results else 0.0
+            print(f"  {model_name}/{task_id}: {task_accuracies[task_id]:.4f} ({correct}/{len(task_results)})")
+
+        # Write cross-task summary
+        summary_path = write_summary_csv(model_dir, task_accuracies)
+        results[model_name] = summary_path
+        print(f"  Summary: {summary_path}")
+
     return results
-
-
-def _get_scores(model: Any, dataloader: DataLoader, n_options: int) -> np.ndarray | None:
-    """Get (n_trials, n_options) scores from model (EvalModel or GenEvalModel)."""
-    if hasattr(model, "get_all_sim_scores"):
-        try:
-            raw = model.get_all_sim_scores(dataloader, n_options=n_options)
-        except TypeError:
-            raw = model.get_all_sim_scores(dataloader)
-    else:
-        return None
-    # raw shape: (n_batches, ...) e.g. (n_trials, 4, 1) for CLIP image-text
-    if raw.ndim == 3:
-        if raw.shape[2] == 1:
-            raw = raw.squeeze(-1)
-        else:
-            raw = raw.reshape(raw.shape[0], -1)
-    if raw.ndim == 2 and raw.shape[1] >= n_options:
-        return raw[:, :n_options].astype(np.float64)
-    return raw.astype(np.float64)

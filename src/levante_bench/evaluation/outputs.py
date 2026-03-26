@@ -1,28 +1,28 @@
-"""Save model outputs (e.g. .npy per task/model) for R comparison."""
+"""Write evaluation outputs: per-task CSV and cross-task summary CSV."""
 
+import csv
 from pathlib import Path
 
-import numpy as np
 
-
-def write_task_output(
-    output_dir: Path | str,
-    task_id: str,
-    model_id: str,
-    scores: np.ndarray,
-) -> Path:
-    """
-    Write model output for one task/model to output_dir/<model_id>/<task_id>.npy.
-    scores: shape (n_trials, n_options) of logits or similarity scores.
-    """
-    output_dir = Path(output_dir)
-    model_dir = output_dir / _safe_id(model_id)
-    model_dir.mkdir(parents=True, exist_ok=True)
-    path = model_dir / f"{_safe_id(task_id)}.npy"
-    np.save(path, scores)
+def write_task_csv(output_dir: Path, task_id: str, results: list[dict]) -> Path:
+    """Write per-task detailed results CSV."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / f"{task_id}.csv"
+    fieldnames = ["trial_id", "item_uid", "generated_text", "predicted_label", "correct_label", "is_correct"]
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(results)
     return path
 
 
-def _safe_id(s: str) -> str:
-    import re
-    return re.sub(r"[^a-zA-Z0-9_-]", "_", s)
+def write_summary_csv(output_dir: Path, task_accuracies: dict[str, float]) -> Path:
+    """Write cross-task summary CSV."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / "summary.csv"
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["task_id", "accuracy"])
+        for task_id, accuracy in task_accuracies.items():
+            writer.writerow([task_id, f"{accuracy:.4f}"])
+    return path

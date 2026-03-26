@@ -1,8 +1,8 @@
 benchmark_name,internal_name,corpus_file
 Math,egma-math,test-combined-math-cat.csv
-Sentence Understanding,trog,trog-item-bank-full-params.csv 
-Vocabulary,vocab,vocab-item-bank.csv 
-Stories,theory-of-mind,theory-of-mind-item-bank.csv 
-Same and Different,same-different-selection,same-different-selection-item-bank.csv 
-Pattern Matching,matrix-reasoning,matrix-reasoning-corpus-retest.csv 
-Shape Rotation,mental-rotation,mental-rotation-item-bank.csv 
+Sentence Understanding,trog,trog-item-bank-full-params.csv
+Vocabulary,vocab,vocab-item-bank.csv
+Stories,theory-of-mind,theory-of-mind-item-bank.csv
+Same and Different,same-different-selection,same-different-selection-item-bank.csv
+Pattern Matching,matrix-reasoning,matrix-reasoning-corpus-retest.csv
+Shape Rotation,mental-rotation,mental-rotation-item-bank.csv

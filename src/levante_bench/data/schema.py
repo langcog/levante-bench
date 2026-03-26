@@ -25,6 +25,8 @@ class TaskDef:
     n_options: int = 4
     has_correct: bool = True  # whether there is a correct-answer key
     corpus_file: Optional[str] = None  # corpus CSV filename in bucket
+    context_type: str = "none"  # "none" | "single_image" | "multi_image"
+    option_type: str = "text"  # "text" | "image"
 
 
 # --- Trial (one row from trials table / manifest) ---

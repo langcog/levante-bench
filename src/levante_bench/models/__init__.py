@@ -1,19 +1,17 @@
-"""VLM adapters for LEVANTE benchmark. Registry: name -> class."""
+"""VLM model adapters. Registry: name -> class."""
 
-from levante_bench.models.base import EvalModel, GenEvalModel
+from levante_bench.models.base import VLMModel
 from levante_bench.models.registry import (
     get_model_class,
     list_models,
     register,
 )
 
-# Import model modules so @register() runs and populates the registry
-from levante_bench.models import clip  # noqa: F401
-
+# Import model modules so @register() runs
+from levante_bench.models import vlm  # noqa: F401
 
 __all__ = [
-    "EvalModel",
-    "GenEvalModel",
+    "VLMModel",
     "get_model_class",
     "list_models",
     "register",

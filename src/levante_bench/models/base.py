@@ -1,7 +1,7 @@
 """Base class for VLM evaluation models."""
 
 import re
-from typing import Any, Optional
+from typing import Optional
 
 
 

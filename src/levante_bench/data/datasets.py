@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Optional
 
-from PIL import Image
 from torch.utils.data import Dataset
 
 from levante_bench.data.schema import TaskDef

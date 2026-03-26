@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from levante_bench.config import get_data_root
 
 
 def load_trials_csv(path: Path) -> pd.DataFrame:

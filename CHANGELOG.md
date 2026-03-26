@@ -2,6 +2,22 @@
 
 All notable updates to this repository should be documented in this file.
 
+## 2026-03-26
+
+### Added
+- R/Redivis validation helper: `scripts/validate_r.sh`
+  - Supports package-only validation and optional comparison smoke test
+  - Checks expected prerequisites and comparison output artifacts for smoke runs
+- Script index: `scripts/README.md`
+  - Provides purpose/inputs/outputs/example usage for pipeline and utility scripts
+
+### Changed
+- Unified validation runner (`scripts/validate_all.sh`) now supports:
+  - `--with-r-validation` for R package checks
+  - `--with-r-smoke` for R package checks plus comparison smoke test
+- Documentation updates in `README.md`, `docs/README.md`, and `comparison/README.md`
+  - Added R validation commands and clearer operational guidance
+
 ## 2026-03-25
 
 ### Added

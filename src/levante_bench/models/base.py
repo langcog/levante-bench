@@ -61,6 +61,9 @@ class VLMModel:
             "predicted_label": predicted_label,
             "correct_label": trial["correct_label"],
             "is_correct": predicted_label == trial["correct_label"],
+            # Carry option context for downstream human-comparison annotation
+            "options": trial.get("options", []),
+            "option_labels": trial.get("option_labels", []),
         }
 
     def parse_answer(self, text: str, option_labels: list[str]) -> Optional[str]:

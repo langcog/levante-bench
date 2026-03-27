@@ -25,7 +25,10 @@ def get_task_def(task_id: str, version: str, data_root: Path | None = None) -> O
         manifest_path = raw / "tasks" / f"{safe}_trials.csv"
         if not manifest_path.exists():
             manifest_path = raw / "trials.csv"
-        human_path = raw / "human" / f"{safe}.csv"
+
+        # Human response proportions written by download_levante_data.R
+        responses_dir = Path(data_root) / "responses" / version / "responses_by_ability"
+        human_path = responses_dir / f"{safe}_proportions.csv"
         if not human_path.exists():
             human_path = None
     else:

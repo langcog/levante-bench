@@ -6,7 +6,9 @@ from pathlib import Path
 from omegaconf import DictConfig, OmegaConf
 
 from levante_bench.config import get_task_def, load_model_config, load_task_config
+from levante_bench.data.loaders import load_human_proportions
 from levante_bench.evaluation.cache import load_cache, save_cache, trial_hash
+from levante_bench.evaluation.human_comparison import annotate_human_metrics
 from levante_bench.evaluation.outputs import write_task_csv, write_summary_csv
 from levante_bench.models import get_model_class
 from levante_bench.tasks import get_task_dataset
@@ -85,6 +87,16 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 print(f"  Skip {task_id}: empty dataset", file=sys.stderr)
                 continue
 
+            # Load human proportions if available
+            human_props: dict = {}
+            if task_def.human_response_path and Path(task_def.human_response_path).exists():
+                human_props = load_human_proportions(task_def.human_response_path)
+                if human_props:
+                    print(
+                        f"  {task_id}: loaded human proportions for "
+                        f"{len(human_props)} items"
+                    )
+
             # Evaluate each trial
             task_results = []
             max_new_tokens = model_cfg.get("max_new_tokens", 64)
@@ -99,6 +111,13 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                     continue
 
                 result = model.evaluate_trial(trial)
+
+                # Annotate with human comparison metrics when data is available
+                if human_props:
+                    annotate_human_metrics(
+                        result, human_props.get(result["item_uid"])
+                    )
+
                 cache[h] = result
                 save_cache(cache_path, cache)
                 task_results.append(result)

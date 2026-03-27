@@ -5,7 +5,10 @@ models:
 
 tasks:
   - egma-math
+  - matrix-reasoning
+  - mental-rotation
   - theory-of-mind
+  - trog
   - vocab
 
 data_root: data

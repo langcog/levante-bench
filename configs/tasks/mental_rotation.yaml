@@ -1,0 +1,9 @@
+# mental-rotation task config.
+
+task_id: mental-rotation
+benchmark_name: Mental Rotation
+internal_name: mental-rotation
+corpus_file: mental-rotation-corpus.csv
+context_type: single_image
+option_type: image
+n_options: 2

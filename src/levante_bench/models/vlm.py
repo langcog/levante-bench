@@ -82,13 +82,21 @@ class SmolVLM2Model(VLMModel):
             # Split prompt on <imageN> placeholders and interleave with images
             labels = ["A", "B", "C", "D", "E", "F", "G", "H"]
             parts = re.split(r'(<image\d+>)', prompt_text)
+            has_image0 = "<image0>" in prompt_text
             for part in parts:
                 m = re.match(r'<image(\d+)>', part)
                 if m:
-                    idx = int(m.group(1)) - 1
+                    n = int(m.group(1))
+                    # If <image0> is present, treat image numbers as direct indices
+                    # into the concatenated image_paths list (context first).
+                    # Otherwise, keep the existing 1-based convention (<image1> -> image_paths[0]).
+                    idx = n if has_image0 else n - 1
                     if idx < len(image_paths):
-                        label = labels[idx] if idx < len(labels) else str(idx + 1)
-                        content.append({"type": "text", "text": f"{label}:"})
+                        # <image0> is reserved for a "prompt/context" image (no label prefix).
+                        if n != 0:
+                            label_idx = n - 1
+                            label = labels[label_idx] if label_idx < len(labels) else str(label_idx + 1)
+                            content.append({"type": "text", "text": f"{label}:"})
                         content.append({"type": "image", "url": str(Path(image_paths[idx]).resolve())})
                 elif part.strip():
                     content.append({"type": "text", "text": part.strip()})

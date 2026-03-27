@@ -7,7 +7,6 @@ from pathlib import Path
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
-from levante_bench.tasks.image_index import build_image_index
 from levante_bench.tasks.registry import register_task
 
 LABELS = ["A", "B", "C", "D"]
@@ -57,7 +56,7 @@ class VocabDataset(VLMDataset):
         super().__init__(task_def=task_def, version=version, data_root=data_root)
         self.manifest = self._load_manifest()
         self.image_dir = self.data_root / "assets" / self.version / "visual" / "vocab"
-        self.image_index = build_image_index(self.image_dir)
+        self.image_index = _build_image_index(self.image_dir)
 
     def _load_manifest(self) -> pd.DataFrame:
         """Load and filter manifest rows for vocab task."""

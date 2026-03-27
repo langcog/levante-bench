@@ -1,8 +1,11 @@
 """Base class for VLM evaluation models."""
 
+import json
 import re
 from typing import Optional
 
+
+ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<letter>", "reason": "<short reason>"}'
 
 
 class VLMModel:
@@ -46,19 +49,21 @@ class VLMModel:
 
     def evaluate_trial(self, trial: dict) -> dict:
         """Run a single trial: generate answer, parse it, return result."""
+        prompt = trial["prompt"] + ANSWER_FORMAT_INSTRUCTION
         image_paths = trial.get("context_image_paths", []) + trial.get("option_image_paths", [])
         raw_output = self.generate(
-            prompt_text=trial["prompt"],
+            prompt_text=prompt,
             image_paths=image_paths if image_paths else None,
             max_new_tokens=trial.get("max_new_tokens", 64),
         )
         clean_text = self.parse_response(raw_output)
-        predicted_label = self.parse_answer(clean_text, trial["option_labels"])
+        predicted_label, reason = self.parse_answer(clean_text, trial["option_labels"])
         return {
             "trial_id": trial["trial_id"],
             "item_uid": trial["item_uid"],
             "generated_text": clean_text,
             "predicted_label": predicted_label,
+            "reason": reason,
             "correct_label": trial["correct_label"],
             "is_correct": predicted_label == trial["correct_label"],
             # Carry option context for downstream human-comparison annotation
@@ -66,25 +71,51 @@ class VLMModel:
             "option_labels": trial.get("option_labels", []),
         }
 
-    def parse_answer(self, text: str, option_labels: list[str]) -> Optional[str]:
-        """Match clean text to an option label. Generic — same for all models."""
+    def parse_answer(self, text: str, option_labels: list[str]) -> tuple[Optional[str], str]:
+        """Extract answer label and reason. Returns (label, reason).
+
+        If parsing fails, label is None and reason is the full output.
+        """
         text = text.strip()
+        labels_upper = [l.upper() for l in option_labels]
 
-        # Exact match
-        for label in option_labels:
-            if text.upper() == label.upper():
-                return label
+        # 1. Try JSON extraction
+        try:
+            parsed = json.loads(text)
+            answer = parsed.get("answer", "").strip().upper()
+            reason = parsed.get("reason", "")
+            if answer in labels_upper:
+                return answer, reason
+        except (json.JSONDecodeError, AttributeError):
+            pass
 
-        # Starts with label followed by delimiter
+        # 2. Try JSON embedded in text
+        m = re.search(r'\{[^}]*"answer"\s*:\s*"([^"]+)"[^}]*\}', text)
+        if m:
+            answer = m.group(1).strip().upper()
+            # Try to extract reason too
+            r = re.search(r'"reason"\s*:\s*"([^"]*)"', text)
+            reason = r.group(1) if r else ""
+            if answer in labels_upper:
+                return answer, reason
+
+        # 3. "the answer is X" / "correct answer is X" patterns
+        m = re.search(r'(?:the\s+)?(?:correct\s+)?answer\s+is\s+([A-Z])\b', text, re.IGNORECASE)
+        if m:
+            answer = m.group(1).upper()
+            if answer in labels_upper:
+                return answer, text
+
+        # 4. Exact match (entire text is just the label)
+        if text.upper() in labels_upper:
+            return text.upper(), ""
+
+        # 5. Text starts with label followed by delimiter
         for label in option_labels:
             if text.upper().startswith(label.upper()):
                 rest = text[len(label):]
                 if not rest or rest[0] in " .),:;\n":
-                    return label
+                    return label, rest.strip()
 
-        # First standalone label in text
-        for label in option_labels:
-            if re.search(rf'\b{re.escape(label)}\b', text, re.IGNORECASE):
-                return label
-
-        return None
+        # No match — full output goes in reason
+        return None, text

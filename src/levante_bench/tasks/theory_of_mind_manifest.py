@@ -60,7 +60,7 @@ class TheoryOfMindDataset(VLMDataset):
         prompt = prompt.replace("<prompt_phrase>", str(prompt_phrase))
         context_image_paths = []
         prompt_image = str(row.get("prompt_image", "NA")).strip()
-        if prompt_image and prompt_image != "NA":
+        if prompt_image and prompt_image not in {"NA", "nan", "TODO"}:
             path = self.image_index.get(prompt_image)
             if path is None:
                 raise FileNotFoundError(

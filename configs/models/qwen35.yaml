@@ -1,0 +1,13 @@
+# Qwen3.5-VL model config.
+
+name: qwen35
+hf_name: Qwen/Qwen3.5-${size}
+size: 0.8B  # 0.8B | 2B | 4B | 9B
+max_new_tokens: 128
+dtype: bfloat16
+
+# What input types this model supports
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

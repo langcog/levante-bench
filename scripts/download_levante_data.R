@@ -44,7 +44,7 @@ library(redivis)
 user     <- redivis$user("levante")
 dataset  <- user$dataset(dataset_id)
 table    <- dataset$table(table_name)
-d        <- table$to_tibble()
+d        <- table$to_tibble(max_results = 5000000)
 
 key_cols <- c(
   "redivis_source", "site", "dataset", "task_id", "user_id", "run_id",
@@ -58,7 +58,7 @@ trials  <- d %>% select(any_of(present))
 
 # Join age and site from scores table
 scores_tbl <- dataset$table(scores_table)
-scores_df  <- scores_tbl$to_tibble()
+scores_df  <- scores_tbl$to_tibble(max_results = 5000000)
 scores_cols <- intersect(c("run_id", "age", "site"), names(scores_df))
 if ("run_id" %in% scores_cols && length(scores_cols) > 1L) {
   scores_join <- scores_df %>% select(all_of(scores_cols)) %>% distinct(run_id, .keep_all = TRUE)
@@ -120,13 +120,13 @@ if (nrow(irt_mapping) == 0L) {
       # Download .rds via stream
       rds_path <- file.path(irt_dir, paste0(safe_name, ".rds"))
       if (!file.exists(rds_path)) {
-        f <- redivis$file(fid)
-        con <- rawConnection(raw(), "wb")
-        f$stream(function(chunk) { writeBin(chunk, con) })
-        data_raw_bytes <- rawConnectionValue(con)
-        close(con)
-        writeBin(data_raw_bytes, rds_path)
-        message("  ", tid, ": downloaded ", rds_path, " (", length(data_raw_bytes), " bytes)")
+        fname <- reg_row$file_name[1]
+        f <- irt_tbl$file(fname)
+        f$download(path = irt_dir, overwrite = TRUE)
+        # file downloads as basename; rename to safe_name.rds if needed
+        src <- file.path(irt_dir, basename(fname))
+        if (file.exists(src) && src != rds_path) file.rename(src, rds_path)
+        message("  ", tid, ": downloaded ", rds_path)
       } else {
         message("  ", tid, ": ", rds_path, " already exists")
       }

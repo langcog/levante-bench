@@ -1,0 +1,13 @@
+# InternVL3.5-HF model config (HuggingFace-native format, no trust_remote_code needed).
+
+name: internvl35
+hf_name: OpenGVLab/InternVL3_5-${size}-HF
+size: 1B  # 1B | 2B | 4B | 8B
+max_new_tokens: 128
+dtype: bfloat16
+
+# What input types this model supports
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

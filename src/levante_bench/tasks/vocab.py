@@ -48,6 +48,18 @@ def _resolve_image(term: str, image_index: dict[str, Path]) -> Path | None:
     return None
 
 
+def _build_multi_image_prompt(target_phrase: str) -> str:
+    """Prompt optimized for ordered multi-image A/B/C/D selection."""
+    return (
+        "You are solving a visual multiple-choice question.\n"
+        "You will see 4 images in order. The first image is option A, the second is B, the third is C, and the fourth is D.\n"
+        "<image1> <image2> <image3> <image4>\n\n"
+        f'Target word: "{target_phrase}".\n'
+        "Which option matches the target word?\n"
+        "Answer with exactly one capital letter: A, B, C, or D."
+    )
+
+
 @register_task("vocab")
 class VocabDataset(VLMDataset):
     """Reads vocab trials from manifest.csv. Each trial shows 4 images of
@@ -95,10 +107,9 @@ class VocabDataset(VLMDataset):
                 )
             option_image_paths.append(str(path))
 
-        # Build prompt from template — keep <imageN> placeholders for interleaving
+        # Use a runner-native prompt optimized for ordered multi-image reasoning.
         prompt_phrase = row["prompt_phrase"]
-        prompt = row["full_prompt"]
-        prompt = prompt.replace("<prompt_phrase>", str(prompt_phrase))
+        prompt = _build_multi_image_prompt(str(prompt_phrase))
 
         return {
             "trial_id": row["item_uid"],

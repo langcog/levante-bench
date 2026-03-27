@@ -20,6 +20,10 @@ _SYSTEM_PROMPT = (
 
 
 @register("qwen35")
+@register("qwen35_0.8b")
+@register("qwen35_2b")
+@register("qwen35_4b")
+@register("qwen35_9b")
 class Qwen35Model(VLMModel):
     """Qwen3.5-VL via HuggingFace AutoProcessor + AutoModelForImageTextToText.
 

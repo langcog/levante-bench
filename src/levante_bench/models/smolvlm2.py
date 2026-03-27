@@ -11,6 +11,9 @@ from levante_bench.models._common import DTYPE_MAP
 
 
 @register("smolvlm2")
+@register("smolvlm2_256m")
+@register("smolvlm2_500m")
+@register("smolvlm2_2b")
 class SmolVLM2Model(VLMModel):
     """SmolVLM2 via HuggingFace AutoProcessor + AutoModelForImageTextToText."""
 

@@ -1,0 +1,43 @@
+# Cross-architecture experiment
+#
+# Tests H2 (architecture family > size for visual tasks) and
+# H4 (visual vs linguistic tasks have different scaling curves).
+#
+# Models are chosen to span three architecture families at similar
+# parameter budgets, enabling fair family vs size comparisons:
+#
+#   Family        | Size   | Vision encoder
+#   --------------|--------|---------------
+#   smolvlm2      | 0.5 B  | SigLIP-400M
+#   tinyllava     | 3.1 B  | SigLIP-400M (Phi-2 LLM)
+#   qwen35        | 0.8 B  | ViT (Qwen3.5)
+#   qwen35        | 4.0 B  | ViT (Qwen3.5)
+#   internvl35    | 2.0 B  | ViT-300M (strong encoder)
+#   internvl35    | 8.0 B  | ViT-300M (strong encoder)
+#
+# Tasks cover the full ability spectrum:
+#   text-heavy  : egma-math, theory-of-mind
+#   image-heavy : matrix-reasoning, trog
+#   mixed       : vocab
+
+data_root: data
+version: null          # auto-detected from data/assets/
+output_dir: results/cross_architecture
+
+# Apple Silicon — change to cuda for GPU servers
+device: mps
+
+models:
+  - smolvlm2_500m      # 0.5B  SigLIP backbone
+  - tinyllava_3.1b     # 3.1B  SigLIP backbone (Phi-2 LLM)
+  - qwen35_0.8b        # 0.8B  Qwen3.5-VL
+  - qwen35_4b          # 4.0B  Qwen3.5-VL
+  - internvl35_2b      # 2.0B  InternVL3.5 (strong ViT)
+  - internvl35_8b      # 8.0B  InternVL3.5 (strong ViT)
+
+tasks:
+  - egma-math          # text options, arithmetic
+  - theory-of-mind     # text options, reasoning
+  - vocab              # image options, vocabulary
+  - trog               # image options, grammar comprehension
+  - matrix-reasoning   # image options + image context, pattern completion

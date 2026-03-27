@@ -29,6 +29,11 @@ _FONT_SIZE = 22
 
 
 @register("tinyllava")
+@register("tinyllava_0.5b")
+@register("tinyllava_0.9b")
+@register("tinyllava_2.4b")
+@register("tinyllava_3b")
+@register("tinyllava_3.1b")
 class TinyLLaVAModel(VLMModel):
     """TinyLLaVA via HuggingFace AutoModelForCausalLM + trust_remote_code.
 

@@ -21,6 +21,10 @@ _USER_INSTRUCTION = "Reply with exactly one letter — A, B, C, or D — and not
 
 
 @register("internvl35")
+@register("internvl35_1b")
+@register("internvl35_2b")
+@register("internvl35_4b")
+@register("internvl35_8b")
 class InternVL35Model(VLMModel):
     """InternVL3.5 via HuggingFace-native format (OpenGVLab/InternVL3_5-{size}-HF).
 

@@ -3,6 +3,8 @@
 import sys
 from pathlib import Path
 
+from tqdm import tqdm
+
 from omegaconf import DictConfig, OmegaConf
 
 from levante_bench.config import get_task_def, load_model_config, load_task_config
@@ -103,7 +105,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             task_trials = []
             max_new_tokens = model_cfg.get("max_new_tokens", 64)
 
-            for i in range(len(dataset)):
+            for i in tqdm(range(len(dataset)), desc=f"  {task_id}", unit="trial"):
                 trial = dataset[i]
                 task_trials.append(trial)
                 trial["max_new_tokens"] = max_new_tokens

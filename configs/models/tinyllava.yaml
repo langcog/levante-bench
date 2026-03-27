@@ -1,0 +1,19 @@
+# TinyLLaVA model config.
+# Multi-image support is achieved by compositing option images into a
+# labeled 2×2 grid passed as a single image.
+
+name: tinyllava
+hf_name: tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B
+# Available sizes (set hf_name to the desired model):
+#   0.5B → tinyllava/TinyLLaVA-Qwen2-0.5B-SigLIP
+#   0.9B → tinyllava/TinyLLaVA-OpenELM-450M-SigLIP-0.89B
+#   2.4B → tinyllava/TinyLLaVA-Gemma-SigLIP-2.4B
+#   3.0B → tinyllava/TinyLLaVA-Qwen2.5-3B-SigLIP
+#   3.1B → tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B  (default)
+max_new_tokens: 32
+dtype: bfloat16
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

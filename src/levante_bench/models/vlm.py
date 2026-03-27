@@ -1,12 +1,13 @@
-"""VLM model implementations. One class per model family."""
+"""Backward-compatibility shim.
 
 import base64
 import mimetypes
 import os
 import re
 
-from pathlib import Path
-from typing import Optional
+This file re-exports them so that existing code importing from
+``levante_bench.models.vlm`` continues to work unchanged.
+"""
 
 import requests
 import torch

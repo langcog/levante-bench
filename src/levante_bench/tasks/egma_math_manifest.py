@@ -19,12 +19,47 @@ def _is_numberline_trial(trial_type: str) -> bool:
     return "number line" in trial_type.strip().lower()
 
 
+def _is_numberline_slider_trial(trial_type: str) -> bool:
+    return "number line slider" in trial_type.strip().lower()
+
+
 def _numberline_instruction() -> str:
     return (
-        "Use the number line graphic to answer this item. "
-        "Read the left and right endpoint labels on the line to determine the scale, "
-        "then locate the marked position and choose the matching value."
+        "Use only the number line graphic to answer this item. "
+        "Read the left and right endpoint labels in the image to determine the scale, "
+        "then locate the marked position in the image and answer from that visual evidence."
     )
+
+
+def _numberline_slider_instruction() -> str:
+    return (
+        "This is a Number Line Slider item. "
+        "Use only visual cues from the image: read endpoint labels to infer scale and read the requested target from the image. "
+        "Choose the slider position that matches that target. "
+        "Return only the slider position as a decimal from 0 to 1 in JSON as "
+        "{\"answer\":\"<position from 0 to 1>\"}, "
+        "where 0 is the far-left endpoint and 1 is the far-right endpoint."
+    )
+
+
+def _parse_slider_max(item_text: str) -> float | None:
+    parts = [p.strip() for p in str(item_text).split(",") if p.strip()]
+    if len(parts) < 2:
+        return None
+    try:
+        return float(parts[1])
+    except ValueError:
+        return None
+
+
+def _parse_slider_min(item_text: str) -> float | None:
+    parts = [p.strip() for p in str(item_text).split(",") if p.strip()]
+    if len(parts) < 2:
+        return None
+    try:
+        return float(parts[0])
+    except ValueError:
+        return None
 
 
 @register_task("egma-math")
@@ -179,18 +214,21 @@ class EgmaMathDataset(VLMDataset):
         row = self.manifest.iloc[idx]
         trial_type = str(row.get("trial_type", "")).strip()
         is_numberline = _is_numberline_trial(trial_type)
+        is_numberline_slider = _is_numberline_slider_trial(trial_type)
+        include_numberline = bool(getattr(self.task_def, "include_numberline", False))
 
         answer = str(row["answer"]).strip()
         alternatives = str(row["response_alternatives"] or "").split(",")
         alternatives = [a.strip() for a in alternatives if a.strip()]
-        all_options = [answer] + alternatives
-
-        # Deterministic shuffle seeded by item_uid
-        rng = random.Random(row["item_uid"])
-        rng.shuffle(all_options)
-
-        correct_idx = all_options.index(answer)
-        correct_label = LABELS[correct_idx]
+        all_options: list[str] = []
+        correct_label = ""
+        if not (is_numberline_slider and include_numberline):
+            all_options = [answer] + alternatives
+            # Deterministic shuffle seeded by item_uid
+            rng = random.Random(row["item_uid"])
+            rng.shuffle(all_options)
+            correct_idx = all_options.index(answer)
+            correct_label = LABELS[correct_idx]
 
         # Build prompt from template.
         # egma-math uses <optionX> placeholders (not <imageX>) so we must substitute option text.
@@ -200,9 +238,11 @@ class EgmaMathDataset(VLMDataset):
         if prompt_phrase_s in {"NA", "nan"}:
             prompt_phrase_s = ""
         prompt = str(row["full_prompt"])
+        if prompt in {"", "NA", "nan"}:
+            prompt = str(row.get("prompt", "")).strip()
 
         context_image_paths = []
-        if is_numberline and bool(getattr(self.task_def, "include_numberline", False)):
+        if is_numberline and include_numberline:
             path = self._resolve_prompt_image(row=row, is_numberline=True)
             if path is not None:
                 if "<prompt_image>" in prompt:
@@ -224,23 +264,49 @@ class EgmaMathDataset(VLMDataset):
                     f"(trial {row['item_uid']})"
                 )
 
-        if is_numberline and bool(getattr(self.task_def, "include_numberline", False)):
-            prompt = f"{_numberline_instruction()}\n{prompt}"
+        if is_numberline and include_numberline:
+            if is_numberline_slider:
+                # Keep slider instructions minimal and unambiguous to avoid endpoint anchoring.
+                prompt = _numberline_slider_instruction()
+                if context_image_paths:
+                    prompt = f"<image0>\n{prompt}"
+            else:
+                prompt = f"{_numberline_instruction()}\n{prompt}"
 
         prompt = prompt.replace("<prompt_phrase>", prompt_phrase_s)
         for i, option in enumerate(all_options, start=1):
             prompt = prompt.replace(f"<option{i}>", str(option))
 
-        return {
+        trial: dict = {
             "trial_id": row["item_uid"],
             "item_uid": row["item_uid"],
             "trial_type": trial_type,
             "prompt": prompt,
             "options": all_options,
-            "option_labels": LABELS[:len(all_options)],
+            "option_labels": LABELS[: len(all_options)],
             "correct_label": correct_label,
             "context_image_paths": context_image_paths,
             "option_image_paths": [],
             "context_type": "image" if context_image_paths else "none",
             "option_type": "text",
+            "chance_level": row.get("chance_level"),
         }
+
+        if is_numberline_slider and include_numberline:
+            slider_max = _parse_slider_max(row.get("item", ""))
+            slider_min = _parse_slider_min(row.get("item", ""))
+            target = float(answer)
+            if slider_max is not None and slider_min is not None and slider_max > slider_min:
+                # Core-tasks parity: abs(response - target) / max < 0.05
+                tolerance = 0.05 * slider_max
+                trial.update(
+                    {
+                        "answer_format": "slider_position",
+                        "slider_min": slider_min,
+                        "slider_max": slider_max,
+                        "target_value": target,
+                        "slider_tolerance": tolerance,
+                    }
+                )
+
+        return trial

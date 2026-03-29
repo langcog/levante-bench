@@ -31,14 +31,17 @@ def _numberline_instruction() -> str:
     )
 
 
-def _numberline_slider_instruction() -> str:
+def _numberline_slider_instruction(target_value: str) -> str:
     return (
-        "This is a Number Line Slider item. "
-        "Use only visual cues from the image: read endpoint labels to infer scale and read the requested target from the image. "
-        "Choose the slider position that matches that target. "
-        "Return only the slider position as a decimal from 0 to 1 in JSON as "
-        "{\"answer\":\"<position from 0 to 1>\"}, "
-        "where 0 is the far-left endpoint and 1 is the far-right endpoint."
+        "You are a child taking a math test. "
+        "Use only the number line image. "
+        "Read the left and right endpoint labels in the image to determine the scale. "
+        f"Find where {target_value} belongs on that scale. "
+        "Compute the relative slider position using position = (target - left_endpoint) / (right_endpoint - left_endpoint). "
+        "Anchors: left endpoint -> 0.00, right endpoint -> 1.00, midpoint -> 0.50. "
+        "Use 0.50 only when the target is exactly at the midpoint between the endpoints. "
+        "Return only one decimal number between 0 and 1 representing the slider position. "
+        "Do not return JSON, labels, or extra words."
     )
 
 
@@ -266,8 +269,7 @@ class EgmaMathDataset(VLMDataset):
 
         if is_numberline and include_numberline:
             if is_numberline_slider:
-                # Keep slider instructions minimal and unambiguous to avoid endpoint anchoring.
-                prompt = _numberline_slider_instruction()
+                prompt = _numberline_slider_instruction(answer)
                 if context_image_paths:
                     prompt = f"<image0>\n{prompt}"
             else:

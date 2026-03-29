@@ -8,7 +8,8 @@ from typing import Optional
 ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<letter>", "reason": "<short reason>"}'
 NUMERIC_ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<number>", "reason": "<short reason>"}'
 SLIDER_POSITION_FORMAT_INSTRUCTION = (
-    '\n\nRespond in JSON format: {"answer": "<position from 0 to 1>", "reason": "<short reason>"}'
+    "\n\nOutput only one decimal number between 0 and 1 "
+    "(the slider position from left to right). No JSON or extra text."
 )
 
 
@@ -71,7 +72,12 @@ class VLMModel:
         )
         clean_text = self.parse_response(raw_output)
         if answer_format in {"numeric", "slider_position"}:
-            predicted_value, reason = self.parse_numeric_answer(clean_text)
+            strict_json = answer_format == "slider_position"
+            predicted_value, reason = self.parse_numeric_answer(
+                clean_text,
+                strict_json=strict_json,
+                slider_mode=(answer_format == "slider_position"),
+            )
             target_value = trial.get("target_value")
             tolerance = trial.get("slider_tolerance")
             predicted_position = None
@@ -121,9 +127,44 @@ class VLMModel:
             "option_labels": trial.get("option_labels", []),
         }
 
-    def parse_numeric_answer(self, text: str) -> tuple[Optional[float], str]:
+    def parse_numeric_answer(
+        self,
+        text: str,
+        strict_json: bool = False,
+        slider_mode: bool = False,
+    ) -> tuple[Optional[float], str]:
         """Extract numeric answer and reason from model output."""
         text = text.strip()
+
+        if slider_mode:
+            # Slider mode is "semi-strict": accept only explicit scalar forms,
+            # never first-number fallback from arbitrary prose.
+            if re.fullmatch(r"[-+]?\d*\.?\d+", text):
+                try:
+                    return float(text), text
+                except ValueError:
+                    pass
+
+            try:
+                parsed = json.loads(text)
+                answer = parsed.get("answer")
+                reason = str(parsed.get("reason", ""))
+                if answer is not None and not isinstance(answer, (dict, list, tuple)):
+                    return float(answer), reason
+            except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
+                pass
+
+            for pattern in (
+                r'answer\s*(?:is|:)\s*"?(?P<num>[-+]?\d*\.?\d+)"?',
+                r'"answer"\s*:\s*"?(?P<num>[-+]?\d*\.?\d+)"?',
+            ):
+                m = re.search(pattern, text, re.IGNORECASE)
+                if m:
+                    try:
+                        return float(m.group("num")), text
+                    except ValueError:
+                        pass
+            return None, text
 
         # 1) Plain JSON
         try:
@@ -131,9 +172,22 @@ class VLMModel:
             answer = parsed.get("answer")
             reason = str(parsed.get("reason", ""))
             if answer is not None:
+                # In strict mode, accept only scalar numeric answers.
+                if strict_json and isinstance(answer, (dict, list, tuple)):
+                    return None, text
                 return float(answer), reason
         except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
             pass
+
+        if strict_json:
+            # Strict mode accepts only explicit scalar answer fields.
+            m = re.search(r'"answer"\s*:\s*"?(?P<num>[-+]?\d*\.?\d+)"?', text)
+            if m:
+                try:
+                    return float(m.group("num")), text
+                except ValueError:
+                    pass
+            return None, text
 
         # 2) Embedded JSON answer
         m = re.search(r'"answer"\s*:\s*"?(?P<num>[-+]?\d*\.?\d+)"?', text)

@@ -1,10 +1,14 @@
 """VLM model implementations. One class per model family."""
 
+import base64
+import mimetypes
+import os
 import re
 
 from pathlib import Path
 from typing import Optional
 
+import requests
 import torch
 from PIL import Image
 
@@ -246,6 +250,251 @@ class Qwen35Model(VLMModel):
                 if re.search(rf'\b{re.escape(label)}\b', sentence, re.IGNORECASE):
                     return label
         return None
+
+
+@register("gemini_pro")
+class GeminiProModel(VLMModel):
+    """Gemini Pro via Google Generative Language REST API."""
+
+    API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+    def __init__(
+        self,
+        model_name: str = "gemini-2.5-pro",
+        device: str = "cpu",
+        api_key_env: str = "GEMINI_API_KEY",
+        timeout_s: int = 120,
+    ) -> None:
+        super().__init__(model_name=model_name, device=device)
+        self.api_key_env = api_key_env
+        self.timeout_s = timeout_s
+        self.api_key: str | None = None
+
+    def load(self) -> None:
+        """Validate API key presence."""
+        self.api_key = os.getenv(self.api_key_env)
+        if not self.api_key:
+            raise RuntimeError(
+                f"{self.api_key_env} is not set. Export it before running gemini_pro."
+            )
+
+    def generate(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None = None,
+        max_new_tokens: int = 64,
+    ) -> str:
+        """Generate text using Gemini REST API."""
+        if not self.api_key:
+            raise RuntimeError("Gemini model not loaded. Call load() first.")
+
+        parts = self._build_parts(prompt_text, image_paths)
+        payload = {
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {
+                "temperature": 0.0,
+                "maxOutputTokens": int(max_new_tokens),
+            },
+        }
+
+        url = f"{self.API_BASE}/models/{self.model_name}:generateContent"
+        response = requests.post(
+            url,
+            params={"key": self.api_key},
+            json=payload,
+            timeout=self.timeout_s,
+        )
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"Gemini API error {response.status_code}: {response.text[:500]}"
+            )
+        data = response.json()
+        candidates = data.get("candidates") or []
+        if not candidates:
+            raise RuntimeError(f"Gemini returned no candidates: {data}")
+        content = candidates[0].get("content", {})
+        out_parts = content.get("parts", [])
+        text_chunks = [p.get("text", "") for p in out_parts if isinstance(p, dict)]
+        return "\n".join([t for t in text_chunks if t]).strip()
+
+    def _build_parts(self, prompt_text: str, image_paths: list[str] | None) -> list[dict]:
+        """Build Gemini parts from prompt + optional image placeholders."""
+        parts: list[dict] = []
+        if image_paths and re.search(r"<image\d+>", prompt_text):
+            chunks = re.split(r"(<image\d+>)", prompt_text)
+            has_image0 = "<image0>" in prompt_text
+            for chunk in chunks:
+                m = re.match(r"<image(\d+)>", chunk)
+                if m:
+                    n = int(m.group(1))
+                    idx = n if has_image0 else n - 1
+                    if 0 <= idx < len(image_paths):
+                        parts.append(self._image_part(image_paths[idx]))
+                elif chunk.strip():
+                    parts.append({"text": chunk.strip()})
+            return parts
+
+        if image_paths:
+            for p in image_paths:
+                parts.append(self._image_part(p))
+        if prompt_text.strip():
+            parts.append({"text": prompt_text.strip()})
+        return parts
+
+    def _image_part(self, image_path: str) -> dict:
+        """Encode a local image path as Gemini inline_data part."""
+        path = Path(image_path)
+        raw = path.read_bytes()
+        mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
+        b64 = base64.b64encode(raw).decode("ascii")
+        return {
+            "inline_data": {
+                "mime_type": mime_type,
+                "data": b64,
+            }
+        }
+
+    def parse_response(self, raw_output: str) -> str:
+        return raw_output.strip()
+
+
+@register("gpt53")
+class GPT53Model(VLMModel):
+    """GPT-5.3 via OpenAI Responses REST API."""
+
+    API_BASE = "https://api.openai.com/v1"
+
+    def __init__(
+        self,
+        model_name: str = "gpt-5.3",
+        device: str = "cpu",
+        api_key_env: str = "OPENAI_API_KEY",
+        timeout_s: int = 120,
+    ) -> None:
+        super().__init__(model_name=model_name, device=device)
+        self.api_key_env = api_key_env
+        self.timeout_s = timeout_s
+        self.api_key: str | None = None
+
+    def load(self) -> None:
+        """Validate API key presence."""
+        self.api_key = os.getenv(self.api_key_env)
+        if not self.api_key:
+            raise RuntimeError(
+                f"{self.api_key_env} is not set. Export it before running gpt53."
+            )
+
+    def generate(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None = None,
+        max_new_tokens: int = 64,
+    ) -> str:
+        """Generate text using OpenAI Responses API."""
+        if not self.api_key:
+            raise RuntimeError("GPT53 model not loaded. Call load() first.")
+
+        content = self._build_content(prompt_text, image_paths)
+        payload = {
+            "model": self.model_name,
+            "input": [
+                {
+                    "role": "user",
+                    "content": content,
+                }
+            ],
+            "max_output_tokens": max(int(max_new_tokens), 256),
+            "reasoning": {"effort": "medium"},
+            "text": {"verbosity": "medium"},
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        # One retry path for GPT-5.* cases where max_output_tokens is consumed
+        # by reasoning and no final text is emitted.
+        for attempt in range(2):
+            response = requests.post(
+                f"{self.API_BASE}/responses",
+                headers=headers,
+                json=payload,
+                timeout=self.timeout_s,
+            )
+            if response.status_code != 200:
+                raise RuntimeError(
+                    f"OpenAI API error {response.status_code}: {response.text[:500]}"
+                )
+            data = response.json()
+            text = self._extract_response_text(data)
+            if text:
+                return text
+
+            incomplete = data.get("incomplete_details") or {}
+            if (
+                attempt == 0
+                and incomplete.get("reason") == "max_output_tokens"
+                and int(payload["max_output_tokens"]) < 1024
+            ):
+                payload["max_output_tokens"] = min(1024, int(payload["max_output_tokens"]) * 2)
+                continue
+
+            raise RuntimeError(f"OpenAI returned empty output: {data}")
+
+        raise RuntimeError("OpenAI response retry exhausted.")
+
+    def _build_content(self, prompt_text: str, image_paths: list[str] | None) -> list[dict]:
+        """Build Responses API content from prompt + optional image placeholders."""
+        content: list[dict] = []
+        if image_paths and re.search(r"<image\d+>", prompt_text):
+            chunks = re.split(r"(<image\d+>)", prompt_text)
+            has_image0 = "<image0>" in prompt_text
+            for chunk in chunks:
+                m = re.match(r"<image(\d+)>", chunk)
+                if m:
+                    n = int(m.group(1))
+                    idx = n if has_image0 else n - 1
+                    if 0 <= idx < len(image_paths):
+                        content.append(self._image_content(image_paths[idx]))
+                elif chunk.strip():
+                    content.append({"type": "input_text", "text": chunk.strip()})
+            return content
+
+        if image_paths:
+            for p in image_paths:
+                content.append(self._image_content(p))
+        if prompt_text.strip():
+            content.append({"type": "input_text", "text": prompt_text.strip()})
+        return content
+
+    def _image_content(self, image_path: str) -> dict:
+        """Encode a local image path as a data URL for input_image."""
+        path = Path(image_path)
+        raw = path.read_bytes()
+        mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
+        b64 = base64.b64encode(raw).decode("ascii")
+        return {
+            "type": "input_image",
+            "image_url": f"data:{mime_type};base64,{b64}",
+        }
+
+    def _extract_response_text(self, data: dict) -> str:
+        """Extract plain text from Responses API payload."""
+        if isinstance(data.get("output_text"), str) and data.get("output_text"):
+            return data["output_text"].strip()
+
+        chunks: list[str] = []
+        for item in data.get("output", []) or []:
+            for part in item.get("content", []) or []:
+                if part.get("type") in {"output_text", "text"}:
+                    txt = part.get("text")
+                    if isinstance(txt, str) and txt.strip():
+                        chunks.append(txt.strip())
+        return "\n".join(chunks).strip()
+
+    def parse_response(self, raw_output: str) -> str:
+        return raw_output.strip()
 
 
 @register("internvl35")

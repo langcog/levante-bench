@@ -7,7 +7,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-DEFAULT_DATA_VERSION = "2026-03-24"
 DEFAULT_SMOLVLM2_MODEL = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
 
 WORKFLOW_SCRIPTS = {
@@ -22,6 +21,12 @@ WORKFLOW_SCRIPTS = {
 
 def project_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
+
+
+def get_default_data_version(data_root: Path | None = None) -> str:
+    """Return the most-recent asset version, or the LEVANTE_DATA_VERSION env var."""
+    from levante_bench.config.defaults import detect_data_version
+    return detect_data_version(data_root or project_root() / "data")
 
 
 def normalize_passthrough(args: list[str] | None) -> list[str]:

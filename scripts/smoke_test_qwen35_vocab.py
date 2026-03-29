@@ -8,16 +8,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from levante_bench.models.vlm import Qwen35Model
-from levante_bench.config import get_task_def
+from levante_bench.config import detect_data_version, get_task_def
 from levante_bench.tasks.vocab import VocabDataset
 
 DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
-VERSION = "2026-03-26"
+VERSION = detect_data_version(DATA_ROOT)
 MODEL_ID = "Qwen/Qwen3.5-0.8B"
 N_ITEMS = 5
 
 
 def main():
+    print(f"Asset version: {VERSION}")
     print(f"Loading model: {MODEL_ID}")
     model = Qwen35Model(model_name=MODEL_ID, device="cpu", dtype="bfloat16")
     model.load()

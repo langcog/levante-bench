@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 
 from levante_bench.cli_workflows import (
-    DEFAULT_DATA_VERSION,
     DEFAULT_SMOLVLM2_MODEL,
     WORKFLOW_SCRIPTS,
     benchmark_command,
+    get_default_data_version,
     normalize_passthrough,
     project_root,
     run_command,
@@ -330,7 +330,7 @@ def cmd_run_benchmark(args: argparse.Namespace) -> int:
 
     root = _project_root()
     device = resolve_device(args.device)
-    data_version = args.data_version or DEFAULT_DATA_VERSION
+    data_version = args.data_version or get_default_data_version(root / "data")
     model_id = args.model_id or DEFAULT_SMOLVLM2_MODEL
 
     try:
@@ -418,7 +418,7 @@ def add_run_workflow_parser(sub: argparse._SubParsersAction) -> None:
 def add_run_benchmark_parser(sub: argparse._SubParsersAction) -> None:
     pb = sub.add_parser("run-benchmark", help="Run integrated benchmark presets (v1, vocab)")
     pb.add_argument("--benchmark", required=True, choices=["v1", "vocab"])
-    pb.add_argument("--data-version", default=DEFAULT_DATA_VERSION, help="Data/assets version")
+    pb.add_argument("--data-version", default=None, help="Data/assets version (default: auto-detect from data/assets/)")
     pb.add_argument("--model-id", default=DEFAULT_SMOLVLM2_MODEL, help="Model id")
     pb.add_argument("--device", default="auto", help="Device: auto|cpu|cuda")
     pb.add_argument("--max-items-math", type=int, default=None, help="Optional cap for v1 math")

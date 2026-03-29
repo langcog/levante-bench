@@ -358,6 +358,7 @@ class GeminiProModel(VLMModel):
         return raw_output.strip()
 
 
+@register("gpt52")
 @register("gpt53")
 class GPT53Model(VLMModel):
     """GPT-5.3 via OpenAI Responses REST API."""

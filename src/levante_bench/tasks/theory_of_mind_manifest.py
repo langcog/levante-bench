@@ -9,7 +9,7 @@ from levante_bench.tasks.image_index import build_image_index
 from levante_bench.tasks.registry import register_task
 
 LABELS = ["A", "B", "C", "D"]
-@register_task("theory-of-mind")
+@register_task("theory-of-mind-manifest")
 class TheoryOfMindDataset(VLMDataset):
     """Reads ToM trials from manifest.csv with image answer choices."""
 

@@ -29,9 +29,10 @@ def _dedupe_keep_order(values: list[str]) -> list[str]:
 def _build_prompt(question: str, context_lines: list[str], options: list[str]) -> str:
     lines: list[str] = []
     if context_lines:
-        lines.append("Story context:")
+        lines.append("Story so far (earlier scenes):")
         lines.extend(f"- {line}" for line in context_lines)
         lines.append("")
+    lines.append("Use the story so far to answer the current question.")
     lines.append(f"Question: {question}")
     lines.append("Options:")
     for idx, option in enumerate(options):

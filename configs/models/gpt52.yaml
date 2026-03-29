@@ -1,0 +1,9 @@
+name: gpt52
+hf_name: gpt-5.2-2025-12-11
+max_new_tokens: 128
+use_json_format: true
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

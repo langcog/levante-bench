@@ -5,6 +5,9 @@
 /data/assets/*
 !/data/assets/manifest.csv
 .secrets
+.env
+.env.*
+!.env.example
 
 # Generated evaluation artifacts
 /results/

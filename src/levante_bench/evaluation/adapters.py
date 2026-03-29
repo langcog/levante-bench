@@ -13,6 +13,18 @@ def _chance_from_options(options: list[str] | None) -> float:
     return 1.0 / n
 
 
+def _chance_for_trial(trial: dict) -> float:
+    chance = trial.get("chance_level")
+    try:
+        if chance is not None:
+            c = float(chance)
+            if c > 0:
+                return c
+    except (TypeError, ValueError):
+        pass
+    return _chance_from_options(trial.get("options"))
+
+
 def _write_math_by_type(
     model_dir: Path,
     task_results: list[dict],
@@ -35,8 +47,8 @@ def _write_math_by_type(
         )
         row["n"] += 1.0
         row["correct"] += 1.0 if bool(result.get("is_correct")) else 0.0
-        row["parsed"] += 1.0 if result.get("predicted_label") is not None else 0.0
-        row["chance_sum"] += _chance_from_options(trial.get("options"))
+        row["parsed"] += 1.0 if (result.get("predicted_label") is not None or result.get("predicted_value") is not None) else 0.0
+        row["chance_sum"] += _chance_for_trial(trial)
 
     out_path = model_dir / "egma-math-by-type.csv"
     with open(out_path, "w", newline="", encoding="utf-8") as f:
@@ -74,8 +86,8 @@ def _write_tom_by_type(
         )
         row["n"] += 1.0
         row["correct"] += 1.0 if bool(result.get("is_correct")) else 0.0
-        row["parsed"] += 1.0 if result.get("predicted_label") is not None else 0.0
-        row["chance_sum"] += _chance_from_options(trial.get("options"))
+        row["parsed"] += 1.0 if (result.get("predicted_label") is not None or result.get("predicted_value") is not None) else 0.0
+        row["chance_sum"] += _chance_for_trial(trial)
 
     out_path = model_dir / "theory-of-mind-by-type.csv"
     with open(out_path, "w", newline="", encoding="utf-8") as f:

@@ -2,6 +2,14 @@ name: gpt53
 hf_name: gpt-5.3-chat-latest
 max_new_tokens: 128
 use_json_format: true
+api_key_env: OPENAI_API_KEY
+timeout_s: 120
+retry_attempts: 5
+retry_on_5xx: true
+max_output_tokens_min: 512
+max_output_tokens_cap: 4096
+reasoning_effort: null
+text_verbosity: null
 
 capabilities:
   - text_only

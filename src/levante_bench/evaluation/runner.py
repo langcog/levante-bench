@@ -1,5 +1,6 @@
 """Run evaluation: for each model, evaluate all tasks, write results."""
 
+import inspect
 import sys
 from pathlib import Path
 
@@ -83,7 +84,33 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             print(f"  Skip model {model_name}: not registered", file=sys.stderr)
             continue
 
-        model = model_cls(model_name=model_cfg["hf_name"], device=device)
+        ctor_cfg = {
+            k: v
+            for k, v in model_cfg.items()
+            if k
+            not in {
+                "name",
+                "hf_name",
+                "size",
+                "max_new_tokens",
+                "use_json_format",
+                "capabilities",
+            }
+        }
+        sig = inspect.signature(model_cls.__init__)
+        has_var_kwargs = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD
+            for p in sig.parameters.values()
+        )
+        if not has_var_kwargs:
+            accepted = {
+                name
+                for name in sig.parameters
+                if name not in {"self", "model_name", "device"}
+            }
+            ctor_cfg = {k: v for k, v in ctor_cfg.items() if k in accepted}
+
+        model = model_cls(model_name=model_cfg["hf_name"], device=device, **ctor_cfg)
         model.use_json_format = model_cfg.get("use_json_format", True)
         model.load()
 

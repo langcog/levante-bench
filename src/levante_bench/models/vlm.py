@@ -371,10 +371,28 @@ class GPT53Model(VLMModel):
         device: str = "cpu",
         api_key_env: str = "OPENAI_API_KEY",
         timeout_s: int = 120,
+        api_base: str = API_BASE,
+        retry_attempts: int = 5,
+        retry_on_5xx: bool = True,
+        max_output_tokens_min: int = 512,
+        max_output_tokens_cap: int = 4096,
+        reasoning_effort: str | None = None,
+        text_verbosity: str | None = None,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.api_key_env = api_key_env
         self.timeout_s = timeout_s
+        self.api_base = api_base
+        self.retry_attempts = max(1, int(retry_attempts))
+        self.retry_on_5xx = bool(retry_on_5xx)
+        self.max_output_tokens_min = max(1, int(max_output_tokens_min))
+        self.max_output_tokens_cap = max(
+            self.max_output_tokens_min, int(max_output_tokens_cap)
+        )
+        self.reasoning_effort = (
+            str(reasoning_effort).strip() if reasoning_effort else None
+        )
+        self.text_verbosity = str(text_verbosity).strip() if text_verbosity else None
         self.api_key: str | None = None
 
     def load(self) -> None:
@@ -404,26 +422,35 @@ class GPT53Model(VLMModel):
                     "content": content,
                 }
             ],
-            "max_output_tokens": max(int(max_new_tokens), 256),
-            "reasoning": {"effort": "medium"},
-            "text": {"verbosity": "medium"},
+            "max_output_tokens": max(int(max_new_tokens), self.max_output_tokens_min),
         }
+        if self.reasoning_effort:
+            payload["reasoning"] = {"effort": self.reasoning_effort}
+        if self.text_verbosity:
+            payload["text"] = {"verbosity": self.text_verbosity}
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
-        # One retry path for GPT-5.* cases where max_output_tokens is consumed
-        # by reasoning and no final text is emitted.
-        for attempt in range(2):
+        # Retry path for GPT-5.* cases where output tokens are consumed by
+        # reasoning and no final text is emitted.
+        for attempt in range(self.retry_attempts):
             response = requests.post(
-                f"{self.API_BASE}/responses",
+                f"{self.api_base}/responses",
                 headers=headers,
                 json=payload,
                 timeout=self.timeout_s,
             )
             if response.status_code != 200:
+                # Transient server errors are common on long runs.
+                if (
+                    self.retry_on_5xx
+                    and response.status_code >= 500
+                    and attempt < self.retry_attempts - 1
+                ):
+                    continue
                 raise RuntimeError(
                     f"OpenAI API error {response.status_code}: {response.text[:500]}"
                 )
@@ -433,12 +460,12 @@ class GPT53Model(VLMModel):
                 return text
 
             incomplete = data.get("incomplete_details") or {}
-            if (
-                attempt == 0
-                and incomplete.get("reason") == "max_output_tokens"
-                and int(payload["max_output_tokens"]) < 1024
-            ):
-                payload["max_output_tokens"] = min(1024, int(payload["max_output_tokens"]) * 2)
+            if incomplete.get("reason") == "max_output_tokens" and int(
+                payload["max_output_tokens"]
+            ) < self.max_output_tokens_cap:
+                payload["max_output_tokens"] = min(
+                    self.max_output_tokens_cap, int(payload["max_output_tokens"]) * 2
+                )
                 continue
 
             raise RuntimeError(f"OpenAI returned empty output: {data}")

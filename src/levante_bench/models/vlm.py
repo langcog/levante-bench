@@ -231,16 +231,16 @@ class Qwen35Model(VLMModel):
         """Return generated text as-is (already decoded from generated tokens only)."""
         return raw_output.strip()
 
-    def parse_answer(self, text: str, option_labels: list[str]) -> Optional[str]:
+    def parse_answer(self, text: str, option_labels: list[str]) -> tuple[Optional[str], str]:
         """Extract the answer letter from Qwen3.5 output.
 
         Tries the base class logic first (handles direct "A" / "A." responses).
         Falls back to scanning the end of the text for the last standalone label
         in case the model reasoned before concluding with e.g. 'The answer is B'.
         """
-        result = super().parse_answer(text, option_labels)
-        if result is not None:
-            return result
+        label, reason = super().parse_answer(text, option_labels)
+        if label is not None:
+            return label, reason
 
         # Scan sentence-by-sentence from the end for the last label mention
         sentences = re.split(r'[.!?\n]', text)
@@ -248,8 +248,8 @@ class Qwen35Model(VLMModel):
             sentence = sentence.strip()
             for label in option_labels:
                 if re.search(rf'\b{re.escape(label)}\b', sentence, re.IGNORECASE):
-                    return label
-        return None
+                    return label, sentence
+        return None, text
 
 
 @register("gemini_pro")

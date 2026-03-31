@@ -4,6 +4,8 @@
 models:
   - name: qwen35
     size: 4B
+    max_new_tokens: 512
+    use_json_format: false
 
 tasks:
   - egma-math

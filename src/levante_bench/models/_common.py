@@ -53,19 +53,21 @@ def parse_answer_with_fallback(
     base_instance,
     text: str,
     option_labels: list[str],
-) -> Optional[str]:
+) -> tuple[Optional[str], str]:
     """Try the base-class parser, then scan backwards through sentences.
 
     Used by Qwen35Model and InternVL35Model, which may generate a brief
     chain-of-thought before stating the answer letter.
     """
-    result = super(type(base_instance), base_instance).parse_answer(text, option_labels)
-    if result is not None:
-        return result
+    label, reason = super(type(base_instance), base_instance).parse_answer(
+        text, option_labels
+    )
+    if label is not None:
+        return label, reason
     sentences = re.split(r"[.!?\n]", text)
     for sentence in reversed(sentences):
         sentence = sentence.strip()
         for label in option_labels:
             if re.search(rf"\b{re.escape(label)}\b", sentence, re.IGNORECASE):
-                return label
-    return None
+                return label, sentence
+    return None, text

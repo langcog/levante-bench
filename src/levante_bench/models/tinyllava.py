@@ -217,6 +217,8 @@ class TinyLLaVAModel(VLMModel):
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()
 
-    def parse_answer(self, text: str, option_labels: list[str]) -> Optional[str]:
+    def parse_answer(
+        self, text: str, option_labels: list[str]
+    ) -> tuple[Optional[str], str]:
         """Base-class parser first; falls back to reverse-sentence scan."""
         return parse_answer_with_fallback(self, text, option_labels)

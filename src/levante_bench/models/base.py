@@ -225,22 +225,28 @@ class VLMModel:
         except (json.JSONDecodeError, AttributeError):
             pass
 
-        # 2. Try JSON embedded in text
-        m = re.search(r'\{[^}]*"answer"\s*:\s*"([^"]+)"[^}]*\}', text)
+        # 2. Embedded/truncated JSON answer field (works on incomplete JSON too).
+        m = re.search(r'"answer"\s*:\s*"?(?P<label>[A-Z])\b', text, re.IGNORECASE)
         if m:
-            answer = m.group(1).strip().upper()
-            # Try to extract reason too
-            r = re.search(r'"reason"\s*:\s*"([^"]*)"', text)
-            reason = r.group(1) if r else ""
+            answer = m.group("label").upper()
             if answer in labels_upper:
+                r = re.search(r'"reason"\s*:\s*"(?P<reason>[^"]*)"', text, re.IGNORECASE)
+                reason = r.group("reason") if r else text
                 return answer, reason
 
-        # 3. "the answer is X" / "correct answer is X" patterns
-        m = re.search(r'(?:the\s+)?(?:correct\s+)?answer\s+is\s+([A-Z])\b', text, re.IGNORECASE)
-        if m:
-            answer = m.group(1).upper()
-            if answer in labels_upper:
-                return answer, text
+        # 3. Common natural-language patterns.
+        phrase_patterns = (
+            r"\b(?:the\s+)?(?:correct\s+)?answer\s+is\s+(?P<label>[A-Z])\b",
+            r"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z])\b",
+            r"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z])\b",
+            r"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z])\b",
+        )
+        for pattern in phrase_patterns:
+            m = re.search(pattern, text, re.IGNORECASE)
+            if m:
+                answer = m.group("label").upper()
+                if answer in labels_upper:
+                    return answer, text
 
         # 4. Exact match (entire text is just the label)
         if text.upper() in labels_upper:

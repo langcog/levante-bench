@@ -42,8 +42,11 @@ def test_parse_answer(model):
     cases = [
         ('{"answer": "A", "reason": "it matches"}', "A"),
         ('{"answer": "B"}', "B"),
+        ('{"answer": "C", "reason": "truncated"', "C"),
         ("The correct answer is C", "C"),
         ("The answer is D", "D"),
+        ("Answer: B", "B"),
+        ("correct option is A", "A"),
         ("A", "A"),
         ("B.", "B"),
         ("", None),

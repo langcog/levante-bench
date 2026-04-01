@@ -10,6 +10,13 @@ import os
 import re
 from typing import Optional
 
+import base64
+import mimetypes
+import os
+import re
+from pathlib import Path
+from typing import Optional
+
 import requests
 import torch
 from PIL import Image
@@ -648,15 +655,17 @@ class InternVL35Model(VLMModel):
         """Return generated text as-is (already decoded from generated tokens only)."""
         return raw_output.strip()
 
-    def parse_answer(self, text: str, option_labels: list[str]) -> Optional[str]:
+    def parse_answer(
+        self, text: str, option_labels: list[str]
+    ) -> tuple[Optional[str], str]:
         """Extract the answer letter, with reverse-sentence fallback."""
-        result = super().parse_answer(text, option_labels)
-        if result is not None:
-            return result
+        label, reason = super().parse_answer(text, option_labels)
+        if label is not None:
+            return label, reason
         sentences = re.split(r'[.!?\n]', text)
         for sentence in reversed(sentences):
             sentence = sentence.strip()
             for label in option_labels:
                 if re.search(rf'\b{re.escape(label)}\b', sentence, re.IGNORECASE):
-                    return label
-        return None
+                    return label, sentence
+        return None, text

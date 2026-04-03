@@ -11,9 +11,14 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
 - `download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
-  - **Inputs:** `--version`
+  - **Inputs:** `--version` (or auto-detect latest bucket version prefix), `--workers`
   - **Outputs:** `data/assets/<version>/...`
-  - **Example:** `python scripts/download_levante_assets.py --version 2026-03-24`
+  - **Example:** `python scripts/download_levante_assets.py --version hackathon --workers 24`
+- `migrate_assets_to_versioned_bucket.py`
+  - **Purpose:** copy corpus/visual/manifest from source bucket into versioned destination prefix
+  - **Inputs:** `--version`, `--dest-bucket`, optional `--dest-root-prefix` (default `corpus_data`), optional `--task`, `--dry-run`
+  - **Outputs:** `gs://<dest-bucket>/<dest-root-prefix>/<version>/...`
+  - **Example:** `python scripts/migrate_assets_to_versioned_bucket.py --version 2026-03-24 --dest-bucket gs://levante-bench --dest-root-prefix corpus_data --dry-run`
 - `download_results_from_drive.py`
   - **Purpose:** download shared benchmark result folders from Google Drive
   - **Inputs:** `--folder-url`, `--output-dir`

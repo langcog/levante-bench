@@ -281,6 +281,8 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
         print(f"  Models: {', '.join(model_ids)}")
     if args.include_numberline:
         print("  Egma-math override: include Number Line items")
+    if args.prompt_language and args.prompt_language != "en":
+        print(f"  Prompt language override: {args.prompt_language}")
 
     cfg = OmegaConf.create(
         {
@@ -291,6 +293,7 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
             "output_dir": str(output_dir),
             "data_root": str(data_root),
             "task_overrides": {
+                "__all__": {"prompt_language": str(args.prompt_language or "en")},
                 "egma-math": {"include_numberline": bool(args.include_numberline)},
             },
         }
@@ -409,6 +412,11 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
         "--include-numberline",
         action="store_true",
         help="For egma-math in runner path, include Number Line trial types from manifest.",
+    )
+    pe.add_argument(
+        "--prompt-language",
+        default="en",
+        help="Prompt language code from translations CSV (e.g., en, de, es-CO).",
     )
 
 

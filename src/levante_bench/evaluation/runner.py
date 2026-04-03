@@ -133,7 +133,13 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 continue
 
             # Load task dataset
-            overrides = task_overrides.get(task_id, {}) if isinstance(task_overrides, dict) else {}
+            global_overrides = task_overrides.get("__all__", {}) if isinstance(task_overrides, dict) else {}
+            task_specific_overrides = task_overrides.get(task_id, {}) if isinstance(task_overrides, dict) else {}
+            overrides = {}
+            if isinstance(global_overrides, dict):
+                overrides.update(global_overrides)
+            if isinstance(task_specific_overrides, dict):
+                overrides.update(task_specific_overrides)
             task_def = get_task_def(task_id, version, data_root=data_root, task_overrides=overrides)
             if task_def is None:
                 print(f"  Skip {task_id}: no task def for version={version}", file=sys.stderr)

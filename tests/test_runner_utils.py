@@ -78,3 +78,62 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
     assert captured["keep_me"] == 99
     assert captured["loaded"] is True
     assert "dummy" in results
+
+
+def test_run_eval_applies_global_and_task_specific_overrides(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    captured_overrides: dict[str, dict] = {}
+
+    class DummyModel:
+        def __init__(self, model_name: str, device: str) -> None:
+            pass
+
+        def load(self) -> None:
+            pass
+
+    monkeypatch.setattr(
+        runner,
+        "load_model_config",
+        lambda model_name: OmegaConf.create(
+            {
+                "hf_name": "base/hf-model",
+                "size": "tiny",
+                "max_new_tokens": 64,
+                "use_json_format": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    monkeypatch.setattr(runner, "load_task_config", lambda task_id: {"context_type": "none"})
+    monkeypatch.setattr(runner, "load_cache", lambda path: {})
+    monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
+
+    def _capture_get_task_def(task_id, version, data_root=None, task_overrides=None):
+        captured_overrides[task_id] = dict(task_overrides or {})
+        return None
+
+    monkeypatch.setattr(runner, "get_task_def", _capture_get_task_def)
+
+    cfg = OmegaConf.create(
+        {
+            "data_root": str(tmp_path / "data"),
+            "output_dir": str(tmp_path / "out"),
+            "version": "unit-test",
+            "device": "cpu",
+            "models": ["dummy"],
+            "tasks": ["trog"],
+            "task_overrides": {
+                "__all__": {"prompt_language": "de"},
+                "trog": {"include_numberline": False},
+            },
+        }
+    )
+
+    runner.run_eval(cfg)
+
+    assert captured_overrides["trog"] == {
+        "prompt_language": "de",
+        "include_numberline": False,
+    }

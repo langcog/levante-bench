@@ -55,6 +55,7 @@ def get_task_def(
         context_type=cfg.get("context_type", "none"),
         option_type=cfg.get("option_type", "text"),
         include_numberline=bool(overrides.get("include_numberline", cfg.get("include_numberline", False))),
+        prompt_language=str(overrides.get("prompt_language", cfg.get("prompt_language", "en"))),
     )
 
 

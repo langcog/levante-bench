@@ -54,11 +54,13 @@ class MatrixReasoningDataset(VLMDataset):
                 )
             option_image_paths.append(str(path))
 
-        prompt_phrase = str(row.get("prompt_phrase", ""))
-        prompt = str(row.get("full_prompt", ""))
-        if prompt in {"NA", "nan"}:
-            prompt = str(row.get("prompt", ""))
-        prompt = prompt.replace("<prompt_phrase>", prompt_phrase)
+        prompt_template = row.get("full_prompt", "")
+        if str(prompt_template) in {"NA", "nan"}:
+            prompt_template = row.get("prompt", "")
+        prompt = self.build_localized_prompt(
+            prompt_template=prompt_template,
+            prompt_phrase=row.get("prompt_phrase", ""),
+        )
 
         context_image_paths = []
         if "<prompt_image>" in prompt:

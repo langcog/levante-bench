@@ -97,9 +97,10 @@ class VocabDataset(VLMDataset):
             option_image_paths.append(str(path))
 
         # Build prompt from template — keep <imageN> placeholders for interleaving
-        prompt_phrase = row["prompt_phrase"]
-        prompt = row["full_prompt"]
-        prompt = prompt.replace("<prompt_phrase>", str(prompt_phrase))
+        prompt = self.build_localized_prompt(
+            prompt_template=row["full_prompt"],
+            prompt_phrase=row["prompt_phrase"],
+        )
 
         return {
             "trial_id": row["item_uid"],

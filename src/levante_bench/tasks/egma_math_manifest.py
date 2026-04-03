@@ -248,13 +248,11 @@ class EgmaMathDataset(VLMDataset):
         # Build prompt from template.
         # egma-math uses <optionX> placeholders (not <imageX>) so we must substitute option text.
         # Some rows also include <prompt_image> (context image), which we convert to <image0>.
-        prompt_phrase = row.get("prompt_phrase")
-        prompt_phrase_s = str(prompt_phrase)
-        if prompt_phrase_s in {"NA", "nan"}:
-            prompt_phrase_s = ""
-        prompt = str(row["full_prompt"])
-        if prompt in {"", "NA", "nan"}:
-            prompt = str(row.get("prompt", "")).strip()
+        prompt_phrase_s = self.translate_text(row.get("prompt_phrase"))
+        prompt_template = row["full_prompt"]
+        if str(prompt_template) in {"", "NA", "nan"}:
+            prompt_template = row.get("prompt", "")
+        prompt = self.translate_text(prompt_template).strip()
 
         context_image_paths = []
         if is_numberline and include_numberline:

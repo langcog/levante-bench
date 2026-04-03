@@ -59,11 +59,13 @@ class VocabDataset(VLMDataset):
         self.image_index = _build_image_index(self.image_dir)
 
     def _load_manifest(self) -> pd.DataFrame:
-        """Load and filter manifest rows for vocab task."""
+        """Load vocab rows from manifest.
+
+        Keep all vocab trial types by default (test + practice + catch).
+        """
         manifest_path = self.data_root / "assets" / "manifest.csv"
         df = pd.read_csv(manifest_path)
         df = df[df["task"] == "vocab"]
-        df = df[df["trial_type"] == "test"]
         return df.reset_index(drop=True)
 
     def __len__(self):

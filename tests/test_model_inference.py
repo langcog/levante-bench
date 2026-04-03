@@ -9,8 +9,17 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
+
+import pytest
+
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("LEVANTE_RUN_INTEGRATION"),
+    reason="Integration-only model inference test. Set LEVANTE_RUN_INTEGRATION=1 to run.",
+)
 
 
 def run_test(name, fn):

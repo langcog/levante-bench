@@ -10,9 +10,17 @@ Usage:
 """
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("LEVANTE_RUN_INTEGRATION"),
+    reason="Integration-style dataset test. Set LEVANTE_RUN_INTEGRATION=1 to run.",
+)
 
 REQUIRED_FIELDS = {
     "trial_id": str,

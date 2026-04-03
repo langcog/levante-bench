@@ -36,7 +36,7 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
    - `scripts/validate_r.sh --run-comparison-smoke --version 2026-03-24`  # optional R comparison smoke test
 5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with IRT item difficulty) and D_KL (by ability bin) to `results/comparison/`.
 
-For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Example: `results/<version>/qwen35_2B-de/`.
+For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
 
 ## Experiment YAML mode (eval-style)
 

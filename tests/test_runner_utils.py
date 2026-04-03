@@ -1,6 +1,7 @@
 """Unit tests for runner utility behavior."""
 
 from __future__ import annotations
+import json
 from pathlib import Path
 
 from omegaconf import OmegaConf
@@ -78,6 +79,10 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
     assert captured["keep_me"] == 99
     assert captured["loaded"] is True
     assert "dummy" in results
+    metadata_path = results["dummy"].parent / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert metadata["model_label"] == "dummy-tiny"
+    assert metadata["prompt_language"] == "en"
 
 
 def test_run_eval_applies_global_and_task_specific_overrides(
@@ -179,4 +184,4 @@ def test_run_eval_appends_non_english_language_suffix_to_model_dir(
     )
 
     results = runner.run_eval(cfg)
-    assert results["dummy"].parent.name == "dummy_tiny-de"
+    assert results["dummy"].parent.name == "dummy-tiny-de"

@@ -1,6 +1,7 @@
 """Run evaluation: for each model, evaluate all tasks, write results."""
 
 import inspect
+import json
 import sys
 from pathlib import Path
 
@@ -42,6 +43,13 @@ def _results_language_suffix(task_overrides: dict) -> str:
     return f"-{code}"
 
 
+def _prompt_language(task_overrides: dict) -> str:
+    global_overrides = task_overrides.get("__all__", {})
+    if not isinstance(global_overrides, dict):
+        return "en"
+    return str(global_overrides.get("prompt_language") or "en")
+
+
 def resolve_device(device: str) -> str:
     """Resolve auto device selection with safe CUDA -> CPU fallback."""
     choice = (device or "auto").strip().lower()
@@ -77,6 +85,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
     if not isinstance(task_overrides, dict):
         task_overrides = {}
     lang_suffix = _results_language_suffix(task_overrides)
+    prompt_language = _prompt_language(task_overrides)
     results = {}
 
     for model_entry in cfg.models:
@@ -99,8 +108,8 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
         model_cfg.update(model_overrides)
         model_cfg = OmegaConf.to_container(OmegaConf.create(model_cfg), resolve=True)
 
-        size = model_cfg.get("size", "")
-        model_label = f"{model_name}_{size}" if size else model_name
+        size = str(model_cfg.get("size", "")).strip()
+        model_label = f"{model_name}-{size}" if size else model_name
         model_label = f"{model_label}{lang_suffix}"
 
         # Load model once for all tasks
@@ -140,6 +149,20 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
         model.load()
 
         model_dir = output_base / version / model_label
+        model_dir.mkdir(parents=True, exist_ok=True)
+        metadata = {
+            "dataset_version": version,
+            "model": model_name,
+            "model_size": size,
+            "model_label": model_label,
+            "prompt_language": prompt_language,
+            "device": device,
+            "tasks": [str(t) for t in cfg.tasks],
+        }
+        (model_dir / "metadata.json").write_text(
+            json.dumps(metadata, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
         cache_path = model_dir / "cache" / "responses.json"
         cache = load_cache(cache_path)
         task_accuracies = {}

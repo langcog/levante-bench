@@ -272,7 +272,7 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
     data_root = _project_root() / "data"
     print(
         f"Running evaluation: version={version}, device={device}, "
-        f"output_base={output_dir} (per-model: {output_dir / version}/<model>_<size>/)"
+        f"output_base={output_dir} (per-model: {output_dir / version}/<model>-<size>[-<lang>]/)"
     )
     print(f"  Data root: {data_root}")
     if task_ids:

@@ -235,11 +235,14 @@ class VLMModel:
                 return answer, reason
 
         # 3. Common natural-language patterns.
+        # Require punctuation/end-of-text after the label to avoid false
+        # positives like "The correct answer is A bird."
+        label_suffix = r"(?=\s*(?:[)\].,:;!?]|$))"
         phrase_patterns = (
-            r"\b(?:the\s+)?(?:correct\s+)?answer\s+is\s+(?P<label>[A-Z])\b",
-            r"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z])\b",
-            r"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z])\b",
-            r"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z])\b",
+            rf"\b(?:the\s+)?(?:correct\s+)?answer\s+is\s+(?P<label>[A-Z]){label_suffix}",
+            rf"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z]){label_suffix}",
+            rf"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
+            rf"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
         )
         for pattern in phrase_patterns:
             m = re.search(pattern, text, re.IGNORECASE)

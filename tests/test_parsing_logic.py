@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 
 from levante_bench.models.base import VLMModel
+from levante_bench.models.internvl35 import InternVL35Model
+from levante_bench.models.qwen35 import Qwen35Model
 
 
 @pytest.mark.parametrize(
@@ -19,6 +21,9 @@ from levante_bench.models.base import VLMModel
         ("my answer=B", ["A", "B", "C", "D"], "B"),
         ("B.", ["A", "B", "C", "D"], "B"),
         ("B) The largest one", ["A", "B", "C", "D"], "B"),
+        ("The correct answer is A bird.", ["A", "B", "C", "D"], None),
+        ("Category B is wrong.", ["A", "B", "C", "D"], None),
+        ("I think the answer might be A bird", ["A", "B", "C", "D"], None),
         ("None of the above", ["A", "B", "C", "D"], None),
         ("", ["A", "B", "C", "D"], None),
     ],
@@ -60,3 +65,24 @@ def test_parse_numeric_answer_modes(
         assert value is None
     else:
         assert value == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("model_cls", [Qwen35Model, InternVL35Model])
+def test_model_specific_parse_answer_prefers_last_sentence(model_cls) -> None:
+    model = model_cls(model_name="dummy")
+    label, reason = model.parse_answer(
+        "The shape looks like a circle. B.",
+        ["A", "B", "C", "D"],
+    )
+    assert label == "B"
+    assert reason in {"", "B"}
+
+
+@pytest.mark.parametrize("model_cls", [Qwen35Model, InternVL35Model])
+def test_model_specific_parse_answer_reverse_scan_handles_conflict(model_cls) -> None:
+    model = model_cls(model_name="dummy")
+    label, _ = model.parse_answer(
+        "Option B is wrong. Therefore A",
+        ["A", "B", "C", "D"],
+    )
+    assert label == "A"

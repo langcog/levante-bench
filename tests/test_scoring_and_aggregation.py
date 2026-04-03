@@ -37,6 +37,25 @@ class MockModel(VLMModel):
         return [{"role": "user", "content": [{"type": "text", "text": prompt_text}]}]
 
 
+class PromptCapturingModel(MockModel):
+    def __init__(self, raw_output: str) -> None:
+        super().__init__(raw_output=raw_output)
+        self.last_prompt_text: str | None = None
+
+    def generate(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None = None,
+        max_new_tokens: int = 64,
+    ) -> str:
+        self.last_prompt_text = prompt_text
+        return super().generate(
+            prompt_text=prompt_text,
+            image_paths=image_paths,
+            max_new_tokens=max_new_tokens,
+        )
+
+
 def test_evaluate_trial_label_is_correct_true() -> None:
     model = MockModel('{"answer":"B"}')
     trial = {
@@ -88,6 +107,24 @@ def test_evaluate_trial_slider_clamps_position_to_unit_interval() -> None:
     assert result["is_correct"] is True
 
 
+def test_evaluate_trial_label_without_json_format_instruction() -> None:
+    model = PromptCapturingModel("B")
+    model.use_json_format = False
+    trial = {
+        "trial_id": "t4",
+        "item_uid": "u4",
+        "prompt": "choose one",
+        "option_labels": ["A", "B", "C", "D"],
+        "correct_label": "B",
+        "answer_format": "label",
+    }
+
+    result = model.evaluate_trial(trial)
+    assert model.last_prompt_text == "choose one"
+    assert result["predicted_label"] == "B"
+    assert result["is_correct"] is True
+
+
 def _read_rows(path: Path) -> list[dict[str, str]]:
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -109,6 +146,8 @@ def test_write_math_by_type_outputs_expected_metrics(tmp_path: Path) -> None:
     assert out is not None and out.exists()
 
     rows = _read_rows(out)
+    assert rows[0]["trial_type"] == "algebra"
+    assert rows[1]["trial_type"] == "geometry"
     by_type = {r["trial_type"]: r for r in rows}
 
     # algebra: 1/2 correct, parse 1/2, chance 1/4

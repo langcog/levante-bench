@@ -46,8 +46,22 @@ def _run_experiment_style_args(cli_args: list[str]) -> int:
         return 1
 
     cfg = load_experiment(experiment_path=experiment_path, cli_overrides=overrides)
+
+    # If models are dicts (new format), go directly to run_eval
+    models_raw = cfg.get("models") or []
+    has_dict_models = any(not isinstance(m, str) for m in models_raw)
+    if has_dict_models:
+        from levante_bench.evaluation.runner import run_eval
+        results = run_eval(cfg)
+        if not results:
+            print("No results produced.", file=sys.stderr)
+            return 1
+        for model_id, path in results.items():
+            print(f"  {model_id}: {path}")
+        return 0
+
     tasks = [str(t) for t in (cfg.get("tasks") or [])]
-    models = [str(m) for m in (cfg.get("models") or [])]
+    models = [str(m) for m in models_raw]
     version = str(cfg.get("version") or "current")
     device = resolve_device(str(cfg.get("device") or "auto"))
     output_dir = str(cfg.get("output_dir") or "results")
@@ -246,18 +260,29 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
 
     task_ids = args.task if args.task else None
     model_ids = args.model if args.model else None
-    version = args.version or "current"
+    from levante_bench.config.defaults import detect_data_version
+
+    version_arg = args.version or "current"
+    if str(version_arg).strip().lower() == "current":
+        version = detect_data_version(_project_root() / "data")
+    else:
+        version = str(version_arg)
     device = resolve_device(args.device)
-    output_dir = Path(args.output_dir) if args.output_dir else None
-    if output_dir is None:
-        output_dir = _project_root() / "results" / version
+    output_dir = Path(args.output_dir) if args.output_dir else _project_root() / "results"
     data_root = _project_root() / "data"
-    print(f"Running evaluation: version={version}, device={device}, output={output_dir}")
+    print(
+        f"Running evaluation: version={version}, device={device}, "
+        f"output_base={output_dir} (per-model: {output_dir / version}/<model>-<size>[-<lang>]/)"
+    )
     print(f"  Data root: {data_root}")
     if task_ids:
         print(f"  Tasks: {', '.join(task_ids)}")
     if model_ids:
         print(f"  Models: {', '.join(model_ids)}")
+    if args.include_numberline:
+        print("  Egma-math override: include Number Line items")
+    if args.prompt_language and args.prompt_language != "en":
+        print(f"  Prompt language override: {args.prompt_language}")
 
     cfg = OmegaConf.create(
         {
@@ -267,6 +292,10 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
             "device": device,
             "output_dir": str(output_dir),
             "data_root": str(data_root),
+            "task_overrides": {
+                "__all__": {"prompt_language": str(args.prompt_language or "en")},
+                "egma-math": {"include_numberline": bool(args.include_numberline)},
+            },
         }
     )
 
@@ -379,6 +408,16 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
     pe.add_argument("--version", default="current", help="Data/asset version")
     pe.add_argument("--device", default="auto", help="Device for model: auto|cpu|cuda")
     pe.add_argument("--output-dir", help="Output directory (default: results/<version>)")
+    pe.add_argument(
+        "--include-numberline",
+        action="store_true",
+        help="For egma-math in runner path, include Number Line trial types from manifest.",
+    )
+    pe.add_argument(
+        "--prompt-language",
+        default="en",
+        help="Prompt language code from translations CSV (e.g., en, de, es-CO).",
+    )
 
 
 def add_run_workflow_parser(sub: argparse._SubParsersAction) -> None:

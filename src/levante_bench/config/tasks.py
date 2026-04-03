@@ -13,7 +13,12 @@ def _safe_task_id(task_id: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "_", task_id)
 
 
-def get_task_def(task_id: str, version: str, data_root: Path | None = None) -> Optional[TaskDef]:
+def get_task_def(
+    task_id: str,
+    version: str,
+    data_root: Path | None = None,
+    task_overrides: dict | None = None,
+) -> Optional[TaskDef]:
     """Build TaskDef from configs/tasks/<task_id>.yaml with paths resolved."""
     cfg = load_task_config(task_id)
     if cfg is None:
@@ -35,6 +40,8 @@ def get_task_def(task_id: str, version: str, data_root: Path | None = None) -> O
         manifest_path = None
         human_path = None
 
+    overrides = task_overrides or {}
+
     return TaskDef(
         task_id=cfg.task_id,
         benchmark_name=cfg.get("benchmark_name", cfg.task_id),
@@ -47,6 +54,8 @@ def get_task_def(task_id: str, version: str, data_root: Path | None = None) -> O
         corpus_file=cfg.get("corpus_file"),
         context_type=cfg.get("context_type", "none"),
         option_type=cfg.get("option_type", "text"),
+        include_numberline=bool(overrides.get("include_numberline", cfg.get("include_numberline", False))),
+        prompt_language=str(overrides.get("prompt_language", cfg.get("prompt_language", "en"))),
     )
 
 

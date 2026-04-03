@@ -1,0 +1,9 @@
+name: gemini_pro
+hf_name: gemini-2.5-pro
+max_new_tokens: 128
+use_json_format: true
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

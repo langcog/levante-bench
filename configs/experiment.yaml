@@ -1,19 +1,19 @@
 # Experiment config — references model and task configs to run.
 
 models:
-  - smolvlm2
+  - name: smolvlm2
+    size: 2.2B
+    use_json_format: false
 
 tasks:
   - egma-math
+  - matrix-reasoning
+  - mental-rotation
   - theory-of-mind
+  - trog
   - vocab
 
 data_root: data
 output_dir: results
 version: 2026-03-24
-device: cpu
-
-# Optional smoke caps (useful while iterating):
-# max_items_math: 2
-# max_items_tom: 2
-# max_items_vocab: 8
+device: cuda

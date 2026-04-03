@@ -1,0 +1,20 @@
+# Aquila-VL model config.
+# Supports specific checkpoint revisions via the optional `revision` field.
+# Intermediate checkpoints are hosted as subfolders under:
+#   BAAI/Aquila-VL-2B-Intermediate/stage2-a-llava-qwen
+#   BAAI/Aquila-VL-2B-Intermediate/stage2-b-llava-qwen
+#   BAAI/Aquila-VL-2B-Intermediate/stage2-c-llava-qwen
+#   BAAI/Aquila-VL-2B-Intermediate/stage3-llava-qwen
+
+name: aquila_vl
+hf_name: BAAI/Aquila-VL-2B-Intermediate
+max_new_tokens: 128
+dtype: float16
+conv_template: qwen_1_5
+checkpoint_subdir: stage3-llava-qwen
+revision: null
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

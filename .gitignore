@@ -1,10 +1,17 @@
 # Data and secrets (do not commit)
 # Leading / = only repo-root data/ (not src/levante_bench/data/ package code)
-/data/
+/data/*
+!/data/assets/
+/data/assets/*
+!/data/assets/manifest.csv
 .secrets
+.env
+.env.*
+!.env.example
 
 # Generated evaluation artifacts
 /results/
+/scripts/results/
 /screenshots/
 
 # Python
@@ -31,6 +38,7 @@ wheels/
 
 # Virtual environments
 .venv/
+.venv-aquila/
 venv/
 ENV/
 
@@ -49,6 +57,7 @@ Thumbs.db
 
 # Testing
 .pytest_cache/
+.hypothesis/
 .coverage
 htmlcov/
 

@@ -1,12 +1,13 @@
 # SmolVLM2 model config.
+# Available sizes: 256M, 500M, 2.2B
 
 name: smolvlm2
-hf_name: HuggingFaceTB/SmolVLM2-${size}-Video-Instruct
+hf_name: HuggingFaceTB/SmolVLM2-${size}-Instruct
 size: 256M  # 256M | 500M | 2.2B
 max_new_tokens: 64
-dtype: float32
+dtype: bfloat16
+use_json_format: false
 
-# What input types this model supports
 capabilities:
   - text_only
   - single_image

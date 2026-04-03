@@ -1,6 +1,7 @@
 # Dev dependencies (install after requirements.txt)
 -r requirements.txt
 pytest==8.3.3
+hypothesis
 ruff==0.6.9
 black==24.10.0
 isort==5.13.2

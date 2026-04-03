@@ -1,0 +1,15 @@
+# Aquila-VL intermediate checkpoint model config.
+# Uses the same adapter as `aquila_vl`, but targets a specific stage checkpoint.
+
+name: aquila_vl_checkpoint
+hf_name: BAAI/Aquila-VL-2B-Intermediate
+checkpoint_subdir: stage2-c-llava-qwen
+max_new_tokens: 128
+dtype: float16
+conv_template: qwen_1_5
+revision: null
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

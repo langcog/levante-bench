@@ -11,9 +11,19 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
 - `download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
-  - **Inputs:** `--version`
+  - **Inputs:** `--version` (or auto-detect latest bucket version prefix), `--workers`
   - **Outputs:** `data/assets/<version>/...`
-  - **Example:** `python scripts/download_levante_assets.py --version 2026-03-24`
+  - **Example:** `python scripts/download_levante_assets.py --version hackathon --workers 24`
+- `migrate_assets_to_versioned_bucket.py`
+  - **Purpose:** copy corpus/visual/manifest from source bucket into versioned destination prefix
+  - **Inputs:** `--version`, `--dest-bucket`, optional `--dest-root-prefix` (default `corpus_data`), optional `--task`, `--dry-run`
+  - **Outputs:** `gs://<dest-bucket>/<dest-root-prefix>/<version>/...` including `manifest.csv` and `translations/item-bank-translations.csv` when present
+  - **Example:** `python scripts/migrate_assets_to_versioned_bucket.py --version 2026-03-24 --dest-bucket gs://levante-bench --dest-root-prefix corpus_data --dry-run`
+- `download_results_from_drive.py`
+  - **Purpose:** download shared benchmark result folders from Google Drive
+  - **Inputs:** `--folder-url`, `--output-dir`
+  - **Outputs:** synced folders under `results/`
+  - **Example:** `python scripts/download_results_from_drive.py --output-dir results`
 - `run_benchmark_v1.py`
   - **Purpose:** run the v1 benchmark bundle (math + ToM robustness)
   - **Inputs:** `--data-version`, `--model-id`, `--device`, `--max-items-*`
@@ -116,6 +126,21 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--results-root`, `--prompts-root`, `--limit`
   - **Outputs:** console summary tables
   - **Example:** `python scripts/list_benchmark_results.py --limit 20`
+- `build_model_comparison_report.py`
+  - **Purpose:** collect all `summary.csv` files and export detailed model comparison JSON
+  - **Inputs:** `--results-root`, `--output-json`
+  - **Outputs:** JSON with per-run metrics and per-model aggregated stats
+  - **Example:** `python scripts/build_model_comparison_report.py --results-root results --output-json results/model-comparison-report.json`
+- `plot_model_comparison_lines.py`
+  - **Purpose:** plot line chart of task accuracies by model from the comparison JSON
+  - **Inputs:** `--report-json`, `--output`, `--min-tasks`
+  - **Outputs:** PNG line chart (tasks on x-axis, accuracy on y-axis)
+  - **Example:** `python scripts/plot_model_comparison_lines.py --report-json results/model-comparison-report.json --output results/model-comparison-line-chart.png`
+- `plot_aquila_stages.py`
+  - **Purpose:** compare Aquila intermediate stages (`stage2a/b/c`, `stage3`) and final production performance by task
+  - **Inputs:** `--results-root`, `--output`
+  - **Outputs:** PNG with task-wise stage lines + mean-accuracy bars
+  - **Example:** `python scripts/analysis/plot_aquila_stages.py --results-root scripts/results/aquila-checkpoints/2026-03-29`
 
 ## Notes
 

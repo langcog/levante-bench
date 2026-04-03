@@ -1,0 +1,21 @@
+# Runner suite: TinyLLaVA 3.1B on all benchmark tasks.
+
+models:
+  - name: tinyllava
+    size: 3.1B
+    hf_name: tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B
+    max_new_tokens: 32
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: current
+device: cuda

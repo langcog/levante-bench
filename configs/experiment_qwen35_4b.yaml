@@ -1,0 +1,21 @@
+# Runner experiment: Qwen3.5-VL 4B (next size up from 2B).
+# Run: python -m levante_bench.cli experiment=configs/experiment_qwen35_4b.yaml device=auto
+
+models:
+  - name: qwen35
+    size: 4B
+    max_new_tokens: 512
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: current
+device: cuda

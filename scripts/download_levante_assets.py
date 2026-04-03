@@ -7,12 +7,14 @@ Version defaults to today (YYYY-MM-DD). Idempotent.
 
 import argparse
 import csv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import os
 import re
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -20,6 +22,7 @@ import requests
 # Retry transient connection errors
 DOWNLOAD_RETRIES = 4
 DOWNLOAD_RETRY_BACKOFF = 2.0  # seconds, doubled each retry
+VERSION_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # Resolve package from script: repo root is parent of scripts/
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -46,12 +49,38 @@ except ModuleNotFoundError:
         return _REPO_ROOT / "src" / "levante_bench" / "config" / "task_name_mapping.csv"
 
     def get_assets_base_url() -> str:
-        return os.environ.get("LEVANTE_ASSETS_BUCKET_URL", "https://storage.googleapis.com/levante-assets-prod")
+        return os.environ.get(
+            "LEVANTE_ASSETS_BUCKET_URL",
+            "https://storage.googleapis.com/levante-bench/corpus_data",
+        )
 
 
-def _bucket_name_from_base(base: str) -> str:
-    """e.g. https://storage.googleapis.com/levante-assets-prod -> levante-assets-prod"""
-    return base.rstrip("/").split("/")[-1]
+def _bucket_and_base_prefix_from_base(base: str) -> tuple[str, str]:
+    """Parse bucket name and optional object-prefix from a GCS HTTP base URL.
+
+    Examples:
+    - https://storage.googleapis.com/levante-assets-prod
+      -> ("levante-assets-prod", "")
+    - https://storage.googleapis.com/levante-bench/corpus_data
+      -> ("levante-bench", "corpus_data")
+    """
+    parsed = urlparse(base.rstrip("/"))
+    host = parsed.netloc
+    parts = [p for p in parsed.path.strip("/").split("/") if p]
+
+    if host == "storage.googleapis.com":
+        if not parts:
+            raise ValueError(f"Invalid bucket base URL (missing bucket path): {base}")
+        return parts[0], "/".join(parts[1:])
+
+    if host.endswith(".storage.googleapis.com"):
+        bucket = host.split(".storage.googleapis.com")[0]
+        return bucket, "/".join(parts)
+
+    # Fallback for non-standard forms.
+    if parts:
+        return parts[0], "/".join(parts[1:])
+    raise ValueError(f"Could not parse bucket from base URL: {base}")
 
 
 def _list_bucket_keys(bucket_name: str, prefix: str) -> list[str]:
@@ -80,6 +109,75 @@ def _list_bucket_keys(bucket_name: str, prefix: str) -> list[str]:
     return keys
 
 
+def _list_bucket_prefixes(bucket_name: str, parent_prefix: str = "") -> list[str]:
+    """List child prefixes under parent_prefix in a public bucket via XML API."""
+    url = f"https://{bucket_name}.storage.googleapis.com"
+    ns = "http://doc.s3.amazonaws.com/2006-03-01"
+    parent = parent_prefix.strip("/")
+    params: dict[str, str] = {"list-type": "2", "delimiter": "/"}
+    if parent:
+        params["prefix"] = f"{parent}/"
+    prefixes: set[str] = set()
+    while True:
+        r = requests.get(url, params=params, timeout=30)
+        r.raise_for_status()
+        root = ET.fromstring(r.content)
+        for cp in root.findall(f".//{{{ns}}}CommonPrefixes"):
+            p = cp.find(f"{{{ns}}}Prefix")
+            if p is not None and p.text:
+                raw = p.text.strip("/")
+                if parent and raw.startswith(f"{parent}/"):
+                    child = raw[len(parent) + 1 :]
+                else:
+                    child = raw
+                if child:
+                    prefixes.add(child.split("/")[0])
+        truncated = root.find(f".//{{{ns}}}IsTruncated")
+        if truncated is not None and truncated.text == "true":
+            next_token = root.find(f".//{{{ns}}}NextContinuationToken")
+            if next_token is not None and next_token.text:
+                params = {
+                    "list-type": "2",
+                    "delimiter": "/",
+                    "continuation-token": next_token.text,
+                }
+            else:
+                break
+        else:
+            break
+    return sorted(prefixes)
+
+
+def _detect_latest_bucket_version(bucket_name: str, base_prefix: str = "") -> str:
+    """Detect a default version prefix in bucket.
+
+    Resolution:
+    1) If there are YYYY-MM-DD prefixes, choose the latest by lexical sort.
+    2) Otherwise, if there is exactly one non-hidden prefix, choose it.
+    3) Otherwise require explicit --version / LEVANTE_DATA_VERSION.
+    """
+    prefixes = _list_bucket_prefixes(bucket_name, parent_prefix=base_prefix)
+    versions = sorted(p for p in prefixes if VERSION_RE.match(p))
+    if versions:
+        return versions[-1]
+
+    non_hidden = sorted(p for p in prefixes if p and not p.startswith("."))
+    if len(non_hidden) == 1:
+        return non_hidden[0]
+
+    if not non_hidden:
+        raise RuntimeError(
+            "No version prefixes found in source bucket. "
+            "Pass --version explicitly or migrate assets into versioned prefixes."
+        )
+    raise RuntimeError(
+        "Multiple non-date version prefixes found in source bucket: "
+        f"{', '.join(non_hidden[:10])}"
+        + ("..." if len(non_hidden) > 10 else "")
+        + ". Pass --version explicitly or set LEVANTE_DATA_VERSION."
+    )
+
+
 def _download_file(base_url: str, key: str, dest: Path) -> None:
     url = f"{base_url.rstrip('/')}/{key}"
     parent = dest.parent
@@ -103,6 +201,46 @@ def _download_file(base_url: str, key: str, dest: Path) -> None:
                 time.sleep(DOWNLOAD_RETRY_BACKOFF * (2**attempt))
             continue
     raise last_err
+
+
+def _download_many(
+    base_url: str,
+    keys: list[str],
+    visual_local_dir: Path,
+    prefix: str,
+    workers: int,
+) -> tuple[int, int]:
+    """Download bucket keys in parallel. Returns (downloaded, skipped)."""
+    to_download: list[tuple[str, Path]] = []
+    skipped = 0
+    for key in keys:
+        rel = key[len(prefix):] if key.startswith(prefix) else key
+        rel = rel.rstrip("/")
+        if not rel:
+            continue  # directory placeholder key
+        local_path = visual_local_dir / rel
+        if local_path.exists():
+            skipped += 1
+            continue
+        to_download.append((key, local_path))
+
+    if not to_download:
+        return 0, skipped
+
+    downloaded = 0
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        futures = [
+            pool.submit(_download_file, base_url, key, local_path)
+            for key, local_path in to_download
+        ]
+        total = len(futures)
+        for i, fut in enumerate(as_completed(futures), start=1):
+            fut.result()
+            downloaded += 1
+            if i % 200 == 0 or i == total:
+                print(f"    downloaded {i}/{total} visual files...")
+
+    return downloaded, skipped
 
 
 def _load_task_mapping(path: Path) -> list[dict]:
@@ -178,12 +316,19 @@ def run(
     data_root: Path | None = None,
     base_url: str | None = None,
     check_completeness: bool = False,
+    workers: int = 8,
 ) -> None:
-    from datetime import datetime
-
     data_root = data_root or _project_root() / "data"
     base_url = base_url or get_assets_base_url()
-    version = version or datetime.now().strftime("%Y-%m-%d")
+    env_version = os.environ.get("LEVANTE_DATA_VERSION", "").strip()
+    bucket_name, base_prefix = _bucket_and_base_prefix_from_base(base_url)
+    version = version or env_version or _detect_latest_bucket_version(
+        bucket_name, base_prefix=base_prefix
+    )
+    version_prefix = f"{base_prefix}/{version}" if base_prefix else version
+    # Keys passed to _download_file are relative to base_url, so they should
+    # never repeat base_prefix.
+    download_version_prefix = version
     assets_dir = data_root / "assets" / version
     corpus_dir = assets_dir / "corpus"
     visual_dir = assets_dir / "visual"
@@ -197,38 +342,70 @@ def run(
     if not tasks:
         return
 
-    bucket_name = _bucket_name_from_base(base_url)
     index: dict[str, dict] = {}  # item_uid -> { task, internal_name, corpus_row, image_paths }
+
+    # Optional versioned manifest snapshot; update compatibility path used by loaders.
+    manifest_key = f"{download_version_prefix}/manifest.csv"
+    manifest_snapshot = assets_dir / "manifest.csv"
+    manifest_compat = data_root / "assets" / "manifest.csv"
+    try:
+        _download_file(base_url, manifest_key, manifest_snapshot)
+        _download_file(base_url, manifest_key, manifest_compat)
+        print(f"Downloaded manifest: {manifest_key}")
+    except requests.HTTPError:
+        print(
+            f"Warning: {manifest_key} not found in bucket; keeping existing "
+            f"{manifest_compat} if present."
+        )
+
+    # Optional translations snapshot.
+    translations_key = (
+        f"{download_version_prefix}/translations/item-bank-translations.csv"
+    )
+    translations_out = (
+        assets_dir / "translations" / "item-bank-translations.csv"
+    )
+    try:
+        _download_file(base_url, translations_key, translations_out)
+        print(f"Downloaded translations: {translations_key}")
+    except requests.HTTPError:
+        print(
+            f"Warning: {translations_key} not found in bucket; "
+            "skipping translations download."
+        )
 
     for t in tasks:
         internal_name = t["internal_name"]
         corpus_file = t["corpus_file"]
         # 1) Corpus CSV
-        corpus_key = f"corpus/{internal_name}/{corpus_file}"
+        corpus_key = f"{download_version_prefix}/corpus/{internal_name}/{corpus_file}"
         out_corpus = corpus_dir / internal_name / corpus_file
         if not out_corpus.exists():
             _download_file(base_url, corpus_key, out_corpus)
         df = pd.read_csv(out_corpus)
         # 2) Visual assets under visual/{internal_name}/ (always download, even if corpus has no item_uid)
-        prefix = f"visual/{internal_name}/"
+        list_prefix = f"{version_prefix}/visual/{internal_name}/"
+        download_prefix = f"{download_version_prefix}/visual/{internal_name}/"
         try:
-            keys = _list_bucket_keys(bucket_name, prefix)
+            keys = _list_bucket_keys(bucket_name, list_prefix)
         except Exception:
             keys = []
+        # _download_file receives keys relative to base_url.
+        if base_prefix:
+            keys = [
+                key[len(base_prefix) + 1 :]
+                if key.startswith(f"{base_prefix}/")
+                else key
+                for key in keys
+            ]
         visual_local_dir = visual_dir / internal_name
-        n_downloaded = 0
-        n_skipped = 0
-        for key in keys:
-            rel = key[len(prefix) :] if key.startswith(prefix) else key
-            rel = rel.rstrip("/")
-            if not rel:
-                continue  # skip directory placeholder keys (would create egma-math as a file)
-            local_path = visual_local_dir / rel
-            if not local_path.exists():
-                _download_file(base_url, key, local_path)
-                n_downloaded += 1
-            else:
-                n_skipped += 1
+        n_downloaded, n_skipped = _download_many(
+            base_url=base_url,
+            keys=keys,
+            visual_local_dir=visual_local_dir,
+            prefix=download_prefix,
+            workers=workers,
+        )
         print(f"  {internal_name}: {n_downloaded} downloaded, {n_skipped} already present ({len(keys)} keys in bucket)")
         # 3) Build index rows from corpus (only when corpus has item_uid)
         if "item_uid" not in df.columns:
@@ -289,13 +466,33 @@ def run(
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Download LEVANTE assets and build item_uid index.")
-    p.add_argument("--version", default=None, help="Asset version (default: today YYYY-MM-DD)")
+    p.add_argument(
+        "--version",
+        default=None,
+        help=(
+            "Asset version prefix (YYYY-MM-DD). "
+            "Default: LEVANTE_DATA_VERSION or latest version prefix in bucket."
+        ),
+    )
     p.add_argument("--task", default=None, help="Only download this task (internal_name or benchmark_name)")
     p.add_argument("--data-root", type=Path, default=None, help="Data root (default: project data/)")
     p.add_argument("--base-url", default=None, help="Bucket base URL (default: config)")
     p.add_argument("--check-completeness", action="store_true", help="At end, report corpus-referenced assets found vs missing")
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="Parallel download workers for visual assets (default: 8).",
+    )
     args = p.parse_args()
-    run(version=args.version, task_filter=args.task, data_root=args.data_root, base_url=args.base_url, check_completeness=args.check_completeness)
+    run(
+        version=args.version,
+        task_filter=args.task,
+        data_root=args.data_root,
+        base_url=args.base_url,
+        check_completeness=args.check_completeness,
+        workers=max(1, int(args.workers)),
+    )
 
 
 if __name__ == "__main__":

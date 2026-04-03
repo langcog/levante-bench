@@ -43,6 +43,25 @@ You can also use OmegaConf dotlist overrides for task subsets and smoke caps:
 - `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
 - `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
 
+## Runner migration checklist
+
+Use this checklist when moving legacy benchmark scripts onto the registry-based
+`levante_bench.evaluation.runner` path.
+
+1. **Lock parity target artifacts**
+   - Math: predictions + summary + by-type outputs
+   - ToM: predictions + summary and trial-type breakdown
+   - Vocab: predictions + summary and quadrant stats
+2. **Implement task adapter hooks**
+   - Add per-task prepare/postprocess hooks in runner for script-only logic
+3. **Run parity gates**
+   - Row counts, parse rates, and metrics must match agreed tolerances
+   - Required output files must exist with compatible schemas
+4. **Switch command routing incrementally**
+   - Move one task at a time from legacy scripts to runner-backed flow
+5. **Deprecate legacy paths only after stable overlap**
+   - Keep `--legacy` or equivalent during transition window
+
 ## Citing
 
 When using this benchmark, cite the LEVANTE manuscript and the DevBench paper (see main README).

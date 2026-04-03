@@ -15,12 +15,15 @@ dependencies = [
     "Pillow>=10",
     "requests>=2.31",
     "omegaconf>=2.3",
+    "matplotlib>=3.10.8",
+    "seaborn>=0.13.2",
 ]
 # Pinned versions for reproducible installs: see requirements.txt
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "black", "isort"]
+dev = ["pytest", "hypothesis", "ruff", "black", "isort"]
 transformers = ["transformers"]
+vlm = ["transformers>=5.3", "torchvision>=0.26", "num2words>=0.5"]
 
 [project.scripts]
 levante-bench = "levante_bench.cli:main"

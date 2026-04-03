@@ -19,9 +19,13 @@ from typing import Optional
 import torch
 from PIL import Image, ImageDraw, ImageFont
 
-from levante_bench.models.base import VLMModel
+from levante_bench.models.base import ParseResult, VLMModel
 from levante_bench.models.registry import register
-from levante_bench.models._common import DTYPE_MAP, parse_answer_with_fallback
+from levante_bench.models._common import (
+    DTYPE_MAP,
+    parse_answer_result_with_fallback,
+    parse_answer_with_fallback,
+)
 
 _LABELS = ["A", "B", "C", "D"]
 _CELL = 224   # each option image is resized to CELL × CELL pixels
@@ -29,11 +33,6 @@ _FONT_SIZE = 22
 
 
 @register("tinyllava")
-@register("tinyllava_0.5b")
-@register("tinyllava_0.9b")
-@register("tinyllava_2.4b")
-@register("tinyllava_3b")
-@register("tinyllava_3.1b")
 class TinyLLaVAModel(VLMModel):
     """TinyLLaVA via HuggingFace AutoModelForCausalLM + trust_remote_code.
 
@@ -59,13 +58,51 @@ class TinyLLaVAModel(VLMModel):
     def load(self) -> None:
         """Load TinyLLaVA model and tokenizer from HuggingFace."""
         from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            trust_remote_code=True,
-            dtype=self.dtype,
-            attn_implementation="eager",  # legacy model lacks _supports_sdpa
-        ).to(self.device)
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+                dtype=self.dtype,
+                attn_implementation="eager",  # legacy model lacks _supports_sdpa
+            ).to(self.device)
+        except TypeError as exc:
+            message = str(exc)
+            tie_kwarg_mismatch = (
+                "tie_weights()" in message
+                and ("recompute_mapping" in message or "missing_keys" in message)
+            )
+            if not tie_kwarg_mismatch:
+                raise
+
+            model_cls = None
+            for class_ref in (
+                "modeling_tinyllava_phi.TinyLlavaForConditionalGeneration",
+                "modeling_tinyllava.TinyLlavaForConditionalGeneration",
+            ):
+                try:
+                    model_cls = get_class_from_dynamic_module(class_ref, self.model_name)
+                    break
+                except Exception:
+                    continue
+            if model_cls is None:
+                raise
+
+            if not getattr(model_cls, "_levante_tie_weights_patch", False):
+                original_tie_weights = model_cls.tie_weights
+
+                def _patched_tie_weights(self, *args, **kwargs):
+                    return original_tie_weights(self)
+
+                model_cls.tie_weights = _patched_tie_weights
+                model_cls._levante_tie_weights_patch = True
+
+            self.model = model_cls.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation="eager",
+            ).to(self.device)
         self.model.eval()
 
         cfg = self.model.config
@@ -86,6 +123,11 @@ class TinyLLaVAModel(VLMModel):
         max_new_tokens: int = 32,
     ) -> str:
         """Generate text using TinyLLaVA's model.chat() API."""
+        if not image_paths:
+            # TinyLLaVA chat() can fail when no image is provided.
+            # Route text-only prompts through chat() with a tiny blank image.
+            image_paths = [self._get_blank_image_path()]
+
         image, prompt = self._prepare_inputs(prompt_text, image_paths)
 
         output, _ = self.model.chat(
@@ -97,6 +139,15 @@ class TinyLLaVAModel(VLMModel):
             num_beams=1,
         )
         return output
+
+    def _get_blank_image_path(self) -> str:
+        """Return a persistent local blank image path for text-only trials."""
+        if self._tmp_dir is None:
+            self._tmp_dir = tempfile.mkdtemp()
+        path = Path(self._tmp_dir) / "blank.png"
+        if not path.exists():
+            Image.new("RGB", (_CELL, _CELL), color=(255, 255, 255)).save(path)
+        return str(path)
 
     # ── Image & prompt preparation ──────────────────────────────────────────
 
@@ -170,6 +221,12 @@ class TinyLLaVAModel(VLMModel):
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()
 
-    def parse_answer(self, text: str, option_labels: list[str]) -> Optional[str]:
+    def parse_answer(
+        self, text: str, option_labels: list[str]
+    ) -> tuple[Optional[str], str]:
         """Base-class parser first; falls back to reverse-sentence scan."""
         return parse_answer_with_fallback(self, text, option_labels)
+
+    def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
+        """Parser with provenance, including reverse-sentence fallback."""
+        return parse_answer_result_with_fallback(self, text, option_labels)

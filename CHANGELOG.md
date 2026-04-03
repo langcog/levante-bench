@@ -10,6 +10,12 @@ All notable updates to this repository should be documented in this file.
   - Checks expected prerequisites and comparison output artifacts for smoke runs
 - Script index: `scripts/README.md`
   - Provides purpose/inputs/outputs/example usage for pipeline and utility scripts
+- Task-registry datasets for benchmark tasks:
+  - Added `src/levante_bench/tasks/theory_of_mind.py`
+  - Implemented `src/levante_bench/tasks/egma_math.py` data loading from assets corpus
+- Runner task-adapter scaffold:
+  - Added `src/levante_bench/evaluation/adapters.py`
+  - Added initial math postprocess artifact (`egma-math-by-type.csv`) in runner path
 
 ### Changed
 - Unified validation runner (`scripts/validate_all.sh`) now supports:
@@ -17,6 +23,9 @@ All notable updates to this repository should be documented in this file.
   - `--with-r-smoke` for R package checks plus comparison smoke test
 - Documentation updates in `README.md`, `docs/README.md`, and `comparison/README.md`
   - Added R validation commands and clearer operational guidance
+- `run-eval` compatibility restored for the OmegaConf-backed runner:
+  - `cli.py` now builds runner config and calls `evaluation.runner.run_eval(cfg)`
+  - `evaluation.runner.resolve_device()` reinstated for `auto` device selection
 
 ## 2026-03-25
 

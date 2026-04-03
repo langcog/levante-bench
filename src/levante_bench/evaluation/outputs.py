@@ -7,8 +7,16 @@ _BASE_FIELDS = [
     "trial_id",
     "item_uid",
     "generated_text",
+    "reason",
     "predicted_label",
+    "predicted_value",
+    "predicted_slider_position",
+    "parse_method",
+    "parse_confidence",
+    "parse_raw_candidate",
     "correct_label",
+    "target_value",
+    "slider_tolerance",
     "is_correct",
 ]
 

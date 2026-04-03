@@ -7,6 +7,10 @@ from levante_bench.tasks.registry import get_task_dataset, list_task_datasets
 from levante_bench.tasks import egma_math  # noqa: F401
 from levante_bench.tasks import matrix_reasoning  # noqa: F401
 from levante_bench.tasks import theory_of_mind  # noqa: F401
+from levante_bench.tasks import egma_math_manifest  # noqa: F401
+from levante_bench.tasks import matrix_reasoning  # noqa: F401
+from levante_bench.tasks import mental_rotation  # noqa: F401
+from levante_bench.tasks import theory_of_mind_manifest  # noqa: F401
 from levante_bench.tasks import trog  # noqa: F401
 from levante_bench.tasks import vocab  # noqa: F401
 

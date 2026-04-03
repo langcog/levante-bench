@@ -1,0 +1,21 @@
+# Runner suite: Aquila intermediate stage2-a on full benchmark.
+
+models:
+  - name: aquila_vl_checkpoint
+    size: stage2a
+    checkpoint_subdir: stage2-a-llava-qwen
+    max_new_tokens: 256
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results/aquila-checkpoints
+version: current
+device: cuda

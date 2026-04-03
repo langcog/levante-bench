@@ -20,12 +20,12 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
 
 1. **IRT model mapping:** Edit `src/levante_bench/config/irt_model_mapping.csv` to map each task to its IRT model `.rds` file in the Redivis model registry (e.g. `trog,trog/multigroup_site/overlap_items/trog_rasch_f1_scalar.rds`).
 2. **Data (R):** Install R and the `redivis` package; run `Rscript scripts/download_levante_data.R` to fetch trials and IRT models into `data/responses/<version>/`.
-3. **Assets (Python):** Run `python scripts/download_levante_assets.py [--version YYYY-MM-DD]` to download corpus and images from the public LEVANTE bucket into `data/assets/<version>/`.
+3. **Assets (Python):** Run `python scripts/download_levante_assets.py [--version VERSION]` to download corpus and images from a versioned bucket prefix into `data/assets/<version>/`. If `--version` is omitted, the script uses `LEVANTE_DATA_VERSION` or auto-detects a bucket default (latest date-style prefix, or the sole non-date prefix). Visual asset downloads are parallelized (`--workers`, default `8`).
 4. **Evaluate:** Then:
    - `levante-bench list-tasks`
    - `levante-bench list-models`
    - `levante-bench check-gpu`  # verify local CUDA availability
-   - `levante-bench run-eval --task trog --model clip_base [--version VERSION]`
+   - `levante-bench run-eval --task trog --model clip_base [--version VERSION] [--prompt-language de]`
    - `levante-bench run-benchmark --benchmark v1 --device auto`
    - `levante-bench run-benchmark --benchmark vocab --device auto`
    - `levante-bench run-workflow --workflow smol-vocab -- --help`
@@ -35,6 +35,8 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
    - `scripts/validate_all.sh --with-r-validation`  # include R/Redivis package checks
    - `scripts/validate_r.sh --run-comparison-smoke --version 2026-03-24`  # optional R comparison smoke test
 5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with IRT item difficulty) and D_KL (by ability bin) to `results/comparison/`.
+
+For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
 
 ## Experiment YAML mode (eval-style)
 
@@ -71,6 +73,19 @@ python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[theory-of-
 - **Validation runner:** Added `scripts/validate_all.sh` to run lint/tests/GPU check plus smoke or full benchmark validations in one command.
 - **Result history reporting:** Added `scripts/list_benchmark_results.py` to list benchmark and prompt-experiment outputs with metric deltas vs prior runs.
 
+## Result visualization
+
+```bash
+# Heatmap of models x tasks accuracy
+python scripts/plot_results.py
+
+# Specific version
+python scripts/plot_results.py --version 2026-03-24
+
+# Text table only
+python scripts/plot_results.py --no-plot
+```
+
 ## Result inspection
 
 Use these commands to verify what ran and compare with prior runs:
@@ -89,6 +104,77 @@ scripts/validate_all.sh --full-benchmarks
 scripts/validate_all.sh --with-r-validation
 ```
 
+## Testing strategy
+
+The test suite is split into fast unit/property tests (default) and opt-in
+integration tests (model loading / dataset end-to-end checks).
+
+- **Default pytest run:** `python -m pytest`
+  - Runs unit tests for parsing, scoring, aggregation, runner utils, cache
+    behavior, and API retry logic.
+  - Includes property-based fuzz tests (Hypothesis) for parser robustness.
+- **Integration tests (opt-in):**
+  - `tests/test_model_inference.py`
+  - `tests/test_task_datasets.py`
+  - These are intentionally gated behind `LEVANTE_RUN_INTEGRATION=1` so
+    default CI/local runs stay deterministic and fast.
+  - Run with:
+    - `LEVANTE_RUN_INTEGRATION=1 python -m pytest`
+
+Current parser-focused coverage includes:
+
+- `parse_answer` / `parse_answer_v2` branch coverage (JSON, embedded JSON,
+  phrase patterns, exact/prefix forms, ambiguous-prose rejection).
+- `parse_numeric_answer` / `parse_numeric_v2` branch coverage (strict JSON,
+  embedded JSON, slider mode constraints, fallback behavior).
+- `<imageN>` interleaving behavior across model adapters.
+- `evaluate_trial` correctness for label, numeric, and slider formats.
+- postprocessing accuracy aggregation and ordering checks.
+- cache round-trip and cache-hit behavior in `run_eval`.
+- GPT-5.3 retry logic (`5xx` retry and token-cap doubling path).
+
+## Parser v2 model
+
+Evaluation now uses a canonical parse layer with provenance so correctness is
+decided in normalized answer space, not output surface format.
+
+### Canonicalization
+
+- **Label tasks:** normalize to `predicted_label` in `option_labels`.
+- **Numeric/slider tasks:** normalize to `predicted_value` (float), then compare
+  to `target_value` using `slider_tolerance`.
+- **Slider tasks:** normalize slider position, clamp to `[0,1]`, then map back to
+  task scale via `slider_min`/`slider_max`.
+
+### Parser v2 outputs
+
+`ParseResult` (in `src/levante_bench/models/base.py`) returns:
+
+- `value` (canonical parsed value/label or `None`)
+- `reason` (extracted reason or source text)
+- `parse_method` (which rule matched)
+- `parse_confidence` (`high` / `medium` / `low` / `none`)
+- `raw_candidate` (raw extracted token)
+
+`evaluate_trial()` now uses:
+
+- `parse_answer_result(...)` for label tasks
+- `parse_numeric_result(...)` for numeric/slider tasks
+
+Backward-compatible APIs (`parse_answer`, `parse_numeric_answer`) are kept for
+existing callers, but benchmark scoring uses parser-v2 paths.
+
+### CSV provenance fields
+
+Per-task CSV outputs now include parser provenance columns:
+
+- `parse_method`
+- `parse_confidence`
+- `parse_raw_candidate`
+
+This supports score audits (for example, reviewing accuracy by parse method or
+identifying low-confidence parses).
+
 ## Comparison approach
 
 The benchmark compares model outputs to human behavioral data on two dimensions:
@@ -101,8 +187,46 @@ See [comparison/README.md](comparison/README.md) for details.
 ## Docs
 
 See [docs/README.md](docs/README.md) for data schema, releases, adding tasks/models, and secrets setup.
+See [docs/aquila-intermediate-runbook.md](docs/aquila-intermediate-runbook.md) for Aquila intermediate checkpoint integration and dual-environment setup.
+See [docs/environment-split.md](docs/environment-split.md) for benchmark vs Aquila virtualenv activation and usage.
 See [scripts/README.md](scripts/README.md) for a script-by-script command index.
 See [CHANGELOG.md](CHANGELOG.md) for ongoing project update history.
+
+### Bucket migration workflow
+
+To migrate from the legacy `-prod` flat layout into a versioned bucket layout:
+
+```bash
+# Preview copy operations
+python scripts/migrate_assets_to_versioned_bucket.py \
+  --version 2026-03-24 \
+  --dest-bucket gs://levante-bench \
+  --dry-run
+
+# Execute migration
+python scripts/migrate_assets_to_versioned_bucket.py \
+  --version 2026-03-24 \
+  --dest-bucket gs://levante-bench
+```
+
+Then point downloads at the destination bucket:
+
+```bash
+export LEVANTE_ASSETS_BUCKET_URL=https://storage.googleapis.com/levante-bench/corpus_data
+python scripts/download_levante_assets.py --version hackathon --workers 8
+```
+
+`corpus_data` is the default destination prefix in the migration script, and can
+be changed with `--dest-root-prefix`.
+
+Versioned snapshots also include:
+
+- `manifest.csv`
+- `translations/item-bank-translations.csv`
+
+When running benchmark/eval commands with `--version current`, local version
+resolution now picks the most recently modified folder under `data/assets/`
+(not only `YYYY-MM-DD` names), so labels like `hackathon` are supported.
 
 ## Citing
 

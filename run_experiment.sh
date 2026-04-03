@@ -5,8 +5,6 @@
 #   ./run_experiment.sh configs/experiment.yaml device=cuda
 #   ./run_experiment.sh configs/my_custom_exp.yaml models=[smolvlm2] device=cuda
 
-set -euo pipefail
-
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 

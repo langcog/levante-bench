@@ -1,12 +1,9 @@
 """Default paths and LEVANTE assets bucket URL."""
 
 import os
-import re
 from pathlib import Path
 
-LEVANTE_ASSETS_BUCKET_URL = "https://storage.googleapis.com/levante-assets-prod"
-
-_VERSION_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+LEVANTE_ASSETS_BUCKET_URL = "https://storage.googleapis.com/levante-bench/corpus_data"
 
 
 def get_task_mapping_path() -> Path:
@@ -23,10 +20,9 @@ def detect_data_version(data_root: Path | None = None) -> str:
     """Return the asset version to use, resolved in this order:
 
     1. ``LEVANTE_DATA_VERSION`` environment variable (explicit override).
-    2. The most-recent ``YYYY-MM-DD`` subfolder found inside
-       ``<data_root>/assets/``.
+    2. The most recently modified subfolder in ``<data_root>/assets/``.
 
-    Raises ``RuntimeError`` if no versioned folder is found and the env var
+    Raises ``RuntimeError`` if no asset folder is found and the env var
     is not set.  Pass ``data_root`` as the project ``data/`` directory;
     defaults to the ``data/`` sibling of the repo root inferred from this
     file's location.
@@ -47,16 +43,14 @@ def detect_data_version(data_root: Path | None = None) -> str:
             "LEVANTE_DATA_VERSION."
         )
 
-    candidates = sorted(
-        d.name
-        for d in assets_dir.iterdir()
-        if d.is_dir() and _VERSION_RE.match(d.name)
-    )
+    candidates = [d for d in assets_dir.iterdir() if d.is_dir()]
     if not candidates:
         raise RuntimeError(
-            f"No YYYY-MM-DD asset folders found in {assets_dir}. "
+            f"No asset folders found in {assets_dir}. "
             "Run scripts/download_levante_assets.py first, or set "
             "LEVANTE_DATA_VERSION."
         )
 
-    return candidates[-1]  # most recent by lexicographic (= chronological) sort
+    # Most recently modified wins; tie-break by name for deterministic output.
+    newest = max(candidates, key=lambda d: (d.stat().st_mtime_ns, d.name))
+    return newest.name

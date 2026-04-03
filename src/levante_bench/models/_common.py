@@ -6,6 +6,8 @@ from typing import Optional
 import torch
 from PIL import Image
 
+from levante_bench.models.base import ParseResult
+
 
 DTYPE_MAP = {
     "float32": torch.float32,
@@ -53,19 +55,43 @@ def parse_answer_with_fallback(
     base_instance,
     text: str,
     option_labels: list[str],
-) -> Optional[str]:
+) -> tuple[Optional[str], str]:
     """Try the base-class parser, then scan backwards through sentences.
 
     Used by Qwen35Model and InternVL35Model, which may generate a brief
     chain-of-thought before stating the answer letter.
     """
-    result = super(type(base_instance), base_instance).parse_answer(text, option_labels)
-    if result is not None:
+    result = parse_answer_result_with_fallback(base_instance, text, option_labels)
+    label = str(result.value).upper() if result.value is not None else None
+    return label, result.reason
+
+
+def parse_answer_result_with_fallback(
+    base_instance,
+    text: str,
+    option_labels: list[str],
+) -> ParseResult:
+    """Like parse_answer_with_fallback, but returns ParseResult provenance."""
+    result = super(type(base_instance), base_instance).parse_answer_result(
+        text, option_labels
+    )
+    if result.value is not None:
         return result
     sentences = re.split(r"[.!?\n]", text)
     for sentence in reversed(sentences):
         sentence = sentence.strip()
         for label in option_labels:
             if re.search(rf"\b{re.escape(label)}\b", sentence, re.IGNORECASE):
-                return label
-    return None
+                return ParseResult(
+                    value=label.upper(),
+                    reason=sentence,
+                    parse_method="reverse_sentence_fallback",
+                    parse_confidence="low",
+                    raw_candidate=label,
+                )
+    return ParseResult(
+        value=None,
+        reason=text,
+        parse_method="unparseable",
+        parse_confidence="none",
+    )

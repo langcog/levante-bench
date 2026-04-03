@@ -104,6 +104,7 @@ class EgmaMathDataset(VLMDataset):
                     {
                         "trial_id": (row.get("item_uid") or row.get("item_id") or "").strip(),
                         "item_uid": (row.get("item_uid") or "").strip(),
+                        "trial_type": (row.get("trial_type") or "").strip(),
                         "prompt": prompt_text,
                         "options": options,
                         "option_labels": LETTERS[: len(options)],

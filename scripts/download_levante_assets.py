@@ -49,7 +49,10 @@ except ModuleNotFoundError:
         return _REPO_ROOT / "src" / "levante_bench" / "config" / "task_name_mapping.csv"
 
     def get_assets_base_url() -> str:
-        return os.environ.get("LEVANTE_ASSETS_BUCKET_URL", "https://storage.googleapis.com/levante-assets-prod")
+        return os.environ.get(
+            "LEVANTE_ASSETS_BUCKET_URL",
+            "https://storage.googleapis.com/levante-bench/corpus_data",
+        )
 
 
 def _bucket_and_base_prefix_from_base(base: str) -> tuple[str, str]:

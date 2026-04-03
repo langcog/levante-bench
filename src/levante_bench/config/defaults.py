@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-LEVANTE_ASSETS_BUCKET_URL = "https://storage.googleapis.com/levante-assets-prod"
+LEVANTE_ASSETS_BUCKET_URL = "https://storage.googleapis.com/levante-bench/corpus_data"
 
 
 def get_task_mapping_path() -> Path:

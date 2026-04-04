@@ -26,6 +26,7 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
    - `levante-bench list-models`
    - `levante-bench check-gpu`  # verify local CUDA availability
    - `levante-bench run-eval --task trog --model clip_base [--version VERSION] [--prompt-language de]`
+   - `levante-bench run-eval --task trog --model gemma3 --version v1 --device cuda`  # Gemma 3 smoke run
    - `levante-bench run-benchmark --benchmark v1 --device auto`
    - `levante-bench run-benchmark --benchmark vocab --device auto`
    - `levante-bench run-workflow --workflow smol-vocab -- --help`

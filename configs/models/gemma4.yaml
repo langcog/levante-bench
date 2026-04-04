@@ -1,0 +1,18 @@
+# Gemma 4 model config.
+#
+# Common sizes:
+# - E2B-it
+# - E4B-it
+# - 26B-A4B-it
+# - 31B-it
+
+name: gemma4
+hf_name: google/gemma-4-${size}
+size: E4B-it
+max_new_tokens: 128
+dtype: bfloat16
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

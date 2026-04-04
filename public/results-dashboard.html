@@ -11,50 +11,59 @@
     <main class="container">
       <header class="header">
         <h1>Levante Results Dashboard</h1>
-        <p>Filter models, tasks, and languages. Compare mean task accuracy.</p>
+        <p>Filter models, tasks, and languages. Compare task-level accuracy curves.</p>
       </header>
 
-      <section class="controls">
-        <div class="control-group">
-          <label for="models">Models</label>
-          <select id="models" multiple size="10"></select>
-          <button id="all-models" type="button">All</button>
+      <section class="dashboard-grid">
+        <aside class="sidebar">
+          <div class="control-group">
+            <label for="models">Models</label>
+            <select id="models" multiple size="10"></select>
+            <button id="all-models" type="button">All</button>
+          </div>
+
+          <div class="control-group">
+            <label for="tasks">Tasks</label>
+            <select id="tasks" multiple size="10"></select>
+            <button id="all-tasks" type="button">All</button>
+          </div>
+
+          <div class="control-group">
+            <label for="languages">Languages</label>
+            <select id="languages" multiple size="6"></select>
+            <button id="all-languages" type="button">All</button>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <section class="status-row">
+            <div id="status">Loading report...</div>
+            <div id="meta"></div>
+          </section>
+
+          <section class="chart-wrap">
+            <canvas id="results-chart"></canvas>
+          </section>
+
+          <section class="summary-wrap">
+            <h2>Summary</h2>
+            <div id="summary-stats"></div>
+          </section>
+
+          <section class="table-wrap">
+            <table id="results-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Language</th>
+                  <th>Tasks</th>
+                  <th>Mean Accuracy</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
         </div>
-
-        <div class="control-group">
-          <label for="tasks">Tasks</label>
-          <select id="tasks" multiple size="10"></select>
-          <button id="all-tasks" type="button">All</button>
-        </div>
-
-        <div class="control-group">
-          <label for="languages">Languages</label>
-          <select id="languages" multiple size="6"></select>
-          <button id="all-languages" type="button">All</button>
-        </div>
-      </section>
-
-      <section class="status-row">
-        <div id="status">Loading report...</div>
-        <div id="meta"></div>
-      </section>
-
-      <section class="chart-wrap">
-        <canvas id="results-chart"></canvas>
-      </section>
-
-      <section class="table-wrap">
-        <table id="results-table">
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Language</th>
-              <th>Tasks</th>
-              <th>Mean Accuracy</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
       </section>
     </main>
 

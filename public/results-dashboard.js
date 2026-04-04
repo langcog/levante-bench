@@ -82,10 +82,17 @@
           taskMeans[taskId] = stats.mean;
         }
       });
+      const baseModelName =
+        entry.size && String(entry.size).trim()
+          ? `${entry.model || "unknown"}-${entry.size}`
+          : entry.model || "unknown";
+      const language = entry.language || "en";
       out.push({
-        label: entry.canonical_model_tag || entry.model,
-        model: entry.model || "unknown",
-        language: entry.language || "en",
+        label:
+          entry.canonical_model_tag ||
+          (language === "en" ? baseModelName : `${baseModelName}-${language}`),
+        model: baseModelName,
+        language,
         taskMeans,
       });
     });

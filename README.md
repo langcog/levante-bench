@@ -39,6 +39,18 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
 
 For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
 
+## Web results dashboard (Vercel)
+
+- A lightweight dashboard is available at `/` when deployed with Vercel.
+- API endpoint `/api/results-report` reads model comparison JSON from:
+  1. `RESULTS_REPORT_URL` (if set), or
+  2. local `results/model-comparison-report.json` (fallback).
+- Build report data before local preview:
+
+```bash
+python scripts/analysis/build_model_comparison_report.py --results-root results --output-json results/model-comparison-report.json
+```
+
 ## Experiment YAML mode (eval-style)
 
 You can run experiment configs directly using the eval-style command structure:

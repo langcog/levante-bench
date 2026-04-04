@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "functions": {
+    "api/results-report.js": {
+      "maxDuration": 15
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/results-report",
+      "destination": "/api/results-report.js"
+    },
+    {
+      "source": "/",
+      "destination": "/results-dashboard.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

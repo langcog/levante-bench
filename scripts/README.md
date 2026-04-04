@@ -137,6 +137,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--report-json`, `--output`, `--min-tasks`
   - **Outputs:** PNG line chart (tasks on x-axis, accuracy on y-axis)
   - **Example:** `python scripts/plot_model_comparison_lines.py --report-json results/model-comparison-report.json --output results/model-comparison-line-chart.png`
+- `normalize_results_layout.py`
+  - **Purpose:** migrate legacy `results/<model>/<version>/...` folders into canonical `results/<version>/<model-size[-lang]>/...`
+  - **Inputs:** `--results-root`, optional `--apply` (default dry-run)
+  - **Outputs:** moved/merged results folders; conflict skips are printed
+  - **Example:** `python scripts/analysis/normalize_results_layout.py --results-root results --apply`
 - `plot_aquila_stages.py`
   - **Purpose:** compare Aquila intermediate stages (`stage2a/b/c`, `stage3`) and final production performance by task
   - **Inputs:** `--results-root`, `--output`

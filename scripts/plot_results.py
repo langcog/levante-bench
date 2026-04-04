@@ -1,7 +1,7 @@
 """Visualize model performance across tasks as a heatmap table.
 
-Reads summary.csv files from results/<model>/<version>/ and produces
-a models x tasks heatmap with accuracy values annotated.
+Reads summary.csv files from results layouts and produces a models x tasks
+heatmap with accuracy values annotated.
 
 Usage:
     python scripts/plot_results.py

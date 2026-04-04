@@ -49,8 +49,11 @@ def _task_sort_key(task_id: str) -> tuple[int, str]:
     return (1, task_id)
 
 
-def _model_label(model: str, size: str | None) -> str:
-    return f"{model}_{size}" if size else model
+def _model_label(model: str, size: str | None, language: str | None = None) -> str:
+    base = f"{model}-{size}" if size else model
+    if language:
+        return f"{base}-{language}"
+    return base
 
 
 def _marker_for_label(label: str) -> str:
@@ -107,7 +110,11 @@ def main() -> int:
                 task_means[task_id] = float(mean_value)
         if len(task_means) < args.min_tasks:
             continue
-        label = _model_label(str(info.get("model", "")), info.get("size"))
+        label = _model_label(
+            str(info.get("model", "")),
+            info.get("size"),
+            info.get("language"),
+        )
         model_series.append((label, task_means))
         all_tasks.update(task_means.keys())
 

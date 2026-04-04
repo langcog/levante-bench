@@ -20,7 +20,7 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
 
 1. **IRT model mapping:** Edit `src/levante_bench/config/irt_model_mapping.csv` to map each task to its IRT model `.rds` file in the Redivis model registry (e.g. `trog,trog/multigroup_site/overlap_items/trog_rasch_f1_scalar.rds`).
 2. **Data (R):** Install R and the `redivis` package; run `Rscript scripts/download_levante_data.R` to fetch trials and IRT models into `data/responses/<version>/`.
-3. **Assets (Python):** Run `python scripts/download_levante_assets.py [--version VERSION]` to download corpus and images from a versioned bucket prefix into `data/assets/<version>/`. If `--version` is omitted, the script uses `LEVANTE_DATA_VERSION` or auto-detects a bucket default (latest date-style prefix, or the sole non-date prefix). Visual asset downloads are parallelized (`--workers`, default `8`).
+3. **Assets (Python):** Run `python scripts/download_levante_assets.py [--version VERSION]` to download corpus and images from a versioned bucket prefix into `data/assets/<version>/`. If `--version` is omitted, the script uses `LEVANTE_DATA_VERSION` or auto-detects a bucket default (latest date-style prefix; otherwise prefers `v1` when present; otherwise the sole non-date prefix). Visual asset downloads are parallelized (`--workers`, default `8`).
 4. **Evaluate:** Then:
    - `levante-bench list-tasks`
    - `levante-bench list-models`

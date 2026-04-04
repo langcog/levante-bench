@@ -54,7 +54,7 @@ class EgmaMathDataset(VLMDataset):
     def _corpus_path(self) -> Path:
         if not self.data_root:
             raise ValueError("EgmaMathDataset requires data_root")
-        corpus_file = self.task_def.corpus_file or "test-combined-math-cat.csv"
+        corpus_file = self.task_def.corpus_file or "math-item-bank.csv"
         return (
             Path(self.data_root)
             / "assets"

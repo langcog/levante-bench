@@ -15,7 +15,7 @@ Provide a stable, repeatable benchmark bundle with:
 
 ### Math (EGMA)
 
-- Corpus: `data/assets/<version>/corpus/egma-math/test-combined-math-cat.csv`
+- Corpus: `data/assets/<version>/corpus/egma-math/math-item-bank.csv`
 - Prompt builder: `scripts/build_math_prompts.py`
 - Default setting: Number Line hint uses `coarse` (script default)
 - Evaluator: `scripts/run_smolvlmv2_math_eval.py`

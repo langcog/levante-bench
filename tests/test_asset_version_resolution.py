@@ -81,12 +81,22 @@ def test_detect_latest_bucket_version_single_non_date(monkeypatch) -> None:
     assert m._detect_latest_bucket_version("levante-bench") == "hackathon"
 
 
-def test_detect_latest_bucket_version_multiple_non_date_raises(monkeypatch) -> None:
+def test_detect_latest_bucket_version_prefers_v1_for_non_date_prefixes(monkeypatch) -> None:
     m = _load_download_assets_module()
     monkeypatch.setattr(
         m,
         "_list_bucket_prefixes",
         lambda bucket_name, parent_prefix="": ["hackathon", "v1"],
+    )
+    assert m._detect_latest_bucket_version("levante-bench") == "v1"
+
+
+def test_detect_latest_bucket_version_multiple_non_date_without_v1_raises(monkeypatch) -> None:
+    m = _load_download_assets_module()
+    monkeypatch.setattr(
+        m,
+        "_list_bucket_prefixes",
+        lambda bucket_name, parent_prefix="": ["hackathon", "pilot"],
     )
     with pytest.raises(RuntimeError, match="Multiple non-date version prefixes"):
         m._detect_latest_bucket_version("levante-bench")

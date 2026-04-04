@@ -124,6 +124,18 @@ def _object_exists(bucket_name: str, key: str) -> bool:
     return key in set(keys)
 
 
+def _task_manifest_keys(bucket_name: str, source_prefix: str, internal_name: str) -> list[str]:
+    corpus_prefix = f"corpus/{internal_name}/"
+    full_prefix = f"{source_prefix}/{corpus_prefix}" if source_prefix else corpus_prefix
+    keys = _list_bucket_keys(bucket_name=bucket_name, prefix=full_prefix)
+    manifests: list[str] = []
+    for key in keys:
+        name = key.rsplit("/", 1)[-1].lower()
+        if "manifest" in name and name.endswith(".json"):
+            manifests.append(key)
+    return sorted(set(manifests))
+
+
 def run(
     version: str,
     dest_bucket: str,
@@ -183,6 +195,24 @@ def run(
             dry_run=dry_run,
         )
         op_count += 1
+
+        # Copy any task-level manifest JSON files alongside corpus CSVs.
+        for manifest_key in _task_manifest_keys(
+            bucket_name=source_bucket,
+            source_prefix=source_prefix,
+            internal_name=internal,
+        ):
+            rel_key = (
+                manifest_key[len(source_prefix) + 1 :]
+                if source_prefix and manifest_key.startswith(f"{source_prefix}/")
+                else manifest_key
+            )
+            _run_cp(
+                f"gs://{source_bucket}/{manifest_key}",
+                f"{dest_prefix}/{rel_key}",
+                dry_run=dry_run,
+            )
+            op_count += 1
 
         source_visual_prefix = (
             f"{source_prefix}/visual/{internal}" if source_prefix else f"visual/{internal}"

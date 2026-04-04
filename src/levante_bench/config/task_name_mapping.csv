@@ -1,5 +1,5 @@
 benchmark_name,internal_name,corpus_file
-Math,egma-math,test-combined-math-cat.csv
+Math,egma-math,math-item-bank.csv
 Sentence Understanding,trog,trog-item-bank-full-params.csv
 Vocabulary,vocab,vocab-item-bank.csv
 Stories,theory-of-mind,theory-of-mind-item-bank.csv

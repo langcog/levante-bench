@@ -153,8 +153,9 @@ def _detect_latest_bucket_version(bucket_name: str, base_prefix: str = "") -> st
 
     Resolution:
     1) If there are YYYY-MM-DD prefixes, choose the latest by lexical sort.
-    2) Otherwise, if there is exactly one non-hidden prefix, choose it.
-    3) Otherwise require explicit --version / LEVANTE_DATA_VERSION.
+    2) Otherwise, prefer 'v1' when present.
+    3) Otherwise, if there is exactly one non-hidden prefix, choose it.
+    4) Otherwise require explicit --version / LEVANTE_DATA_VERSION.
     """
     prefixes = _list_bucket_prefixes(bucket_name, parent_prefix=base_prefix)
     versions = sorted(p for p in prefixes if VERSION_RE.match(p))
@@ -162,6 +163,8 @@ def _detect_latest_bucket_version(bucket_name: str, base_prefix: str = "") -> st
         return versions[-1]
 
     non_hidden = sorted(p for p in prefixes if p and not p.startswith("."))
+    if "v1" in non_hidden:
+        return "v1"
     if len(non_hidden) == 1:
         return non_hidden[0]
 

@@ -105,7 +105,7 @@ class EgmaMathDataset(VLMDataset):
         return index
 
     def _build_item_id_map(self) -> dict[str, str]:
-        corpus_file = str(self.task_def.corpus_file or "test-combined-math-cat.csv")
+        corpus_file = str(self.task_def.corpus_file or "math-item-bank.csv")
         path = (
             Path(self.data_root)
             / "assets"

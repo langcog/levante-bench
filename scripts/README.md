@@ -11,7 +11,7 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
 - `download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
-  - **Inputs:** `--version` (or auto-detect latest bucket version prefix), `--workers`
+  - **Inputs:** `--version` (or auto-detect latest bucket version prefix; prefers `v1` for non-date prefixes), `--workers`
   - **Outputs:** `data/assets/<version>/...`
   - **Example:** `python scripts/download_levante_assets.py --version hackathon --workers 24`
 - `migrate_assets_to_versioned_bucket.py`

@@ -15,6 +15,6 @@ tasks:
   - vocab
 
 data_root: data
-output_dir: results/gemma3-v1
+output_dir: results
 version: v1
 device: cuda

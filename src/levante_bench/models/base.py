@@ -49,8 +49,17 @@ class VLMModel:
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 64,
+        *,
+        do_sample: bool = False,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        sample_seed: int | None = None,
     ) -> str:
-        """Generate text given a prompt and optional images."""
+        """Generate text given a prompt and optional images.
+
+        Stochastic decoding: set ``do_sample=True`` and optionally
+        ``temperature``, ``top_p``, and ``sample_seed`` for reproducible draws.
+        """
         raise NotImplementedError
 
     def _build_messages(

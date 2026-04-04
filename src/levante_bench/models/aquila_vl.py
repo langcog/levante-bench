@@ -12,6 +12,7 @@ from levante_bench.models.base import ParseResult, VLMModel
 from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
+    hf_sample_kwargs,
     load_pil_images,
     parse_answer_result_with_fallback,
     parse_answer_with_fallback,
@@ -87,6 +88,11 @@ class AquilaVLModel(VLMModel):
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 128,
+        *,
+        do_sample: bool = False,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        sample_seed: int | None = None,
     ) -> str:
         """Generate text using Aquila-VL."""
         from llava.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
@@ -114,11 +120,20 @@ class AquilaVLModel(VLMModel):
             return_tensors="pt",
         ).unsqueeze(0).to(self.device)
 
-        generate_kwargs = {
-            "do_sample": False,
+        generate_kwargs: dict = {
             "max_new_tokens": max_new_tokens,
-            "temperature": 0,
         }
+        generate_kwargs.update(
+            hf_sample_kwargs(
+                self.device,
+                do_sample=do_sample,
+                temperature=temperature,
+                top_p=top_p,
+                sample_seed=sample_seed,
+            )
+        )
+        if not do_sample:
+            generate_kwargs["temperature"] = 0
         if pil_images:
             image_tensor = process_images(pil_images, self.image_processor, self.model.config)
             image_tensor = [

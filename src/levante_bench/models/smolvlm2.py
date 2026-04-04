@@ -7,7 +7,7 @@ import torch
 
 from levante_bench.models.base import VLMModel
 from levante_bench.models.registry import register
-from levante_bench.models._common import DTYPE_MAP
+from levante_bench.models._common import DTYPE_MAP, hf_sample_kwargs
 
 
 @register("smolvlm2")
@@ -42,6 +42,11 @@ class SmolVLM2Model(VLMModel):
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 64,
+        *,
+        do_sample: bool = False,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        sample_seed: int | None = None,
     ) -> str:
         """Generate text using SmolVLM2."""
         messages = self._build_messages(prompt_text, image_paths)
@@ -53,9 +58,16 @@ class SmolVLM2Model(VLMModel):
             return_tensors="pt",
         ).to(self.device, dtype=self.dtype)
 
+        sample = hf_sample_kwargs(
+            self.device,
+            do_sample=do_sample,
+            temperature=temperature,
+            top_p=top_p,
+            sample_seed=sample_seed,
+        )
         with torch.no_grad():
             output_ids = self.model.generate(
-                **inputs, do_sample=False, max_new_tokens=max_new_tokens
+                **inputs, max_new_tokens=max_new_tokens, **sample
             )
 
         return self.processor.batch_decode(output_ids, skip_special_tokens=True)[0]

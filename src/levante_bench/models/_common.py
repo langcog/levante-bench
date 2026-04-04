@@ -16,6 +16,29 @@ DTYPE_MAP = {
 }
 
 
+def hf_sample_kwargs(
+    device: str | torch.device,
+    *,
+    do_sample: bool,
+    temperature: float,
+    top_p: float,
+    sample_seed: int | None,
+) -> dict:
+    """Keyword args for ``transformers`` ``generate`` sampling (or greedy)."""
+    if not do_sample:
+        return {"do_sample": False}
+    dev = torch.device(device) if isinstance(device, str) else device
+    gen = torch.Generator(device=dev)
+    if sample_seed is not None:
+        gen.manual_seed(int(sample_seed) % (2**32))
+    return {
+        "do_sample": True,
+        "temperature": max(float(temperature), 1e-5),
+        "top_p": float(top_p),
+        "generator": gen,
+    }
+
+
 def load_pil_images(image_paths: list[str] | None) -> Optional[list]:
     """Load a list of file paths as RGB PIL Images."""
     if not image_paths:

@@ -6,6 +6,9 @@
     },
     "api/parser-glitch-report.js": {
       "maxDuration": 60
+    },
+    "api/human-age-accuracy.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -16,6 +19,10 @@
     {
       "source": "/api/parser-glitch-report",
       "destination": "/api/parser-glitch-report.js"
+    },
+    {
+      "source": "/api/human-age-accuracy",
+      "destination": "/api/human-age-accuracy.js"
     },
     {
       "source": "/",

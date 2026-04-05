@@ -1,5 +1,6 @@
 (function () {
   const modelsEl = document.getElementById("models");
+  const childrenEl = document.getElementById("children");
   const tasksEl = document.getElementById("tasks");
   const languagesEl = document.getElementById("languages");
   const tableBody = document.querySelector("#results-table tbody");
@@ -7,8 +8,15 @@
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
   const allModelsBtn = document.getElementById("all-models");
+  const clearModelsBtn = document.getElementById("clear-models");
+  const allChildrenBtn = document.getElementById("all-children");
+  const clearChildrenBtn = document.getElementById("clear-children");
   const allTasksBtn = document.getElementById("all-tasks");
   const allLanguagesBtn = document.getElementById("all-languages");
+  const tabModelsBtn = document.getElementById("tab-models");
+  const tabChildrenBtn = document.getElementById("tab-children");
+  const panelModels = document.getElementById("panel-models");
+  const panelChildren = document.getElementById("panel-children");
   const refreshDataBtn = document.getElementById("refresh-data");
   const helpMenuButton = document.getElementById("help-menu-button");
   const helpMenuDropdown = document.getElementById("help-menu-dropdown");
@@ -19,7 +27,8 @@
   const helpModalContent = document.getElementById("help-modal-content");
 
   let chart = null;
-  let records = [];
+  let modelRecords = [];
+  let childRecords = [];
   const preferredTaskOrder = [
     "egma-math",
     "matrix-reasoning",
@@ -198,8 +207,29 @@
     });
   }
 
+  function clearAllSelected(selectEl) {
+    Array.from(selectEl.options).forEach((option) => {
+      option.selected = false;
+    });
+  }
+
   function uniqueSorted(values) {
     return Array.from(new Set(values)).sort((a, b) => String(a).localeCompare(String(b)));
+  }
+
+  function sortAgeBins(values) {
+    const toStartAge = (value) => {
+      const match = String(value).trim().match(/^(\d+)/);
+      return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+    };
+    return Array.from(new Set(values)).sort((a, b) => {
+      const sa = toStartAge(a);
+      const sb = toStartAge(b);
+      if (sa !== sb) {
+        return sa - sb;
+      }
+      return String(a).localeCompare(String(b), undefined, { numeric: true });
+    });
   }
 
   function mean(values) {
@@ -226,7 +256,7 @@
     });
   }
 
-  function parseRecords(report) {
+  function parseModelRecords(report) {
     const byModel = report.by_model || {};
     const out = [];
     Object.values(byModel).forEach((entry) => {
@@ -246,6 +276,7 @@
         label:
           entry.canonical_model_tag ||
           (language === "en" ? baseModelName : `${baseModelName}-${language}`),
+        kind: "model",
         model: baseModelName,
         language,
         taskMeans,
@@ -254,41 +285,102 @@
     return out;
   }
 
+  function parseChildRecords(payload) {
+    const rows = (payload && payload.records) || [];
+    const byAgeBinAndLanguage = new Map();
+    rows.forEach((row) => {
+      const ageBin = String(row.age_bin || "").trim();
+      const taskId = String(row.task_id || "").trim();
+      const language = String(row.language || "unknown").trim().toLowerCase() || "unknown";
+      const accuracy = Number(row.accuracy);
+      if (!ageBin || !taskId || !Number.isFinite(accuracy)) {
+        return;
+      }
+      const key = `${ageBin}|${language}`;
+      if (!byAgeBinAndLanguage.has(key)) {
+        byAgeBinAndLanguage.set(key, { ageBin, language, taskMeans: {} });
+      }
+      byAgeBinAndLanguage.get(key).taskMeans[taskId] = accuracy;
+    });
+
+    return Array.from(byAgeBinAndLanguage.values())
+      .sort((a, b) => {
+        const ageCmp = a.ageBin.localeCompare(b.ageBin, undefined, { numeric: true });
+        if (ageCmp !== 0) {
+          return ageCmp;
+        }
+        return a.language.localeCompare(b.language);
+      })
+      .map(({ ageBin, language, taskMeans }) => ({
+        label: `Children ${ageBin} (${language})`,
+        kind: "child",
+        child: ageBin,
+        ageBin,
+        model: `Children (${ageBin})`,
+        language,
+        taskMeans,
+      }));
+  }
+
   function renderSelectors() {
-    const models = uniqueSorted(records.map((r) => r.model));
-    const tasks = sortTasks(uniqueSorted(records.flatMap((r) => Object.keys(r.taskMeans))));
-    const languages = uniqueSorted(records.map((r) => r.language || "en"));
+    const models = uniqueSorted(modelRecords.map((r) => r.model));
+    const children = sortAgeBins(childRecords.map((r) => r.child));
+    const tasks = sortTasks(
+      uniqueSorted(
+        modelRecords
+          .concat(childRecords)
+          .flatMap((r) => Object.keys(r.taskMeans)),
+      ),
+    );
+    const languages = uniqueSorted(
+      modelRecords.concat(childRecords).map((r) => r.language || "unknown"),
+    );
 
     modelsEl.innerHTML = models.map((v) => `<option value="${v}">${v}</option>`).join("");
+    childrenEl.innerHTML = children.map((v) => `<option value="${v}">${v}</option>`).join("");
     tasksEl.innerHTML = tasks.map((v) => `<option value="${v}">${v}</option>`).join("");
     languagesEl.innerHTML = languages.map((v) => `<option value="${v}">${v}</option>`).join("");
 
     setAllSelected(modelsEl);
+    setAllSelected(childrenEl);
     setAllSelected(tasksEl);
     setAllSelected(languagesEl);
   }
 
   function filteredRecords() {
     const modelSet = selectedValues(modelsEl);
+    const childSet = selectedValues(childrenEl);
     const taskSet = selectedValues(tasksEl);
     const langSet = selectedValues(languagesEl);
+    const applyTaskFilter = (r) => {
+      const filteredTaskMeans = {};
+      Object.entries(r.taskMeans).forEach(([taskId, value]) => {
+        if (taskSet.has(taskId)) {
+          filteredTaskMeans[taskId] = value;
+        }
+      });
+      return { ...r, taskMeans: filteredTaskMeans };
+    };
 
-    return records
-      .map((r) => {
-        const filteredTaskMeans = {};
-        Object.entries(r.taskMeans).forEach(([taskId, value]) => {
-          if (taskSet.has(taskId)) {
-            filteredTaskMeans[taskId] = value;
-          }
-        });
-        return { ...r, taskMeans: filteredTaskMeans };
-      })
+    const filteredModels = modelRecords
+      .map(applyTaskFilter)
       .filter(
         (r) =>
           modelSet.has(r.model) &&
           langSet.has(r.language || "en") &&
           Object.keys(r.taskMeans).length > 0,
       );
+
+    const filteredChildren = childRecords
+      .map(applyTaskFilter)
+      .filter(
+        (r) =>
+          childSet.has(r.child) &&
+          langSet.has(r.language || "unknown") &&
+          Object.keys(r.taskMeans).length > 0,
+      );
+
+    return filteredModels.concat(filteredChildren);
   }
 
   function renderTable(rows) {
@@ -302,7 +394,7 @@
         const taskCount = Object.keys(row.taskMeans).length;
         const avg = mean(Object.values(row.taskMeans));
         return `<tr>
-          <td>${row.model}</td>
+          <td>${row.kind === "child" ? `Children (${row.ageBin})` : row.model}</td>
           <td>${row.language}</td>
           <td>${taskCount}</td>
           <td>${Number.isNaN(avg) ? "n/a" : avg.toFixed(4)}</td>
@@ -328,7 +420,7 @@
       }))
       .sort((a, b) => b.score - a.score)[0];
     summaryStatsEl.textContent =
-      `Models shown: ${rows.length} | Best mean: ${best.label} (${best.score.toFixed(4)}) | Overall mean: ${overallMean.toFixed(4)}`;
+      `Series shown: ${rows.length} | Best mean: ${best.label} (${best.score.toFixed(4)}) | Overall mean: ${overallMean.toFixed(4)}`;
   }
 
   function renderChart(rows) {
@@ -416,7 +508,7 @@
 
   function rerender() {
     const rows = filteredRecords();
-    statusEl.textContent = `Showing ${rows.length} model entries`;
+    statusEl.textContent = `Showing ${rows.length} series entries`;
     renderSummary(rows);
     renderTable(rows);
     renderChart(rows);
@@ -431,6 +523,7 @@
   async function loadReportData({ preserveSelection = false } = {}) {
     const previousSelection = {
       models: selectedValues(modelsEl),
+      children: selectedValues(childrenEl),
       tasks: selectedValues(tasksEl),
       languages: selectedValues(languagesEl),
     };
@@ -440,18 +533,29 @@
         refreshDataBtn.textContent = "Refreshing...";
       }
       statusEl.textContent = "Loading report...";
-      const response = await fetch(`/api/results-report?t=${Date.now()}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      const [modelResponse, childResponse] = await Promise.all([
+        fetch(`/api/results-report?t=${Date.now()}`),
+        fetch(`/api/human-age-accuracy?t=${Date.now()}`),
+      ]);
+      if (!modelResponse.ok) {
+        throw new Error(`Model report HTTP ${modelResponse.status}`);
       }
-      const payload = await response.json();
-      records = parseRecords(payload.report || {});
-      metaEl.textContent = `Source: ${payload.source || "unknown"} | Generated: ${
+      if (!childResponse.ok) {
+        throw new Error(`Children report HTTP ${childResponse.status}`);
+      }
+      const payload = await modelResponse.json();
+      const childPayload = await childResponse.json();
+      modelRecords = parseModelRecords(payload.report || {});
+      childRecords = parseChildRecords(childPayload || {});
+      metaEl.textContent = `Model source: ${payload.source || "unknown"} | Models generated: ${
         (payload.report && payload.report.generated_at) || "n/a"
+      } | Children source: ${childPayload.source || "unknown"} | Children rows: ${
+        Array.isArray(childPayload.records) ? childPayload.records.length : 0
       }`;
       renderSelectors();
       if (preserveSelection) {
         setSelectedFromSet(modelsEl, previousSelection.models);
+        setSelectedFromSet(childrenEl, previousSelection.children);
         setSelectedFromSet(tasksEl, previousSelection.tasks);
         setSelectedFromSet(languagesEl, previousSelection.languages);
       }
@@ -515,15 +619,35 @@
     helpModal.classList.add("hidden");
   }
 
+  function activateSeriesTab(tabName) {
+    const isModels = tabName === "models";
+    tabModelsBtn.classList.toggle("active", isModels);
+    tabChildrenBtn.classList.toggle("active", !isModels);
+    panelModels.classList.toggle("active", isModels);
+    panelChildren.classList.toggle("active", !isModels);
+  }
+
   async function boot() {
     await loadReportData({ preserveSelection: false });
   }
 
-  [modelsEl, tasksEl, languagesEl].forEach((el) => {
+  [modelsEl, childrenEl, tasksEl, languagesEl].forEach((el) => {
     el.addEventListener("change", rerender);
   });
   allModelsBtn.addEventListener("click", () => {
     setAllSelected(modelsEl);
+    rerender();
+  });
+  clearModelsBtn.addEventListener("click", () => {
+    clearAllSelected(modelsEl);
+    rerender();
+  });
+  allChildrenBtn.addEventListener("click", () => {
+    setAllSelected(childrenEl);
+    rerender();
+  });
+  clearChildrenBtn.addEventListener("click", () => {
+    clearAllSelected(childrenEl);
     rerender();
   });
   allTasksBtn.addEventListener("click", () => {
@@ -546,6 +670,8 @@
       helpMenuButton.setAttribute("aria-expanded", isHidden ? "true" : "false");
     });
   }
+  tabModelsBtn.addEventListener("click", () => activateSeriesTab("models"));
+  tabChildrenBtn.addEventListener("click", () => activateSeriesTab("children"));
   helpMenuItems.forEach((btn) => {
     btn.addEventListener("click", () => {
       openHelpModal(btn.dataset.helpTopic || "");

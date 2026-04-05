@@ -37,9 +37,25 @@
       <section class="dashboard-grid">
         <aside class="sidebar">
           <div class="control-group">
-            <label for="models">Models</label>
-            <select id="models" multiple size="10"></select>
-            <button id="all-models" type="button">All</button>
+            <label>Series</label>
+            <div class="tab-row">
+              <button id="tab-models" type="button" class="tab-button active">Models</button>
+              <button id="tab-children" type="button" class="tab-button">Children</button>
+            </div>
+            <div id="panel-models" class="tab-panel active">
+              <select id="models" multiple size="8"></select>
+              <div class="button-row">
+                <button id="all-models" type="button">All</button>
+                <button id="clear-models" type="button" class="secondary">Clear All</button>
+              </div>
+            </div>
+            <div id="panel-children" class="tab-panel">
+              <select id="children" multiple size="8"></select>
+              <div class="button-row">
+                <button id="all-children" type="button">All</button>
+                <button id="clear-children" type="button" class="secondary">Clear All</button>
+              </div>
+            </div>
           </div>
 
           <div class="control-group">
@@ -79,7 +95,7 @@
             <table id="results-table">
               <thead>
                 <tr>
-                  <th>Model</th>
+                  <th>Series</th>
                   <th>Language</th>
                   <th>Tasks</th>
                   <th>Mean Accuracy</th>

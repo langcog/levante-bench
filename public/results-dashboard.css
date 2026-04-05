@@ -150,6 +150,48 @@ body {
   color: #f8fafc;
 }
 
+.tab-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.tab-button {
+  margin: 0;
+  width: 100%;
+  padding: 7px 8px;
+}
+
+.tab-button.active {
+  outline: 1px solid rgba(0, 186, 252, 0.65);
+  box-shadow: 0 0 0 2px rgba(0, 186, 252, 0.18) inset;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.button-row button {
+  margin-top: 8px;
+}
+
+button.secondary {
+  background: rgba(15, 28, 48, 0.95);
+  color: #e2e8f0;
+  border: 1px solid rgba(0, 160, 222, 0.4);
+}
+
 select {
   width: 100%;
   background: var(--panel-2);

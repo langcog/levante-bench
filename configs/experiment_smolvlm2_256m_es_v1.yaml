@@ -1,0 +1,24 @@
+# Runner experiment: SmolVLM2 256M Instruct on Spanish v1 benchmark tasks.
+# Run: python -m levante_bench.cli experiment=configs/experiment_smolvlm2_256m_es_v1.yaml device=auto
+
+models:
+  - name: smolvlm2
+    size: 256M
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+task_overrides:
+  __all__:
+    prompt_language: es
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda

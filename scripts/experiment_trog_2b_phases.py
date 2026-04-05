@@ -15,6 +15,11 @@ New phases vs 0.8B run:
            types where 0.8B got 0%: conditional, postmodified, spatial)
   Phase 7: Language expert system prompt — tell the model it is a language
            comprehension expert evaluating image-sentence matches
+  Phase 9: Describe-first visual grounding — ask the model to generate a
+           one-sentence description of each image before picking the match.
+           Unlike Phase 4 (static hints) or Phase 6 (grammar CoT), this forces
+           active visual grounding: the model must commit to what it sees in
+           each image before reasoning about the sentence.
 
 Phases
 ------
@@ -25,8 +30,9 @@ Phases
     4  Visual grounding hints (complex grammar types only)
     6  Grammar role decomposition CoT (new — targets 0% types)
     7  Language expert system prompt (new)
+    9  Describe-first visual grounding (new)
 
-Combos tested: 1+2+3, 1+2+3+4, 1+2+7, 1+2+3+6, 1+2+7+6
+Combos tested: 1+2+3, 1+2+3+4, 1+2+7, 1+2+3+6, 1+2+7+6, 1+2+3+9, 1+2+3+4+9
 """
 
 from __future__ import annotations
@@ -298,6 +304,33 @@ def apply_phase6_grammar_cot(prompt: str, trial_type: str, prompt_phrase: str) -
     return prompt.rstrip() + cot
 
 
+def build_prompt_phase9(prompt_phrase: str, trial_type: str) -> str:
+    """Phase 9: describe-first visual grounding.
+
+    Forces the model to generate a one-sentence description of each image
+    before matching to the target sentence. This is different from:
+    - Phase 4 (prepends a static hint about what to look for)
+    - Phase 6 (grammar CoT decomposes the sentence structure)
+    Phase 9 grounds reasoning in the visual content by making the model
+    commit to what it sees before reading the task sentence.
+    """
+    lines = [
+        "Look at the four images below:",
+        "",
+        "A: <image1>",
+        "B: <image2>",
+        "C: <image3>",
+        "D: <image4>",
+        "",
+        "Step 1: Write one sentence describing what is happening in each image.",
+        "Step 2: Decide which image matches this sentence:",
+        f'"{prompt_phrase}"',
+        "",
+        "End your response with exactly: My answer: [A/B/C/D]",
+    ]
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Answer parsing
 # ---------------------------------------------------------------------------
@@ -492,31 +525,38 @@ def run_experiment(args, trials, model, processor, dtype) -> list[dict]:
     use_phase4 = 4 in phases
     use_phase6 = 6 in phases
     use_phase7 = 7 in phases
+    use_phase9 = 9 in phases
 
     system_prompt = QWEN_DEFAULT_SYSTEM
     if use_phase7:
         system_prompt = LANGUAGE_EXPERT_SYSTEM
 
-    max_tokens = 256 if use_phase6 else 64
+    # Phase 9 generates descriptions (~4 sentences) + answer — needs more tokens
+    max_tokens = 400 if use_phase9 else (256 if use_phase6 else 64)
     results = []
 
     for trial in tqdm(trials, desc="Evaluating", unit="trial"):
         prompt_phrase = trial["prompt_phrase"]
         trial_type = trial["trial_type"]
 
-        prompt = (
-            build_prompt_phase1(trial["row"], prompt_phrase)
-            if use_phase1
-            else build_prompt_baseline(trial["row"], prompt_phrase)
-        )
+        if use_phase9:
+            prompt = build_prompt_phase9(prompt_phrase, trial_type)
+            if use_phase4:
+                prompt = apply_phase4_grounding(prompt, trial_type)
+        else:
+            prompt = (
+                build_prompt_phase1(trial["row"], prompt_phrase)
+                if use_phase1
+                else build_prompt_baseline(trial["row"], prompt_phrase)
+            )
 
-        if use_phase4:
-            prompt = apply_phase4_grounding(prompt, trial_type)
+            if use_phase4:
+                prompt = apply_phase4_grounding(prompt, trial_type)
 
-        if use_phase6:
-            prompt = apply_phase6_grammar_cot(prompt, trial_type, prompt_phrase)
-        elif use_phase3:
-            prompt = apply_phase3_format_suffix(prompt)
+            if use_phase6:
+                prompt = apply_phase6_grammar_cot(prompt, trial_type, prompt_phrase)
+            elif use_phase3:
+                prompt = apply_phase3_format_suffix(prompt)
 
         response = generate(
             model, processor, dtype, args.device,
@@ -572,7 +612,7 @@ def main():
     )
     parser.add_argument(
         "--phase", nargs="+", type=int, default=[0], dest="phases",
-        help="Phase(s): 0=baseline 1=structured 2=enhanced-parse 3=format-suffix 4=grounding 6=grammar-cot 7=expert-sys",
+        help="Phase(s): 0=baseline 1=structured 2=enhanced-parse 3=format-suffix 4=grounding 6=grammar-cot 7=expert-sys 9=describe-first",
     )
     parser.add_argument("--model-id", default="Qwen/Qwen3.5-2B")
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
@@ -599,7 +639,7 @@ def main():
 
     phase_names = {
         1: "structured-prompt", 2: "enhanced-parse", 3: "format-suffix",
-        4: "grounding", 6: "grammar-cot", 7: "expert-sys",
+        4: "grounding", 6: "grammar-cot", 7: "expert-sys", 9: "describe-first",
     }
     active = [phase_names.get(p, f"phase{p}") for p in phases]
     print(f"Active phases: {active or ['baseline']}")

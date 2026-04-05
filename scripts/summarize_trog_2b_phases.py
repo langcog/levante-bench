@@ -15,6 +15,8 @@ ROW_ORDER = [
     ("phase_1_2_7.csv",      "1+2+7 — Structural + expert system"),
     ("phase_1_2_3_6.csv",    "1+2+3+6 — Structural + grammar CoT"),
     ("phase_1_2_6_7.csv",    "1+2+7+6 — Structural + expert system + grammar CoT"),
+    ("phase_1_2_3_9.csv",    "1+2+3+9 — Structural + describe-first"),
+    ("phase_1_2_3_4_9.csv",  "1+2+3+4+9 — Structural + grounding hints + describe-first"),
 ]
 
 

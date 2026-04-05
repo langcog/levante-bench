@@ -3,12 +3,19 @@
   "functions": {
     "api/results-report.js": {
       "maxDuration": 60
+    },
+    "api/parser-glitch-report.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
     {
       "source": "/api/results-report",
       "destination": "/api/results-report.js"
+    },
+    {
+      "source": "/api/parser-glitch-report",
+      "destination": "/api/parser-glitch-report.js"
     },
     {
       "source": "/",

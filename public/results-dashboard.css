@@ -305,6 +305,21 @@ th {
   margin: 8px 0 8px 16px;
 }
 
+.help-modal-content pre {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(0, 160, 222, 0.3);
+  color: #d9e2ef;
+  max-height: 62vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
 .help-modal-close {
   position: absolute;
   top: 10px;

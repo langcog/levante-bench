@@ -157,6 +157,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--results-root`, `--output`
   - **Outputs:** PNG with task-wise stage lines + mean-accuracy bars
   - **Example:** `python scripts/analysis/plot_aquila_stages.py --results-root scripts/results/aquila-checkpoints/2026-03-29`
+- `check_parser_glitches.py`
+  - **Purpose:** scan trial CSVs for parser anomalies (high unparseable/empty prediction rates), write a diagnostics report, and suggest parser/prompt fixes
+  - **Inputs:** `--local` or `--bucket` (default bucket), `--results-root` (for local mode), `--bucket-results-url` and `--staging-dir` (for bucket mode), `--output-json`, `--output-markdown`, optional thresholds
+  - **Outputs:** JSON + Markdown parser-glitch reports
+  - **Example:** `python scripts/analysis/check_parser_glitches.py --bucket --bucket-results-url gs://levante-bench/results`
 
 ## Notes
 

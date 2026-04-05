@@ -380,6 +380,9 @@ class VLMModel:
             rf"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z]){label_suffix}",
             rf"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
             rf"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
+            rf"\b(?:final\s+)?answer\s*(?:is|:|=|->|=>|-)\s*\(?\s*(?P<label>[A-Z])\s*\)?{label_suffix}",
+            rf"\b(?:choose|pick|select)\s+(?:option\s+)?(?P<label>[A-Z]){label_suffix}",
+            rf"\boption\s+(?P<label>[A-Z])(?:\s+is\s+correct)?{label_suffix}",
         )
         for pattern in phrase_patterns:
             m = re.search(pattern, text, re.IGNORECASE)

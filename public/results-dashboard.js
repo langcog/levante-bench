@@ -127,6 +127,65 @@
         </p>
       `,
     },
+    parser: {
+      title: "Our Parser",
+      html: `
+        <p>
+          LEVANTE-Bench uses a layered parser with provenance to convert raw model
+          text into canonical benchmark answers.
+        </p>
+        <h3>How it works</h3>
+        <ul>
+          <li>Model-specific cleanup in <code>parse_response()</code> removes wrappers and formatting artifacts.</li>
+          <li>Shared v2 answer parsing extracts labels/numbers and records parse provenance fields.</li>
+          <li>Each trial logs <code>parse_method</code>, <code>parse_confidence</code>, and <code>parse_raw_candidate</code> for auditability.</li>
+        </ul>
+        <h3>Recent parser improvements</h3>
+        <ul>
+          <li>Punctuation-wrapped label extraction (for outputs like <code>; A:</code>).</li>
+          <li>Broader explicit-phrase capture (for forms like <code>Final answer -&gt; (C)</code>, <code>choose option D</code>, and <code>Option B is correct</code>).</li>
+          <li>Fallback logic for harder outputs in selected model adapters.</li>
+        </ul>
+        <h3>Validation tooling</h3>
+        <p>
+          Use <code>scripts/analysis/check_parser_glitches.py</code> to scan all
+          result CSVs, surface parser-risk clusters, and generate fix suggestions.
+        </p>
+      `,
+    },
+    "getting-started": {
+      title: "Getting Started",
+      html: `
+        <p>
+          Quick path for researchers to run LEVANTE-Bench, compare models, and
+          publish reproducible results.
+        </p>
+        <h3>1) Clone and set up</h3>
+        <ul>
+          <li>Clone the repository and create a Python virtual environment.</li>
+          <li>Install dependencies and set required API keys in <code>.env</code> (for hosted models).</li>
+          <li>Download benchmark assets with <code>scripts/download_levante_assets.py</code>.</li>
+        </ul>
+        <h3>2) Run evaluations</h3>
+        <ul>
+          <li>Run via CLI (<code>python -m levante_bench.cli run-eval ...</code>) or experiment configs.</li>
+          <li>Use canonical output layout: <code>results/&lt;version&gt;/&lt;model-size[-lang]&gt;/</code>.</li>
+          <li>Each run should include task CSVs, <code>summary.csv</code>, and <code>metadata.json</code>.</li>
+        </ul>
+        <h3>3) Analyze and review quality</h3>
+        <ul>
+          <li>Build comparison JSON with <code>scripts/analysis/build_model_comparison_report.py</code>.</li>
+          <li>Audit parsing behavior with <code>scripts/analysis/check_parser_glitches.py</code>.</li>
+          <li>Refresh this dashboard to pull latest bucket-backed data.</li>
+        </ul>
+        <h3>4) Add your own model or runs</h3>
+        <ul>
+          <li>Add a model config in <code>configs/models/</code> and adapter implementation in <code>src/levante_bench/models/</code>.</li>
+          <li>Register the model and run a small smoke evaluation before full runs.</li>
+          <li>Upload completed results under the canonical version/model folder in the bucket.</li>
+        </ul>
+      `,
+    },
   };
 
   function selectedValues(selectEl) {
@@ -408,9 +467,41 @@
     }
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  async function loadParserIssuesReport() {
+    const response = await fetch(`/api/parser-glitch-report?t=${Date.now()}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return await response.text();
+  }
+
   function openHelpModal(topicId) {
     const item = helpContentByTopic[topicId];
-    if (!item) {
+    if (!item && topicId !== "parser-issues") {
+      return;
+    }
+    if (topicId === "parser-issues") {
+      helpModalTitle.textContent = "Current Parser Issues";
+      helpModalContent.innerHTML = "<p>Loading parser glitch report...</p>";
+      helpModal.classList.remove("hidden");
+      helpMenuDropdown.setAttribute("aria-hidden", "true");
+      helpMenuButton.setAttribute("aria-expanded", "false");
+      loadParserIssuesReport()
+        .then((reportText) => {
+          helpModalContent.innerHTML = `<pre>${escapeHtml(reportText)}</pre>`;
+        })
+        .catch((error) => {
+          helpModalContent.innerHTML = `<p>Failed to load parser glitch report: ${escapeHtml(
+            String(error && error.message ? error.message : error),
+          )}</p>`;
+        });
       return;
     }
     helpModalTitle.textContent = item.title;

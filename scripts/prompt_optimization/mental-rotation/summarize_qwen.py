@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_DIR = PROJECT_ROOT / "results" / "prompt_optimization/mental-rotation/qwen-0.8b"
 
 ROW_ORDER = [

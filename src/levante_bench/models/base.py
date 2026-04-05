@@ -394,7 +394,24 @@ class VLMModel:
                         raw_candidate=m.group("label"),
                     )
 
-        # 4. Exact match (entire text is just the label)
+        # 4. Single label wrapped by punctuation/noise (e.g., "; A:")
+        m = re.search(
+            r'^[\s\W_]*(?P<label>[A-Z])[\s\W_]*$',
+            text,
+            re.IGNORECASE,
+        )
+        if m:
+            answer = m.group("label").upper()
+            if answer in labels_upper:
+                return ParseResult(
+                    value=answer,
+                    reason=text,
+                    parse_method="punctuated_single_label",
+                    parse_confidence="low",
+                    raw_candidate=m.group("label"),
+                )
+
+        # 5. Exact match (entire text is just the label)
         if text.upper() in labels_upper:
             return ParseResult(
                 value=text.upper(),
@@ -404,7 +421,7 @@ class VLMModel:
                 raw_candidate=text,
             )
 
-        # 5. Text starts with label followed by delimiter
+        # 6. Text starts with label followed by delimiter
         for label in option_labels:
             if text.upper().startswith(label.upper()):
                 rest = text[len(label):]

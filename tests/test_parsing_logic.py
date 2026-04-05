@@ -24,6 +24,8 @@ from levante_bench.models.qwen35 import Qwen35Model
         ("The correct answer is A bird.", ["A", "B", "C", "D"], None),
         ("Category B is wrong.", ["A", "B", "C", "D"], None),
         ("I think the answer might be A bird", ["A", "B", "C", "D"], None),
+        ("; A:", ["A", "B", "C", "D"], "A"),
+        ("... ( d ) ;", ["A", "B", "C", "D"], "D"),
         ("None of the above", ["A", "B", "C", "D"], None),
         ("", ["A", "B", "C", "D"], None),
     ],

@@ -174,12 +174,38 @@ button {
 .status-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
   color: var(--muted);
   background: var(--panel);
   border: 1px solid rgba(0, 160, 222, 0.28);
   border-radius: 10px;
   padding: 10px 12px;
+}
+
+.status-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.status-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.refresh-data-button {
+  margin: 0;
+  width: auto;
+  min-width: 128px;
+  padding: 8px 12px;
+}
+
+.refresh-data-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .chart-wrap,
@@ -301,6 +327,11 @@ th {
   }
 
   .header-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .status-row {
     flex-direction: column;
     align-items: flex-start;
   }

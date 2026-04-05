@@ -9,6 +9,7 @@
   const allModelsBtn = document.getElementById("all-models");
   const allTasksBtn = document.getElementById("all-tasks");
   const allLanguagesBtn = document.getElementById("all-languages");
+  const refreshDataBtn = document.getElementById("refresh-data");
   const helpMenuButton = document.getElementById("help-menu-button");
   const helpMenuDropdown = document.getElementById("help-menu-dropdown");
   const helpMenuItems = Array.from(document.querySelectorAll(".help-menu-item"));
@@ -362,6 +363,51 @@
     renderChart(rows);
   }
 
+  function setSelectedFromSet(selectEl, valueSet) {
+    Array.from(selectEl.options).forEach((option) => {
+      option.selected = valueSet.has(option.value);
+    });
+  }
+
+  async function loadReportData({ preserveSelection = false } = {}) {
+    const previousSelection = {
+      models: selectedValues(modelsEl),
+      tasks: selectedValues(tasksEl),
+      languages: selectedValues(languagesEl),
+    };
+    try {
+      if (refreshDataBtn) {
+        refreshDataBtn.disabled = true;
+        refreshDataBtn.textContent = "Refreshing...";
+      }
+      statusEl.textContent = "Loading report...";
+      const response = await fetch(`/api/results-report?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      records = parseRecords(payload.report || {});
+      metaEl.textContent = `Source: ${payload.source || "unknown"} | Generated: ${
+        (payload.report && payload.report.generated_at) || "n/a"
+      }`;
+      renderSelectors();
+      if (preserveSelection) {
+        setSelectedFromSet(modelsEl, previousSelection.models);
+        setSelectedFromSet(tasksEl, previousSelection.tasks);
+        setSelectedFromSet(languagesEl, previousSelection.languages);
+      }
+      rerender();
+    } catch (error) {
+      statusEl.textContent = "Failed to load report data.";
+      metaEl.textContent = String(error && error.message ? error.message : error);
+    } finally {
+      if (refreshDataBtn) {
+        refreshDataBtn.disabled = false;
+        refreshDataBtn.textContent = "Refresh Data";
+      }
+    }
+  }
+
   function openHelpModal(topicId) {
     const item = helpContentByTopic[topicId];
     if (!item) {
@@ -379,22 +425,7 @@
   }
 
   async function boot() {
-    try {
-      const response = await fetch("/api/results-report");
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const payload = await response.json();
-      records = parseRecords(payload.report || {});
-      metaEl.textContent = `Source: ${payload.source || "unknown"} | Generated: ${
-        (payload.report && payload.report.generated_at) || "n/a"
-      }`;
-      renderSelectors();
-      rerender();
-    } catch (error) {
-      statusEl.textContent = "Failed to load report data.";
-      metaEl.textContent = String(error && error.message ? error.message : error);
-    }
+    await loadReportData({ preserveSelection: false });
   }
 
   [modelsEl, tasksEl, languagesEl].forEach((el) => {
@@ -412,6 +443,11 @@
     setAllSelected(languagesEl);
     rerender();
   });
+  if (refreshDataBtn) {
+    refreshDataBtn.addEventListener("click", async () => {
+      await loadReportData({ preserveSelection: true });
+    });
+  }
   if (helpMenuButton) {
     helpMenuButton.addEventListener("click", () => {
       const isHidden = helpMenuDropdown.getAttribute("aria-hidden") !== "false";

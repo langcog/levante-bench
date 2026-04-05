@@ -11,9 +11,22 @@
   <body>
     <main class="container">
       <header class="header">
-        <div class="header-title-row">
-          <img class="header-logo" src="/levante_icon.svg" alt="Levante logo" />
-          <h1>Levante-Bench Results Dashboard</h1>
+        <div class="header-top-row">
+          <div class="header-title-row">
+            <img class="header-logo" src="/levante_icon.svg" alt="Levante logo" />
+            <h1>Levante-Bench Results Dashboard</h1>
+          </div>
+          <div class="help-menu">
+            <button id="help-menu-button" class="help-menu-button" type="button" aria-haspopup="true" aria-expanded="false">
+              Help
+            </button>
+            <div id="help-menu-dropdown" class="help-menu-dropdown" role="menu" aria-hidden="true">
+              <button class="help-menu-item" type="button" data-help-topic="project">Levante Bench...</button>
+              <button class="help-menu-item" type="button" data-help-topic="dataset">Our Dataset...</button>
+              <button class="help-menu-item" type="button" data-help-topic="models">Models...</button>
+              <button class="help-menu-item" type="button" data-help-topic="benchmark">Benchmark...</button>
+            </div>
+          </div>
         </div>
         <p>Filter models, tasks, and languages. Compare task-level accuracy curves.</p>
       </header>
@@ -70,6 +83,14 @@
         </div>
       </section>
     </main>
+
+    <div id="help-modal" class="help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+      <div class="help-modal-card">
+        <button id="help-modal-close" class="help-modal-close" type="button" aria-label="Close help dialog">×</button>
+        <h2 id="help-modal-title"></h2>
+        <div id="help-modal-content" class="help-modal-content"></div>
+      </div>
+    </div>
 
     <script src="/results-dashboard.js"></script>
   </body>

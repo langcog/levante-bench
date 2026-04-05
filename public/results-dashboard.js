@@ -9,6 +9,13 @@
   const allModelsBtn = document.getElementById("all-models");
   const allTasksBtn = document.getElementById("all-tasks");
   const allLanguagesBtn = document.getElementById("all-languages");
+  const helpMenuButton = document.getElementById("help-menu-button");
+  const helpMenuDropdown = document.getElementById("help-menu-dropdown");
+  const helpMenuItems = Array.from(document.querySelectorAll(".help-menu-item"));
+  const helpModal = document.getElementById("help-modal");
+  const helpModalClose = document.getElementById("help-modal-close");
+  const helpModalTitle = document.getElementById("help-modal-title");
+  const helpModalContent = document.getElementById("help-modal-content");
 
   let chart = null;
   let records = [];
@@ -32,6 +39,94 @@
     "#f97316",
     "#0ea5e9",
   ];
+  const helpContentByTopic = {
+    project: {
+      title: "Levante Bench",
+      html: `
+        <p>
+          <strong>Levante-Bench</strong> is an open benchmark for evaluating vision-language
+          models on child-centered cognitive tasks from the LEVANTE framework.
+        </p>
+        <h3>What it measures</h3>
+        <ul>
+          <li>Task accuracy across multiple cognitive domains.</li>
+          <li>Model performance under multilingual prompt conditions.</li>
+          <li>Comparability across model families and parameter sizes.</li>
+        </ul>
+        <h3>What this dashboard does</h3>
+        <p>
+          It lets researchers filter model/task/language combinations and compare
+          task-level accuracy curves and summary statistics.
+        </p>
+      `,
+    },
+    dataset: {
+      title: "Our Dataset (v1)",
+      html: `
+        <p>
+          <strong>v1</strong> is the first stable benchmark snapshot used for reproducible
+          model comparisons in this dashboard.
+        </p>
+        <h3>Task coverage</h3>
+        <ul>
+          <li>egma-math</li>
+          <li>matrix-reasoning</li>
+          <li>mental-rotation</li>
+          <li>theory-of-mind</li>
+          <li>trog</li>
+          <li>vocab</li>
+        </ul>
+        <h3>Versioning</h3>
+        <p>
+          Results are stored with deterministic paths under
+          <code>results/&lt;version&gt;/&lt;model-size[-lang]&gt;/</code> so runs can be tracked
+          and compared across releases.
+        </p>
+      `,
+    },
+    models: {
+      title: "Models",
+      html: `
+        <p>Current benchmark runs include the following model families:</p>
+        <h3>Aquila-VL</h3>
+        <p><a href="https://huggingface.co/BAAI/Aquila-VL-2B-llava-qwen" target="_blank" rel="noopener noreferrer">BAAI/Aquila-VL-2B-llava-qwen</a></p>
+        <p><a href="https://github.com/BAAI-DCAI/Aquila-VL" target="_blank" rel="noopener noreferrer">Aquila-VL project repository</a></p>
+        <h3>SmolVLM2</h3>
+        <p><a href="https://huggingface.co/HuggingFaceTB/SmolVLM2-256M-Instruct" target="_blank" rel="noopener noreferrer">HuggingFaceTB/SmolVLM2-256M-Instruct</a></p>
+        <p><a href="https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Instruct" target="_blank" rel="noopener noreferrer">HuggingFaceTB/SmolVLM2-500M-Instruct</a></p>
+        <h3>Qwen3.5</h3>
+        <p><a href="https://huggingface.co/Qwen" target="_blank" rel="noopener noreferrer">Qwen model family (Qwen3.5 variants)</a></p>
+        <h3>Gemma</h3>
+        <p><a href="https://huggingface.co/google/gemma-3-4b-it" target="_blank" rel="noopener noreferrer">google/gemma-3-4b-it</a></p>
+        <p><a href="https://huggingface.co/google/gemma-4-E2B-it" target="_blank" rel="noopener noreferrer">google/gemma-4-E2B-it</a></p>
+        <p><a href="https://huggingface.co/google/gemma-4-E4B-it" target="_blank" rel="noopener noreferrer">google/gemma-4-E4B-it</a></p>
+        <h3>InternVL3.5</h3>
+        <p><a href="https://huggingface.co/OpenGVLab/InternVL3_5-1B-HF" target="_blank" rel="noopener noreferrer">OpenGVLab/InternVL3_5-1B-HF</a></p>
+        <h3>TinyLLaVA</h3>
+        <p><a href="https://huggingface.co/tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B" target="_blank" rel="noopener noreferrer">tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B</a></p>
+      `,
+    },
+    benchmark: {
+      title: "Benchmark Process",
+      html: `
+        <h3>Step 1: Run evaluation</h3>
+        <p>
+          Each model is evaluated on all benchmark tasks for a fixed data version
+          (for example <code>v1</code>) and selected prompt language.
+        </p>
+        <h3>Step 2: Write task outputs</h3>
+        <p>
+          Per-task predictions are written to task CSV files, and per-model
+          task accuracies are collected into <code>summary.csv</code>.
+        </p>
+        <h3>Step 3: Aggregate and publish</h3>
+        <p>
+          Published results are synced to the levante-bench bucket and this dashboard
+          computes cross-model comparison JSON from bucket summaries on refresh.
+        </p>
+      `,
+    },
+  };
 
   function selectedValues(selectEl) {
     return new Set(Array.from(selectEl.selectedOptions).map((o) => o.value));
@@ -267,6 +362,22 @@
     renderChart(rows);
   }
 
+  function openHelpModal(topicId) {
+    const item = helpContentByTopic[topicId];
+    if (!item) {
+      return;
+    }
+    helpModalTitle.textContent = item.title;
+    helpModalContent.innerHTML = item.html;
+    helpModal.classList.remove("hidden");
+    helpMenuDropdown.setAttribute("aria-hidden", "true");
+    helpMenuButton.setAttribute("aria-expanded", "false");
+  }
+
+  function closeHelpModal() {
+    helpModal.classList.add("hidden");
+  }
+
   async function boot() {
     try {
       const response = await fetch("/api/results-report");
@@ -300,6 +411,48 @@
   allLanguagesBtn.addEventListener("click", () => {
     setAllSelected(languagesEl);
     rerender();
+  });
+  if (helpMenuButton) {
+    helpMenuButton.addEventListener("click", () => {
+      const isHidden = helpMenuDropdown.getAttribute("aria-hidden") !== "false";
+      helpMenuDropdown.setAttribute("aria-hidden", isHidden ? "false" : "true");
+      helpMenuButton.setAttribute("aria-expanded", isHidden ? "true" : "false");
+    });
+  }
+  helpMenuItems.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openHelpModal(btn.dataset.helpTopic || "");
+    });
+  });
+  if (helpModalClose) {
+    helpModalClose.addEventListener("click", closeHelpModal);
+  }
+  if (helpModal) {
+    helpModal.addEventListener("click", (event) => {
+      if (event.target === helpModal) {
+        closeHelpModal();
+      }
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeHelpModal();
+      helpMenuDropdown.setAttribute("aria-hidden", "true");
+      helpMenuButton.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!helpMenuButton || !helpMenuDropdown) {
+      return;
+    }
+    if (
+      helpMenuDropdown.getAttribute("aria-hidden") === "false" &&
+      !helpMenuDropdown.contains(event.target) &&
+      !helpMenuButton.contains(event.target)
+    ) {
+      helpMenuDropdown.setAttribute("aria-hidden", "true");
+      helpMenuButton.setAttribute("aria-expanded", "false");
+    }
   });
 
   boot();

@@ -42,6 +42,18 @@ body {
   color: #03101f;
 }
 
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+}
+
 .header p {
   color: rgba(3, 16, 31, 0.82);
   margin: 6px 0 0 0;

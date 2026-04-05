@@ -24,6 +24,16 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--folder-url`, `--output-dir`
   - **Outputs:** synced folders under `results/`
   - **Example:** `python scripts/download_results_from_drive.py --output-dir results`
+- `publish_results_from_drive_to_bucket.py`
+  - **Purpose:** end-to-end publish pipeline (Drive -> local staging -> comparison report -> `gs://levante-bench/results`)
+  - **Inputs:** `--folder-url`, `--bucket-results-url`, `--staging-dir`, optional `--remaining-ok`, optional `--skip-download`, optional `--min-summary-files`, optional `--fallback-results-root`
+  - **Outputs:** synced benchmark results + `model-comparison-report.json` in bucket prefix; report cache-control set to no-store; excludes `*:Zone.Identifier` artifacts from rsync
+  - **Example:** `python scripts/analysis/publish_results_from_drive_to_bucket.py --remaining-ok`
+- `publish_results.sh`
+  - **Purpose:** convenience wrapper for `publish_results_from_drive_to_bucket.py`
+  - **Inputs:** same flags as the Python script (passthrough)
+  - **Outputs:** same as publish pipeline
+  - **Example:** `scripts/publish_results.sh --remaining-ok`
 - `run_benchmark_v1.py`
   - **Purpose:** run the v1 benchmark bundle (math + ToM robustness)
   - **Inputs:** `--data-version`, `--model-id`, `--device`, `--max-items-*`

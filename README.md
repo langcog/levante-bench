@@ -42,9 +42,10 @@ For multilingual runs (`--prompt-language` not English), per-model result folder
 ## Web results dashboard (Vercel)
 
 - A lightweight dashboard is available at `/` when deployed with Vercel.
-- API endpoint `/api/results-report` reads model comparison JSON from:
-  1. `RESULTS_REPORT_URL` (if set), or
-  2. local `results/model-comparison-report.json` (fallback).
+- API endpoint `/api/results-report` supports:
+  1. live bucket aggregation (`RESULTS_SOURCE_MODE=bucket_compute`, default),
+  2. remote prebuilt JSON (`RESULTS_SOURCE_MODE=remote` + `RESULTS_REPORT_URL`), or
+  3. local JSON fallback (`RESULTS_SOURCE_MODE=local`).
 - Build report data before local preview:
 
 ```bash

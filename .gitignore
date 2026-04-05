@@ -4,6 +4,7 @@
 !/data/assets/
 /data/assets/*
 !/data/assets/manifest.csv
+.tmp/
 .secrets
 .env
 .env.*

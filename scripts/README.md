@@ -163,9 +163,10 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Outputs:** JSON + Markdown parser-glitch reports
   - **Example:** `python scripts/analysis/check_parser_glitches.py --bucket --bucket-results-url gs://levante-bench/results`
 - `plot_human_accuracy_by_age_lines.py`
-  - **Purpose:** aggregate human trial accuracy by age bin and plot task-wise line chart (one line per age bin)
+  - **Purpose:** aggregate human trial accuracy by age bin/language and plot task-wise line chart
   - **Inputs:** `--trials-csv`, `--min-age`, `--max-age`, `--bin-width`, `--min-samples`
-  - **Outputs:** PNG line chart + CSV aggregate table
+  - **Outputs:** PNG line chart + CSV aggregate table with columns `age_bin,task_id,language,n,accuracy`
+  - **Usage in dashboard:** powers `/api/human-age-accuracy` for model-vs-children comparison with shared task/language filters
   - **Example:** `python scripts/analysis/plot_human_accuracy_by_age_lines.py --trials-csv data/responses/v1/trials.csv`
 
 ## Notes

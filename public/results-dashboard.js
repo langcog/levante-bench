@@ -65,8 +65,18 @@
         </ul>
         <h3>What this dashboard does</h3>
         <p>
-          It lets researchers filter model/task/language combinations and compare
-          task-level accuracy curves and summary statistics.
+          It lets researchers compare model runs against aggregated child performance
+          by age bin, with shared task and language filters.
+        </p>
+        <ul>
+          <li><strong>Models tab:</strong> select one or more model families/sizes.</li>
+          <li><strong>Children tab:</strong> select one or more child age bins.</li>
+          <li><strong>Languages filter:</strong> applies to both models and children.</li>
+          <li><strong>Tasks filter:</strong> applies to both models and children.</li>
+        </ul>
+        <p>
+          Child lines are computed from <code>trials.csv</code> and exposed through
+          <code>/api/human-age-accuracy</code>.
         </p>
       `,
     },
@@ -134,6 +144,11 @@
           Published results are synced to the levante-bench bucket and this dashboard
           computes cross-model comparison JSON from bucket summaries on refresh.
         </p>
+        <h3>Step 4: Compare with children</h3>
+        <p>
+          Human child accuracy lines are aggregated from Redivis trial data by
+          age bin, task, and language, then loaded by the dashboard alongside model runs.
+        </p>
       `,
     },
     parser: {
@@ -184,8 +199,9 @@
         <h3>3) Analyze and review quality</h3>
         <ul>
           <li>Build comparison JSON with <code>scripts/analysis/build_model_comparison_report.py</code>.</li>
+          <li>Build child age/language comparison data with <code>scripts/analysis/plot_human_accuracy_by_age_lines.py</code>.</li>
           <li>Audit parsing behavior with <code>scripts/analysis/check_parser_glitches.py</code>.</li>
-          <li>Refresh this dashboard to pull latest bucket-backed data.</li>
+          <li>Refresh this dashboard to pull latest bucket-backed model and child comparison data.</li>
         </ul>
         <h3>4) Add your own model or runs</h3>
         <ul>

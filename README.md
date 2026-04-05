@@ -46,6 +46,21 @@ For multilingual runs (`--prompt-language` not English), per-model result folder
   1. live bucket aggregation (`RESULTS_SOURCE_MODE=bucket_compute`, default),
   2. remote prebuilt JSON (`RESULTS_SOURCE_MODE=remote` + `RESULTS_REPORT_URL`), or
   3. local JSON fallback (`RESULTS_SOURCE_MODE=local`).
+- API endpoint `/api/human-age-accuracy` serves aggregated child accuracy lines from
+  `results/human-accuracy-by-age-lines.csv` (bucket or local mode).
+- The dashboard supports model-vs-children comparison with:
+  - tabbed series selection (`Models` / `Children`),
+  - shared task and language filters across both tabs,
+  - child series grouped by age bin and filtered by the same language selector used for models.
+- Generate or refresh child comparison data from Redivis trials with:
+
+```bash
+python scripts/analysis/plot_human_accuracy_by_age_lines.py \
+  --trials-csv data/responses/v1/trials.csv \
+  --output-csv results/human-accuracy-by-age-lines.csv \
+  --output results/human-accuracy-by-age-lines.png
+```
+
 - Build report data before local preview:
 
 ```bash

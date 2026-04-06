@@ -1,0 +1,19 @@
+# Runner experiment: GPT-5.3 on v1 benchmark tasks.
+# Run: python -m levante_bench.cli experiment=configs/experiment_gpt53_v1.yaml device=auto
+
+models:
+  - name: gpt53
+    use_json_format: true
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: v1
+device: cpu

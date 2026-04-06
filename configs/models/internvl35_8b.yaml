@@ -1,0 +1,10 @@
+name: internvl35_8b
+hf_name: OpenGVLab/InternVL3_5-8B-HF
+params_b: 8.0
+family: internvl35
+max_new_tokens: 128
+dtype: bfloat16
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

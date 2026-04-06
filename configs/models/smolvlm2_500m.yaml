@@ -1,0 +1,10 @@
+name: smolvlm2_500m
+hf_name: HuggingFaceTB/SmolVLM2-500M-Video-Instruct
+params_b: 0.5
+family: smolvlm2
+max_new_tokens: 64
+dtype: bfloat16
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

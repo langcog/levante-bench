@@ -219,7 +219,11 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             max_new_tokens = model_cfg.get("max_new_tokens", 64)
 
             for i in tqdm(range(len(dataset)), desc=f"  {task_id}", unit="trial"):
-                trial = dataset[i]
+                try:
+                    trial = dataset[i]
+                except (FileNotFoundError, OSError) as exc:
+                    print(f"  SKIP item {i} ({task_id}): {exc}", file=sys.stderr)
+                    continue
                 task_trials.append(trial)
                 trial["max_new_tokens"] = max_new_tokens
                 h = trial_hash(trial)
@@ -228,7 +232,11 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                     task_results.append(cache[h])
                     continue
 
-                result = model.evaluate_trial(trial)
+                try:
+                    result = model.evaluate_trial(trial)
+                except (FileNotFoundError, OSError) as exc:
+                    print(f"  SKIP item {i} ({task_id}): {exc}", file=sys.stderr)
+                    continue
 
                 # Annotate with human comparison metrics when data is available
                 if human_props:

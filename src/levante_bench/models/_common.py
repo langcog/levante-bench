@@ -24,18 +24,20 @@ def hf_sample_kwargs(
     top_p: float,
     sample_seed: int | None,
 ) -> dict:
-    """Keyword args for ``transformers`` ``generate`` sampling (or greedy)."""
+    """Keyword args for ``transformers`` ``generate`` sampling (or greedy).
+
+    Sets ``torch.manual_seed`` as a side effect when ``sample_seed`` is given
+    so that results are reproducible across models regardless of whether they
+    accept a ``generator`` kwarg.
+    """
     if not do_sample:
         return {"do_sample": False}
-    dev = torch.device(device) if isinstance(device, str) else device
-    gen = torch.Generator(device=dev)
     if sample_seed is not None:
-        gen.manual_seed(int(sample_seed) % (2**32))
+        torch.manual_seed(int(sample_seed) % (2**32))
     return {
         "do_sample": True,
         "temperature": max(float(temperature), 1e-5),
         "top_p": float(top_p),
-        "generator": gen,
     }
 
 

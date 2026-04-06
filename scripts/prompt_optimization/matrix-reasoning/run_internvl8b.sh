@@ -49,7 +49,7 @@ run_one "phase_5_3_1024"     --phase 5 3 --max-image-size 1024
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo "──── SUMMARY ────" | tee -a "$SUITE_LOG"
-"$PY" "${ROOT}/scripts/summarize_matrix_8b_phases.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
+"$PY" "${ROOT}/scripts/prompt_optimization/matrix-reasoning/summarize_internvl8b.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
 
 echo ""
 echo "Suite complete. Log: $SUITE_LOG"

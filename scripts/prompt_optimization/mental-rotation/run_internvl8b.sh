@@ -19,7 +19,7 @@ run_one() {
     shift
     local logfile="${LOGDIR}/run_${tag}.log"
     echo "──── ${tag} ────" | tee -a "$SUITE_LOG"
-    "$PY" "${ROOT}/scripts/experiment_mrot_internvl_phases.py" \
+    "$PY" "${ROOT}/scripts/prompt_optimization/mental-rotation/experiment_internvl2b.py" \
         --model-id "$MODEL_ID" \
         --output-dir "$LOGDIR" \
         "$@" 2>&1 | tee "$logfile" | tee -a "$SUITE_LOG"
@@ -42,7 +42,7 @@ run_one "phase_1_4"         --phase 1 4
 run_one "phase_1_2_3_4_5"   --phase 1 2 3 4 5
 
 echo "──── SUMMARY ────" | tee -a "$SUITE_LOG"
-"$PY" "${ROOT}/scripts/summarize_mrot_internvl8b_phases.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
+"$PY" "${ROOT}/scripts/prompt_optimization/mental-rotation/summarize_internvl8b.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
 
 echo ""
 echo "Suite complete. Full log: $SUITE_LOG"

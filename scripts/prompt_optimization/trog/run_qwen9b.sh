@@ -12,8 +12,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PY="$PROJECT_ROOT/.venv/bin/python"
+DEVICE="${DEVICE:-cuda}"
 EXP="$SCRIPT_DIR/experiment_qwen9b.py"
 RESULTS="$PROJECT_ROOT/results/trog-9b-phases"
 LOG_DIR="$RESULTS"
@@ -28,7 +28,7 @@ run_phase() {
     echo "════════════════════════════════════════════════════════"
     echo "  Launching: phases=${phases[*]}  →  $log"
     echo "════════════════════════════════════════════════════════"
-    HF_HUB_OFFLINE=1 "$PY" "$EXP" --phase "${phases[@]}" --device mps 2>&1 | tee "$log"
+    HF_HUB_OFFLINE=1 "$PY" "$EXP" --phase "${phases[@]}" --device "$DEVICE" 2>&1 | tee "$log"
     echo ""
 }
 

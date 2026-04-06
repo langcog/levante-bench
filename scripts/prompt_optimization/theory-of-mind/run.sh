@@ -17,7 +17,7 @@ run_one() {
     shift
     local logfile="${LOGDIR}/run_${tag}.log"
     echo "──── ${tag} ────" | tee -a "$SUITE_LOG"
-    "$PY" "${ROOT}/scripts/experiment_stories_phases.py" "$@" 2>&1 | tee "$logfile" | tee -a "$SUITE_LOG"
+    "$PY" "${ROOT}/scripts/prompt_optimization/theory-of-mind/experiment.py" "$@" 2>&1 | tee "$logfile" | tee -a "$SUITE_LOG"
     echo "" | tee -a "$SUITE_LOG"
 }
 
@@ -44,7 +44,7 @@ run_one "phase_1_2_3_6"     --phase 1 2 3 6
 
 # Summary
 echo "──── SUMMARY ────" | tee -a "$SUITE_LOG"
-"$PY" "${ROOT}/scripts/summarize_stories_phases.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
+"$PY" "${ROOT}/scripts/prompt_optimization/theory-of-mind/summarize.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
 
 echo ""
 echo "Suite complete. Full log: $SUITE_LOG"

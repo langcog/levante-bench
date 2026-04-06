@@ -50,7 +50,7 @@ run_one "phase_1_2_7_6"     --phase 1 2 7 6
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo "──── SUMMARY ────" | tee -a "$SUITE_LOG"
-"$PY" "${ROOT}/scripts/summarize_trog_2b_phases.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
+"$PY" "${ROOT}/scripts/prompt_optimization/trog/summarize_qwen2b.py" --dir "$LOGDIR" 2>&1 | tee -a "$SUITE_LOG"
 
 echo ""
 echo "Suite complete. Log: $SUITE_LOG"

@@ -39,4 +39,4 @@ echo "All runs finished. Logs: ${LOGDIR}/run_*.log"
 
 echo ""
 echo "========== $(date -Iseconds) SUMMARY TABLE =========="
-"$PY" "${ROOT}/scripts/summarize_egma_math_phases.py" --dir "$LOGDIR" | tee -a "${LOGDIR}/suite.log"
+"$PY" "${ROOT}/scripts/prompt_optimization/egma-math/summarize.py" --dir "$LOGDIR" | tee -a "${LOGDIR}/suite.log"

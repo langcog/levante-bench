@@ -1,0 +1,10 @@
+name: tinyllava_3.1b
+hf_name: tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B
+params_b: 3.1
+family: tinyllava
+max_new_tokens: 32
+dtype: bfloat16
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

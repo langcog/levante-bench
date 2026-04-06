@@ -1,7 +1,10 @@
 name: gemini_pro
 hf_name: gemini-2.5-pro
-max_new_tokens: 128
+max_new_tokens: 1024
 use_json_format: true
+thinking_budget: 128
+retry_attempts: 4
+max_output_tokens_cap: 2048
 
 capabilities:
   - text_only

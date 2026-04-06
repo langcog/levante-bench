@@ -49,17 +49,8 @@ class VLMModel:
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 64,
-        *,
-        do_sample: bool = False,
-        temperature: float = 1.0,
-        top_p: float = 1.0,
-        sample_seed: int | None = None,
     ) -> str:
-        """Generate text given a prompt and optional images.
-
-        Stochastic decoding: set ``do_sample=True`` and optionally
-        ``temperature``, ``top_p``, and ``sample_seed`` for reproducible draws.
-        """
+        """Generate text given a prompt and optional images."""
         raise NotImplementedError
 
     def _build_messages(
@@ -389,6 +380,9 @@ class VLMModel:
             rf"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z]){label_suffix}",
             rf"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
             rf"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
+            rf"\b(?:final\s+)?answer\s*(?:is|:|=|->|=>|-)\s*\(?\s*(?P<label>[A-Z])\s*\)?{label_suffix}",
+            rf"\b(?:choose|pick|select)\s+(?:option\s+)?(?P<label>[A-Z]){label_suffix}",
+            rf"\boption\s+(?P<label>[A-Z])(?:\s+is\s+correct)?{label_suffix}",
         )
         for pattern in phrase_patterns:
             m = re.search(pattern, text, re.IGNORECASE)
@@ -403,7 +397,24 @@ class VLMModel:
                         raw_candidate=m.group("label"),
                     )
 
-        # 4. Exact match (entire text is just the label)
+        # 4. Single label wrapped by punctuation/noise (e.g., "; A:")
+        m = re.search(
+            r'^[\s\W_]*(?P<label>[A-Z])[\s\W_]*$',
+            text,
+            re.IGNORECASE,
+        )
+        if m:
+            answer = m.group("label").upper()
+            if answer in labels_upper:
+                return ParseResult(
+                    value=answer,
+                    reason=text,
+                    parse_method="punctuated_single_label",
+                    parse_confidence="low",
+                    raw_candidate=m.group("label"),
+                )
+
+        # 5. Exact match (entire text is just the label)
         if text.upper() in labels_upper:
             return ParseResult(
                 value=text.upper(),
@@ -413,7 +424,7 @@ class VLMModel:
                 raw_candidate=text,
             )
 
-        # 5. Text starts with label followed by delimiter
+        # 6. Text starts with label followed by delimiter
         for label in option_labels:
             if text.upper().startswith(label.upper()):
                 rest = text[len(label):]

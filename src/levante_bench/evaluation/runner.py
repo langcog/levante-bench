@@ -50,6 +50,30 @@ def _prompt_language(task_overrides: dict) -> str:
     return str(global_overrides.get("prompt_language") or "en")
 
 
+def _normalize_output_base(output_base: Path, version: str) -> Path:
+    """Normalize legacy output_dir values to canonical results root.
+
+    Handles legacy config values like:
+      - results/<version>
+      - results/<model>-<version>
+    so runner always writes to results/<version>/<model-size[-lang]>.
+    """
+    normalized = output_base
+
+    # If user passed results/<version>, collapse to results.
+    if normalized.name == version:
+        normalized = normalized.parent
+
+    # Legacy experiment configs used results/<model>-<version>.
+    if (
+        normalized.parent.name == "results"
+        and normalized.name.lower().endswith(f"-{version.lower()}")
+    ):
+        normalized = normalized.parent
+
+    return normalized
+
+
 def resolve_device(device: str) -> str:
     """Resolve auto device selection with safe CUDA -> CPU fallback."""
     choice = (device or "auto").strip().lower()
@@ -78,6 +102,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
     output_base = Path(cfg.get("output_dir", "results"))
     if not output_base.is_absolute():
         output_base = Path.cwd() / output_base
+    output_base = _normalize_output_base(output_base, version)
 
     device = resolve_device(str(cfg.get("device", "auto")))
     task_overrides_cfg = cfg.get("task_overrides") or {}
@@ -219,11 +244,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             max_new_tokens = model_cfg.get("max_new_tokens", 64)
 
             for i in tqdm(range(len(dataset)), desc=f"  {task_id}", unit="trial"):
-                try:
-                    trial = dataset[i]
-                except (FileNotFoundError, OSError) as exc:
-                    print(f"  SKIP item {i} ({task_id}): {exc}", file=sys.stderr)
-                    continue
+                trial = dataset[i]
                 task_trials.append(trial)
                 trial["max_new_tokens"] = max_new_tokens
                 h = trial_hash(trial)
@@ -232,11 +253,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                     task_results.append(cache[h])
                     continue
 
-                try:
-                    result = model.evaluate_trial(trial)
-                except (FileNotFoundError, OSError) as exc:
-                    print(f"  SKIP item {i} ({task_id}): {exc}", file=sys.stderr)
-                    continue
+                result = model.evaluate_trial(trial)
 
                 # Annotate with human comparison metrics when data is available
                 if human_props:

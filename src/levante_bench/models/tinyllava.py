@@ -121,11 +121,6 @@ class TinyLLaVAModel(VLMModel):
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 32,
-        *,
-        do_sample: bool = False,
-        temperature: float = 1.0,
-        top_p: float = 1.0,
-        sample_seed: int | None = None,
     ) -> str:
         """Generate text using TinyLLaVA's model.chat() API."""
         if not image_paths:
@@ -135,16 +130,12 @@ class TinyLLaVAModel(VLMModel):
 
         image, prompt = self._prepare_inputs(prompt_text, image_paths)
 
-        if sample_seed is not None:
-            torch.manual_seed(int(sample_seed) % (2**32))
-        temp = max(float(temperature), 1e-5) if do_sample else 0.0
-
         output, _ = self.model.chat(
             prompt=prompt,
             image=image,
             tokenizer=self.tokenizer,
             max_new_tokens=max_new_tokens,
-            temperature=temp,
+            temperature=0,
             num_beams=1,
         )
         return output
@@ -172,12 +163,7 @@ class TinyLLaVAModel(VLMModel):
         - 4 images   → (grid_path_str, prompt rewritten for A/B/C/D grid)
         """
         if not image_paths:
-            # TinyLLaVA's chat() requires an image; for text-only tasks pass a
-            # small blank white image so image_tensor is always bound.
-            blank = Image.new("RGB", (64, 64), color=(255, 255, 255))
-            tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-            blank.save(tmp.name)
-            return tmp.name, prompt_text
+            return None, prompt_text
 
         # Remove all <imageN> placeholders from the original prompt
         clean_prompt = re.sub(r"<image\d+>", "", prompt_text).strip()

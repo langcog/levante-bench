@@ -9,7 +9,6 @@ from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
-    hf_sample_kwargs,
     load_pil_images,
     parse_answer_result_with_fallback,
     parse_answer_with_fallback,
@@ -61,11 +60,6 @@ class Qwen35Model(VLMModel):
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 64,
-        *,
-        do_sample: bool = False,
-        temperature: float = 1.0,
-        top_p: float = 1.0,
-        sample_seed: int | None = None,
     ) -> str:
         """Generate text using Qwen3.5-VL."""
         pil_images = load_pil_images(image_paths)
@@ -82,16 +76,9 @@ class Qwen35Model(VLMModel):
         ).to(self.device)
 
         input_len = inputs["input_ids"].shape[1]
-        sample = hf_sample_kwargs(
-            self.device,
-            do_sample=do_sample,
-            temperature=temperature,
-            top_p=top_p,
-            sample_seed=sample_seed,
-        )
         with torch.no_grad():
             output_ids = self.model.generate(
-                **inputs, max_new_tokens=max_new_tokens, **sample
+                **inputs, do_sample=False, max_new_tokens=max_new_tokens
             )
 
         generated_ids = output_ids[:, input_len:]

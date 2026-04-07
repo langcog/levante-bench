@@ -246,6 +246,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             for i in tqdm(range(len(dataset)), desc=f"  {task_id}", unit="trial"):
                 trial = dataset[i]
                 task_trials.append(trial)
+                trial["task_id"] = task_id
                 trial["max_new_tokens"] = max_new_tokens
                 h = trial_hash(trial)
 

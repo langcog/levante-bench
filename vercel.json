@@ -9,6 +9,12 @@
     },
     "api/human-age-accuracy.js": {
       "maxDuration": 60
+    },
+    "api/model-age-equivalency.js": {
+      "maxDuration": 60
+    },
+    "api/model-age-equivalency-accuracy.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -23,6 +29,14 @@
     {
       "source": "/api/human-age-accuracy",
       "destination": "/api/human-age-accuracy.js"
+    },
+    {
+      "source": "/api/model-age-equivalency",
+      "destination": "/api/model-age-equivalency.js"
+    },
+    {
+      "source": "/api/model-age-equivalency-accuracy",
+      "destination": "/api/model-age-equivalency-accuracy.js"
     },
     {
       "source": "/",

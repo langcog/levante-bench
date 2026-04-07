@@ -14,6 +14,11 @@ function mean(values) {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
+function abilityBinStart(value) {
+  const match = String(value || "").trim().match(/^(-?\d+)_/);
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+}
+
 function splitModelSizeLanguage(modelTag) {
   let m = modelTag.match(MODEL_SIZE_UNDERSCORE_RE);
   if (m && m.groups) {
@@ -102,12 +107,57 @@ function aggregateByModel(records) {
     const task_stats = {};
     for (const taskId of Object.keys(taskMap).sort()) {
       const values = taskMap[taskId];
+      const taskRows = rows.filter((row) => row.task_id === taskId);
+      const abilityBinMap = {};
+      for (const row of taskRows) {
+        if (!abilityBinMap[row.ability_bin]) {
+          abilityBinMap[row.ability_bin] = [];
+        }
+        abilityBinMap[row.ability_bin].push(row.d_kl);
+      }
+      const ability_bin_stats = Object.fromEntries(
+        Object.entries(abilityBinMap)
+          .sort((a, b) => {
+            const sa = abilityBinStart(a[0]);
+            const sb = abilityBinStart(b[0]);
+            if (sa !== sb) {
+              return sa - sb;
+            }
+            return a[0].localeCompare(b[0]);
+          })
+          .map(([bin, binValues]) => [
+            bin,
+            {
+              count: binValues.length,
+              mean: mean(binValues),
+              min: Math.min(...binValues),
+              max: Math.max(...binValues),
+            },
+          ]),
+      );
+      const closest_ability_bin = Object.entries(ability_bin_stats)
+        .sort((a, b) => {
+          const am = Number(a[1].mean);
+          const bm = Number(b[1].mean);
+          if (am !== bm) {
+            return am - bm;
+          }
+          const sa = abilityBinStart(a[0]);
+          const sb = abilityBinStart(b[0]);
+          if (sa !== sb) {
+            return sa - sb;
+          }
+          return a[0].localeCompare(b[0]);
+        })
+        .map(([bin]) => bin)[0] || null;
       task_stats[taskId] = {
         count: values.length,
         min: Math.min(...values),
         max: Math.max(...values),
         mean: mean(values),
         values,
+        ability_bin_stats,
+        closest_ability_bin,
       };
     }
     byModel[modelTag] = {

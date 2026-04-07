@@ -6,6 +6,8 @@
   const languagesEl = document.getElementById("languages");
   const tableBody = document.querySelector("#results-table tbody");
   const metricColumnHeaderEl = document.getElementById("metric-column-header");
+  const closestBinColumnHeaderEl = document.getElementById("closest-bin-column-header");
+  const ageEqColumnHeaderEl = document.getElementById("age-eq-column-header");
   const summaryStatsEl = document.getElementById("summary-stats");
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
@@ -32,6 +34,10 @@
   let accuracyModelRecords = [];
   let accuracyChildRecords = [];
   let klModelRecords = [];
+  let ageEqModelRecords = [];
+  let ageEqAccModelRecords = [];
+  let ageEquivalencyIndex = new Map();
+  let ageEquivalencyAccuracyIndex = new Map();
   const preferredTaskOrder = [
     "egma-math",
     "matrix-reasoning",
@@ -52,6 +58,10 @@
     "#f97316",
     "#0ea5e9",
   ];
+  const MODEL_SIZE_UNDERSCORE_RE = /^(?<model>[A-Za-z0-9.-]+)_(?<size>[0-9]+(?:\.[0-9]+)?[A-Za-z]+)$/;
+  const MODEL_SIZE_DASH_RE =
+    /^(?<model>[A-Za-z0-9._-]+)-(?<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$/;
+  const LANG_SUFFIX_RE = /^(?<base>.+)-(?<lang>[a-z]{2})$/;
   const helpContentByTopic = {
     project: {
       title: "Levante Bench",
@@ -154,6 +164,29 @@
         </p>
       `,
     },
+    "age-equivalency": {
+      title: "Age Equivalency (KL-D)",
+      html: `
+        <p>
+          <strong>Age Eq</strong> is a task-specific estimate derived from how closely
+          a model's response distribution matches child response distributions across
+          IRT ability bins.
+        </p>
+        <h3>How it's computed</h3>
+        <ul>
+          <li>Compute mean D_KL for each <code>ability_bin</code> within a task.</li>
+          <li>Convert KL values to soft weights (lower KL = higher weight).</li>
+          <li>Map each ability bin to child age stats from the same task.</li>
+          <li>Report weighted expected age as <code>soft_age_eq_mean</code>.</li>
+        </ul>
+        <h3>How to read it safely</h3>
+        <ul>
+          <li>It is <strong>not</strong> a literal developmental age.</li>
+          <li>Interpret within-task; do not over-compare raw values across tasks.</li>
+          <li>Treat low-confidence matches as weak evidence.</li>
+        </ul>
+      `,
+    },
     parser: {
       title: "Our Parser",
       html: `
@@ -236,6 +269,35 @@
     return Array.from(new Set(values)).sort((a, b) => String(a).localeCompare(String(b)));
   }
 
+  function splitModelSizeLanguage(modelTag) {
+    let m = String(modelTag || "").match(MODEL_SIZE_UNDERSCORE_RE);
+    if (m && m.groups) {
+      return { model: m.groups.model, size: m.groups.size, language: null };
+    }
+    m = String(modelTag || "").match(MODEL_SIZE_DASH_RE);
+    if (m && m.groups) {
+      return { model: m.groups.model, size: m.groups.size, language: null };
+    }
+
+    let base = String(modelTag || "");
+    let language = null;
+    const lm = base.match(LANG_SUFFIX_RE);
+    if (lm && lm.groups) {
+      base = lm.groups.base;
+      language = lm.groups.lang;
+    }
+
+    m = base.match(MODEL_SIZE_UNDERSCORE_RE);
+    if (m && m.groups) {
+      return { model: m.groups.model, size: m.groups.size, language };
+    }
+    m = base.match(MODEL_SIZE_DASH_RE);
+    if (m && m.groups) {
+      return { model: m.groups.model, size: m.groups.size, language };
+    }
+    return { model: base, size: null, language };
+  }
+
   function sortAgeBins(values) {
     const toStartAge = (value) => {
       const match = String(value).trim().match(/^(\d+)/);
@@ -266,12 +328,29 @@
     return currentMetric() === "d_kl";
   }
 
+  function isAgeEqMetric() {
+    return currentMetric() === "age_eq";
+  }
+
+  function isAgeEqAccuracyMetric() {
+    return currentMetric() === "age_eq_acc";
+  }
+
   function currentModelRecords() {
-    return isKlMetric() ? klModelRecords : accuracyModelRecords;
+    if (isKlMetric()) {
+      return klModelRecords;
+    }
+    if (isAgeEqMetric()) {
+      return ageEqModelRecords;
+    }
+    if (isAgeEqAccuracyMetric()) {
+      return ageEqAccModelRecords;
+    }
+    return accuracyModelRecords;
   }
 
   function currentChildRecords() {
-    return isKlMetric() ? [] : accuracyChildRecords;
+    return isKlMetric() || isAgeEqMetric() || isAgeEqAccuracyMetric() ? [] : accuracyChildRecords;
   }
 
   function sortTasks(taskIds) {
@@ -364,9 +443,13 @@
     Object.values(byModel).forEach((entry) => {
       const taskStats = entry.task_stats || {};
       const taskMeans = {};
+      const closestBins = {};
       Object.entries(taskStats).forEach(([taskId, stats]) => {
         if (typeof stats.mean === "number") {
           taskMeans[taskId] = stats.mean;
+        }
+        if (stats && typeof stats.closest_ability_bin === "string") {
+          closestBins[taskId] = stats.closest_ability_bin;
         }
       });
       const baseModelName =
@@ -382,14 +465,163 @@
         model: baseModelName,
         language,
         taskMeans,
+        closestBins,
+        ageEqByTask: {},
       });
     });
     return out;
   }
 
-  function renderSelectors() {
-    const modelsSource = currentModelRecords();
-    const childrenSource = currentChildRecords();
+  function parseAgeEquivalencyIndex(records) {
+    const index = new Map();
+    (records || []).forEach((row) => {
+      const task = String(row.task || "").trim();
+      const modelTag = String(row.model || "").trim();
+      if (!task || !modelTag) {
+        return;
+      }
+      const modelParts = splitModelSizeLanguage(modelTag);
+      const baseModelName =
+        modelParts.size && String(modelParts.size).trim()
+          ? `${modelParts.model || "unknown"}-${modelParts.size}`
+          : modelParts.model || "unknown";
+      const language = modelParts.language || "en";
+      const key = `${baseModelName}|${language}|${task}`;
+      index.set(key, {
+        soft_age_eq_mean: Number(row.soft_age_eq_mean),
+        soft_age_eq_median: Number(row.soft_age_eq_median),
+        closest_ability_bin: String(row.closest_ability_bin || "").trim(),
+      });
+    });
+    return index;
+  }
+
+  function parseAgeEquivalencyAccuracyIndex(records) {
+    const index = new Map();
+    (records || []).forEach((row) => {
+      const task = String(row.task || "").trim();
+      const modelTag = String(row.model || "").trim();
+      if (!task || !modelTag) {
+        return;
+      }
+      const modelParts = splitModelSizeLanguage(modelTag);
+      const baseModelName =
+        modelParts.size && String(modelParts.size).trim()
+          ? `${modelParts.model || "unknown"}-${modelParts.size}`
+          : modelParts.model || "unknown";
+      const language = modelParts.language || String(row.language || "en").toLowerCase() || "en";
+      const key = `${baseModelName}|${language}|${task}`;
+      index.set(key, {
+        soft_age_eq_accuracy: Number(row.soft_age_eq_accuracy),
+        nearest_age_bin: row.nearest_age_bin ? String(row.nearest_age_bin) : null,
+      });
+    });
+    return index;
+  }
+
+  function attachAgeEquivalency(rows, index) {
+    return rows.map((row) => {
+      if (row.kind !== "model") {
+        return row;
+      }
+      const ageEqByTask = {};
+      Object.keys(row.taskMeans || {}).forEach((taskId) => {
+        const key = `${row.model}|${row.language || "en"}|${taskId}`;
+        const rec = index.get(key);
+        if (rec && Number.isFinite(rec.soft_age_eq_mean)) {
+          ageEqByTask[taskId] = rec.soft_age_eq_mean;
+        }
+      });
+      return { ...row, ageEqByTask };
+    });
+  }
+
+  function parseAgeEquivalencyModelRecords(records) {
+    const grouped = new Map();
+    (records || []).forEach((row) => {
+      const task = String(row.task || "").trim();
+      const modelTag = String(row.model || "").trim();
+      const ageEq = Number(row.soft_age_eq_mean);
+      if (!task || !modelTag || !Number.isFinite(ageEq)) {
+        return;
+      }
+      const modelParts = splitModelSizeLanguage(modelTag);
+      const baseModelName =
+        modelParts.size && String(modelParts.size).trim()
+          ? `${modelParts.model || "unknown"}-${modelParts.size}`
+          : modelParts.model || "unknown";
+      const language = modelParts.language || "en";
+      const key = `${baseModelName}|${language}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          label: language === "en" ? baseModelName : `${baseModelName}-${language}`,
+          kind: "model",
+          model: baseModelName,
+          language,
+          taskMeans: {},
+          closestBins: {},
+          ageEqByTask: {},
+        });
+      }
+      const rec = grouped.get(key);
+      rec.taskMeans[task] = ageEq;
+      rec.ageEqByTask[task] = ageEq;
+      if (row.closest_ability_bin) {
+        rec.closestBins[task] = String(row.closest_ability_bin);
+      }
+    });
+    return Array.from(grouped.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  function parseAgeEquivalencyAccuracyModelRecords(records) {
+    const grouped = new Map();
+    (records || []).forEach((row) => {
+      const task = String(row.task || "").trim();
+      const modelTag = String(row.model || "").trim();
+      const ageEq = Number(row.soft_age_eq_accuracy);
+      if (!task || !modelTag || !Number.isFinite(ageEq)) {
+        return;
+      }
+      const modelParts = splitModelSizeLanguage(modelTag);
+      const baseModelName =
+        modelParts.size && String(modelParts.size).trim()
+          ? `${modelParts.model || "unknown"}-${modelParts.size}`
+          : modelParts.model || "unknown";
+      const language = modelParts.language || String(row.language || "en").toLowerCase() || "en";
+      const key = `${baseModelName}|${language}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          label: language === "en" ? baseModelName : `${baseModelName}-${language}`,
+          kind: "model",
+          model: baseModelName,
+          language,
+          taskMeans: {},
+          closestBins: {},
+          ageEqByTask: {},
+        });
+      }
+      const rec = grouped.get(key);
+      rec.taskMeans[task] = ageEq;
+      rec.ageEqByTask[task] = ageEq;
+      if (row.nearest_age_bin) {
+        rec.closestBins[task] = String(row.nearest_age_bin);
+      }
+    });
+    return Array.from(grouped.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  function renderSelectors({ preserveSelection = false } = {}) {
+    const previousSelection = {
+      models: selectedValues(modelsEl),
+      children: selectedValues(childrenEl),
+      tasks: selectedValues(tasksEl),
+      languages: selectedValues(languagesEl),
+    };
+    const modelsSource = accuracyModelRecords
+      .concat(klModelRecords)
+      .concat(ageEqModelRecords)
+      .concat(ageEqAccModelRecords);
+    const childrenSource = accuracyChildRecords;
     const models = uniqueSorted(modelsSource.map((r) => r.model));
     const children = sortAgeBins(childrenSource.map((r) => r.child));
     const tasks = sortTasks(
@@ -408,10 +640,17 @@
     tasksEl.innerHTML = tasks.map((v) => `<option value="${v}">${v}</option>`).join("");
     languagesEl.innerHTML = languages.map((v) => `<option value="${v}">${v}</option>`).join("");
 
-    setAllSelected(modelsEl);
-    setAllSelected(childrenEl);
-    setAllSelected(tasksEl);
-    setAllSelected(languagesEl);
+    if (preserveSelection) {
+      setSelectedFromSet(modelsEl, previousSelection.models);
+      setSelectedFromSet(childrenEl, previousSelection.children);
+      setSelectedFromSet(tasksEl, previousSelection.tasks);
+      setSelectedFromSet(languagesEl, previousSelection.languages);
+    } else {
+      setAllSelected(modelsEl);
+      setAllSelected(childrenEl);
+      setAllSelected(tasksEl);
+      setAllSelected(languagesEl);
+    }
   }
 
   function filteredRecords() {
@@ -421,12 +660,25 @@
     const langSet = selectedValues(languagesEl);
     const applyTaskFilter = (r) => {
       const filteredTaskMeans = {};
+      const filteredClosestBins = {};
+      const filteredAgeEqByTask = {};
       Object.entries(r.taskMeans).forEach(([taskId, value]) => {
         if (taskSet.has(taskId)) {
           filteredTaskMeans[taskId] = value;
+          if (r.closestBins && r.closestBins[taskId]) {
+            filteredClosestBins[taskId] = r.closestBins[taskId];
+          }
+          if (r.ageEqByTask && Number.isFinite(r.ageEqByTask[taskId])) {
+            filteredAgeEqByTask[taskId] = r.ageEqByTask[taskId];
+          }
         }
       });
-      return { ...r, taskMeans: filteredTaskMeans };
+      return {
+        ...r,
+        taskMeans: filteredTaskMeans,
+        closestBins: filteredClosestBins,
+        ageEqByTask: filteredAgeEqByTask,
+      };
     };
 
     const filteredModels = currentModelRecords()
@@ -453,17 +705,33 @@
   function renderTable(rows) {
     if (!rows.length) {
       tableBody.innerHTML =
-        '<tr><td colspan="4">No rows for current filter selection.</td></tr>';
+        '<tr><td colspan="6">No rows for current filter selection.</td></tr>';
       return;
     }
     const html = rows
       .map((row) => {
         const taskCount = Object.keys(row.taskMeans).length;
         const avg = mean(Object.values(row.taskMeans));
+        const selectedTasks = Object.keys(row.taskMeans);
+        let closestBinText = "n/a";
+        let ageEqText = "n/a";
+        if ((isKlMetric() || isAgeEqMetric() || isAgeEqAccuracyMetric()) && row.kind === "model") {
+          if (selectedTasks.length === 1) {
+            const onlyTask = selectedTasks[0];
+            closestBinText = (row.closestBins && row.closestBins[onlyTask]) || "n/a";
+            const ageEq = row.ageEqByTask && row.ageEqByTask[onlyTask];
+            ageEqText = Number.isFinite(ageEq) ? ageEq.toFixed(2) : "n/a";
+          } else if (selectedTasks.length > 1) {
+            closestBinText = "select 1 task";
+            ageEqText = "select 1 task";
+          }
+        }
         return `<tr>
           <td>${row.kind === "child" ? `Children (${row.ageBin})` : row.model}</td>
           <td>${row.language}</td>
           <td>${taskCount}</td>
+          <td>${closestBinText}</td>
+          <td>${ageEqText}</td>
           <td>${Number.isNaN(avg) ? "n/a" : avg.toFixed(4)}</td>
         </tr>`;
       })
@@ -486,8 +754,16 @@
         score: mean(Object.values(row.taskMeans)),
       }))
       .sort((a, b) => (isKlMetric() ? a.score - b.score : b.score - a.score))[0];
-    const metricName = isKlMetric() ? "D_KL" : "accuracy";
-    const bestLabel = isKlMetric() ? "Best (lowest)" : "Best mean";
+    const metricName = isKlMetric()
+      ? "D_KL"
+      : isAgeEqMetric() || isAgeEqAccuracyMetric()
+        ? "age equivalency"
+        : "accuracy";
+    const bestLabel = isKlMetric()
+      ? "Best (lowest)"
+      : isAgeEqMetric() || isAgeEqAccuracyMetric()
+        ? "Highest mean age eq"
+        : "Best mean";
     summaryStatsEl.textContent =
       `Series shown: ${rows.length} | ${bestLabel}: ${best.label} (${best.score.toFixed(4)}) | Overall mean ${metricName}: ${overallMean.toFixed(4)}`;
   }
@@ -520,6 +796,8 @@
     });
     const ctx = document.getElementById("results-chart");
     const klMetric = isKlMetric();
+    const ageEqMetric = isAgeEqMetric();
+    const ageEqAccMetric = isAgeEqAccuracyMetric();
 
     if (chart) {
       chart.destroy();
@@ -563,10 +841,16 @@
           },
           y: {
             min: 0,
-            max: klMetric ? undefined : 1,
+            max: klMetric || ageEqMetric || ageEqAccMetric ? undefined : 1,
             title: {
               display: true,
-              text: klMetric ? "D_KL (lower is better)" : "Accuracy",
+              text: klMetric
+                ? "D_KL (lower is better)"
+                : ageEqMetric
+                  ? "Age equivalency (years)"
+                  : ageEqAccMetric
+                    ? "Age equivalency from accuracy (years)"
+                  : "Accuracy",
               color: "#cbd5e1",
             },
             ticks: {
@@ -583,13 +867,36 @@
 
   function rerender() {
     const klMetric = isKlMetric();
+    const ageEqMetric = isAgeEqMetric();
+    const ageEqAccMetric = isAgeEqAccuracyMetric();
     if (metricColumnHeaderEl) {
-      metricColumnHeaderEl.textContent = klMetric ? "Mean D_KL" : "Mean Accuracy";
+      metricColumnHeaderEl.textContent = klMetric
+        ? "Mean D_KL"
+        : ageEqMetric
+          ? "Mean Age Eq"
+          : ageEqAccMetric
+            ? "Mean Age Eq (Acc)"
+          : "Mean Accuracy";
+    }
+    if (closestBinColumnHeaderEl) {
+      closestBinColumnHeaderEl.textContent = klMetric || ageEqMetric || ageEqAccMetric
+        ? ageEqAccMetric
+          ? "Nearest Age Bin"
+          : "Closest IRT Bin"
+        : "Closest IRT Bin (KL only)";
+    }
+    if (ageEqColumnHeaderEl) {
+      ageEqColumnHeaderEl.textContent =
+        klMetric || ageEqMetric || ageEqAccMetric ? "Age Eq (years)" : "Age Eq (KL only)";
     }
     const rows = filteredRecords();
     statusEl.textContent = klMetric
       ? `Showing ${rows.length} model series (D_KL)`
-      : `Showing ${rows.length} series entries`;
+      : ageEqMetric
+        ? `Showing ${rows.length} model series (Age Equivalency)`
+        : ageEqAccMetric
+          ? `Showing ${rows.length} model series (Age Eq from Accuracy)`
+        : `Showing ${rows.length} series entries`;
     renderSummary(rows);
     renderTable(rows);
     renderChart(rows);
@@ -602,22 +909,19 @@
   }
 
   async function loadReportData({ preserveSelection = false } = {}) {
-    const previousSelection = {
-      models: selectedValues(modelsEl),
-      children: selectedValues(childrenEl),
-      tasks: selectedValues(tasksEl),
-      languages: selectedValues(languagesEl),
-    };
     try {
       if (refreshDataBtn) {
         refreshDataBtn.disabled = true;
         refreshDataBtn.textContent = "Refreshing...";
       }
       statusEl.textContent = "Loading report...";
-      const [modelResponse, childResponse, klResponse] = await Promise.all([
+      const [modelResponse, childResponse, klResponse, ageEqResponse, ageEqAccResponse] =
+        await Promise.all([
         fetch(`/api/results-report?t=${Date.now()}`),
         fetch(`/api/human-age-accuracy?t=${Date.now()}`),
         fetch(`/api/kl-report?t=${Date.now()}`),
+        fetch(`/api/model-age-equivalency?t=${Date.now()}`),
+        fetch(`/api/model-age-equivalency-accuracy?t=${Date.now()}`),
       ]);
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
@@ -628,26 +932,44 @@
       if (!klResponse.ok) {
         throw new Error(`KL report HTTP ${klResponse.status}`);
       }
+      if (!ageEqResponse.ok) {
+        throw new Error(`Age-equivalency report HTTP ${ageEqResponse.status}`);
+      }
+      if (!ageEqAccResponse.ok) {
+        throw new Error(`Age-equivalency-accuracy report HTTP ${ageEqAccResponse.status}`);
+      }
       const payload = await modelResponse.json();
       const childPayload = await childResponse.json();
       const klPayload = await klResponse.json();
+      const ageEqPayload = await ageEqResponse.json();
+      const ageEqAccPayload = await ageEqAccResponse.json();
       accuracyModelRecords = parseModelRecords(payload.report || {});
       accuracyChildRecords = parseChildRecords(childPayload || {});
-      klModelRecords = parseKlModelRecords(klPayload || {});
+      ageEquivalencyIndex = parseAgeEquivalencyIndex(
+        (ageEqPayload && ageEqPayload.records) || [],
+      );
+      klModelRecords = attachAgeEquivalency(parseKlModelRecords(klPayload || {}), ageEquivalencyIndex);
+      ageEqModelRecords = parseAgeEquivalencyModelRecords(
+        (ageEqPayload && ageEqPayload.records) || [],
+      );
+      ageEquivalencyAccuracyIndex = parseAgeEquivalencyAccuracyIndex(
+        (ageEqAccPayload && ageEqAccPayload.records) || [],
+      );
+      ageEqAccModelRecords = parseAgeEquivalencyAccuracyModelRecords(
+        (ageEqAccPayload && ageEqAccPayload.records) || [],
+      );
       metaEl.textContent = `Model source: ${payload.source || "unknown"} | Models generated: ${
         (payload.report && payload.report.generated_at) || "n/a"
       } | Children source: ${childPayload.source || "unknown"} | Children rows: ${
         Array.isArray(childPayload.records) ? childPayload.records.length : 0
       } | KL source: ${klPayload.source || "unknown"} | KL rows: ${
         Array.isArray(klPayload.records) ? klPayload.records.length : 0
-      }`;
-      renderSelectors();
-      if (preserveSelection) {
-        setSelectedFromSet(modelsEl, previousSelection.models);
-        setSelectedFromSet(childrenEl, previousSelection.children);
-        setSelectedFromSet(tasksEl, previousSelection.tasks);
-        setSelectedFromSet(languagesEl, previousSelection.languages);
-      }
+      } | AgeEq source: ${ageEqPayload.source || "unknown"} | AgeEq rows: ${
+        Array.isArray(ageEqPayload.records) ? ageEqPayload.records.length : 0
+      } | AgeEqAcc source: ${ageEqAccPayload.source || "unknown"} | AgeEqAcc rows: ${
+        Array.isArray(ageEqAccPayload.records) ? ageEqAccPayload.records.length : 0
+      } | Note: Age Eq is task-specific and approximate.`;
+      renderSelectors({ preserveSelection });
       rerender();
     } catch (error) {
       statusEl.textContent = "Failed to load report data.";
@@ -724,10 +1046,7 @@
     el.addEventListener("change", rerender);
   });
   if (metricEl) {
-    metricEl.addEventListener("change", () => {
-      renderSelectors();
-      rerender();
-    });
+    metricEl.addEventListener("change", rerender);
   }
   allModelsBtn.addEventListener("click", () => {
     setAllSelected(modelsEl);

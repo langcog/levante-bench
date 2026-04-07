@@ -25,13 +25,14 @@
               <button class="help-menu-item" type="button" data-help-topic="dataset">Our Dataset...</button>
               <button class="help-menu-item" type="button" data-help-topic="models">Models...</button>
               <button class="help-menu-item" type="button" data-help-topic="benchmark">Benchmark...</button>
+              <button class="help-menu-item" type="button" data-help-topic="age-equivalency">Age Equivalency...</button>
               <button class="help-menu-item" type="button" data-help-topic="parser">Our Parser...</button>
               <button class="help-menu-item" type="button" data-help-topic="parser-issues">Current Parser/Prompt Issues...</button>
               <button class="help-menu-item" type="button" data-help-topic="getting-started">Getting Started...</button>
             </div>
           </div>
         </div>
-        <p>Filter models and child age bins by task and language. Compare task-level accuracy and KL-D curves.</p>
+        <p>Filter models and child age bins by task and language. Compare task-level accuracy, KL-D, and age-equivalency curves.</p>
       </header>
 
       <section class="dashboard-grid">
@@ -60,9 +61,11 @@
 
           <div class="control-group">
             <label for="metric">Metric</label>
-            <select id="metric" size="2">
+            <select id="metric" size="4">
               <option value="accuracy" selected>Accuracy</option>
               <option value="d_kl">D_KL</option>
+              <option value="age_eq">Age Equivalency</option>
+              <option value="age_eq_acc">Age Eq (Accuracy)</option>
             </select>
           </div>
 
@@ -106,6 +109,8 @@
                   <th>Series</th>
                   <th>Language</th>
                   <th>Tasks</th>
+                  <th id="closest-bin-column-header" title="In D_KL mode with one selected task, this is the ability bin with the lowest mean D_KL for the model.">Closest IRT Bin</th>
+                  <th id="age-eq-column-header" title="In D_KL mode with one selected task, this is the soft age-equivalency estimate derived from KL across IRT ability bins (approximate, task-specific).">Age Eq (KL only)</th>
                   <th id="metric-column-header">Mean Accuracy</th>
                 </tr>
               </thead>

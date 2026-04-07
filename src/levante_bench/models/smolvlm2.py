@@ -20,10 +20,12 @@ class SmolVLM2Model(VLMModel):
         device: str = "cpu",
         dtype: str = "bfloat16",
         attn_implementation: str = "eager",
+        prompt_profile: str = "baseline",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
+        self.prompt_profile = str(prompt_profile).strip().lower() or "baseline"
 
     def load(self) -> None:
         """Load SmolVLM2 model and processor from HuggingFace."""
@@ -60,6 +62,56 @@ class SmolVLM2Model(VLMModel):
 
         return self.processor.batch_decode(output_ids, skip_special_tokens=True)[0]
 
+    def evaluate_trial(self, trial: dict) -> dict:
+        """Apply task-tuned prompt upgrades before base evaluation."""
+        if self.prompt_profile != "upgraded":
+            return super().evaluate_trial(trial)
+        trial_with_prompt = dict(trial)
+        prompt = str(trial.get("prompt", ""))
+        task_id = str(trial.get("task_id", "") or "").strip().lower()
+        if prompt:
+            trial_with_prompt["prompt"] = self._upgraded_prompt(prompt, task_id)
+        return super().evaluate_trial(trial_with_prompt)
+
+    def _upgraded_prompt(self, prompt: str, task_id: str) -> str:
+        """Append concise, task-specific instructions from prompt optimization runs."""
+        base_instruction = (
+            "Final answer format: respond with exactly one option letter (A, B, C, or D)."
+        )
+        additions: list[str] = [base_instruction]
+
+        if task_id == "vocab":
+            additions.append(
+                "Only one image matches the target word. Compare all options and choose the single best match."
+            )
+        elif task_id == "trog":
+            additions.append(
+                "Ground the sentence meaning in the images: who is doing what to whom, and where."
+            )
+            additions.append(
+                "Use image details that distinguish grammar roles, then choose one letter."
+            )
+        elif task_id == "egma-math":
+            additions.append(
+                "Solve the math carefully before choosing. Double-check arithmetic and pick the best option."
+            )
+        elif task_id == "theory-of-mind":
+            additions.append(
+                "Use each character's perspective: they only know what they saw or were told."
+            )
+            additions.append(
+                "Ignore events that happened while a character was away unless they were informed later."
+            )
+        elif task_id == "matrix-reasoning":
+            additions.append(
+                "Identify the transformation rule across rows and columns, then apply the same rule to the missing cell."
+            )
+            additions.append(
+                "Prefer the option that best matches both row and column patterns."
+            )
+
+        return f"{prompt}\n\n" + "\n".join(additions)
+
     def _build_messages(
         self,
         prompt_text: str,
@@ -87,6 +139,14 @@ class SmolVLM2Model(VLMModel):
                 for path in image_paths:
                     content.append({"type": "image", "url": str(Path(path).resolve())})
             content.append({"type": "text", "text": prompt_text})
+        if self.prompt_profile == "upgraded":
+            return [
+                {
+                    "role": "system",
+                    "content": "You are a precise visual reasoning assistant.",
+                },
+                {"role": "user", "content": content},
+            ]
         return [{"role": "user", "content": content}]
 
     def parse_response(self, raw_output: str) -> str:

@@ -1,0 +1,20 @@
+# Prompt-upgrade experiment: SmolVLM2 256M on selected tasks.
+# Run: python -m levante_bench.cli experiment=configs/experiment_smolvlm2_256m_upgrade_prompt.yaml device=auto
+
+models:
+  - name: smolvlm2
+    size: 256M
+    use_json_format: false
+    prompt_profile: upgraded
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results/prompt-upgrade
+version: v1
+device: cuda

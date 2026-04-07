@@ -31,7 +31,7 @@
             </div>
           </div>
         </div>
-        <p>Filter models and child age bins by task and language. Compare task-level accuracy curves.</p>
+        <p>Filter models and child age bins by task and language. Compare task-level accuracy and KL-D curves.</p>
       </header>
 
       <section class="dashboard-grid">
@@ -56,6 +56,14 @@
                 <button id="clear-children" type="button" class="secondary">Clear All</button>
               </div>
             </div>
+          </div>
+
+          <div class="control-group">
+            <label for="metric">Metric</label>
+            <select id="metric" size="2">
+              <option value="accuracy" selected>Accuracy</option>
+              <option value="d_kl">D_KL</option>
+            </select>
           </div>
 
           <div class="control-group">
@@ -98,7 +106,7 @@
                   <th>Series</th>
                   <th>Language</th>
                   <th>Tasks</th>
-                  <th>Mean Accuracy</th>
+                  <th id="metric-column-header">Mean Accuracy</th>
                 </tr>
               </thead>
               <tbody></tbody>

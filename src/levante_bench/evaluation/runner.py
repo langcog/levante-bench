@@ -15,7 +15,11 @@ from levante_bench.data.loaders import load_human_proportions
 from levante_bench.evaluation.adapters import postprocess_task_outputs
 from levante_bench.evaluation.cache import load_cache, save_cache, trial_hash
 from levante_bench.evaluation.human_comparison import annotate_human_metrics
-from levante_bench.evaluation.outputs import write_task_csv, write_summary_csv
+from levante_bench.evaluation.outputs import (
+    write_summary_csv,
+    write_task_csv,
+    write_task_npy,
+)
 from levante_bench.models import get_model_class
 from levante_bench.tasks import get_task_dataset
 
@@ -268,6 +272,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
 
             # Write per-task CSV
             write_task_csv(model_dir, task_id, task_results)
+            write_task_npy(model_dir, task_id, task_results, task_trials=task_trials)
             post_paths = postprocess_task_outputs(
                 task_id=task_id,
                 model_dir=model_dir,

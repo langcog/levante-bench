@@ -1,9 +1,11 @@
 (function () {
   const modelsEl = document.getElementById("models");
   const childrenEl = document.getElementById("children");
+  const metricEl = document.getElementById("metric");
   const tasksEl = document.getElementById("tasks");
   const languagesEl = document.getElementById("languages");
   const tableBody = document.querySelector("#results-table tbody");
+  const metricColumnHeaderEl = document.getElementById("metric-column-header");
   const summaryStatsEl = document.getElementById("summary-stats");
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
@@ -27,8 +29,9 @@
   const helpModalContent = document.getElementById("help-modal-content");
 
   let chart = null;
-  let modelRecords = [];
-  let childRecords = [];
+  let accuracyModelRecords = [];
+  let accuracyChildRecords = [];
+  let klModelRecords = [];
   const preferredTaskOrder = [
     "egma-math",
     "matrix-reasoning",
@@ -255,6 +258,22 @@
     return values.reduce((acc, val) => acc + val, 0) / values.length;
   }
 
+  function currentMetric() {
+    return metricEl ? metricEl.value : "accuracy";
+  }
+
+  function isKlMetric() {
+    return currentMetric() === "d_kl";
+  }
+
+  function currentModelRecords() {
+    return isKlMetric() ? klModelRecords : accuracyModelRecords;
+  }
+
+  function currentChildRecords() {
+    return isKlMetric() ? [] : accuracyChildRecords;
+  }
+
   function sortTasks(taskIds) {
     return taskIds.sort((a, b) => {
       const ia = preferredTaskOrder.indexOf(a);
@@ -338,18 +357,50 @@
       }));
   }
 
+  function parseKlModelRecords(payload) {
+    const report = (payload && payload.report) || {};
+    const byModel = report.by_model || {};
+    const out = [];
+    Object.values(byModel).forEach((entry) => {
+      const taskStats = entry.task_stats || {};
+      const taskMeans = {};
+      Object.entries(taskStats).forEach(([taskId, stats]) => {
+        if (typeof stats.mean === "number") {
+          taskMeans[taskId] = stats.mean;
+        }
+      });
+      const baseModelName =
+        entry.size && String(entry.size).trim()
+          ? `${entry.model || "unknown"}-${entry.size}`
+          : entry.model || "unknown";
+      const language = entry.language || "en";
+      out.push({
+        label:
+          entry.canonical_model_tag ||
+          (language === "en" ? baseModelName : `${baseModelName}-${language}`),
+        kind: "model",
+        model: baseModelName,
+        language,
+        taskMeans,
+      });
+    });
+    return out;
+  }
+
   function renderSelectors() {
-    const models = uniqueSorted(modelRecords.map((r) => r.model));
-    const children = sortAgeBins(childRecords.map((r) => r.child));
+    const modelsSource = currentModelRecords();
+    const childrenSource = currentChildRecords();
+    const models = uniqueSorted(modelsSource.map((r) => r.model));
+    const children = sortAgeBins(childrenSource.map((r) => r.child));
     const tasks = sortTasks(
       uniqueSorted(
-        modelRecords
-          .concat(childRecords)
+        modelsSource
+          .concat(childrenSource)
           .flatMap((r) => Object.keys(r.taskMeans)),
       ),
     );
     const languages = uniqueSorted(
-      modelRecords.concat(childRecords).map((r) => r.language || "unknown"),
+      modelsSource.concat(childrenSource).map((r) => r.language || "unknown"),
     );
 
     modelsEl.innerHTML = models.map((v) => `<option value="${v}">${v}</option>`).join("");
@@ -378,7 +429,7 @@
       return { ...r, taskMeans: filteredTaskMeans };
     };
 
-    const filteredModels = modelRecords
+    const filteredModels = currentModelRecords()
       .map(applyTaskFilter)
       .filter(
         (r) =>
@@ -387,7 +438,7 @@
           Object.keys(r.taskMeans).length > 0,
       );
 
-    const filteredChildren = childRecords
+    const filteredChildren = currentChildRecords()
       .map(applyTaskFilter)
       .filter(
         (r) =>
@@ -434,9 +485,11 @@
         label: row.label,
         score: mean(Object.values(row.taskMeans)),
       }))
-      .sort((a, b) => b.score - a.score)[0];
+      .sort((a, b) => (isKlMetric() ? a.score - b.score : b.score - a.score))[0];
+    const metricName = isKlMetric() ? "D_KL" : "accuracy";
+    const bestLabel = isKlMetric() ? "Best (lowest)" : "Best mean";
     summaryStatsEl.textContent =
-      `Series shown: ${rows.length} | Best mean: ${best.label} (${best.score.toFixed(4)}) | Overall mean: ${overallMean.toFixed(4)}`;
+      `Series shown: ${rows.length} | ${bestLabel}: ${best.label} (${best.score.toFixed(4)}) | Overall mean ${metricName}: ${overallMean.toFixed(4)}`;
   }
 
   function renderChart(rows) {
@@ -466,6 +519,7 @@
       };
     });
     const ctx = document.getElementById("results-chart");
+    const klMetric = isKlMetric();
 
     if (chart) {
       chart.destroy();
@@ -509,7 +563,12 @@
           },
           y: {
             min: 0,
-            max: 1,
+            max: klMetric ? undefined : 1,
+            title: {
+              display: true,
+              text: klMetric ? "D_KL (lower is better)" : "Accuracy",
+              color: "#cbd5e1",
+            },
             ticks: {
               color: "#cbd5e1",
             },
@@ -523,8 +582,14 @@
   }
 
   function rerender() {
+    const klMetric = isKlMetric();
+    if (metricColumnHeaderEl) {
+      metricColumnHeaderEl.textContent = klMetric ? "Mean D_KL" : "Mean Accuracy";
+    }
     const rows = filteredRecords();
-    statusEl.textContent = `Showing ${rows.length} series entries`;
+    statusEl.textContent = klMetric
+      ? `Showing ${rows.length} model series (D_KL)`
+      : `Showing ${rows.length} series entries`;
     renderSummary(rows);
     renderTable(rows);
     renderChart(rows);
@@ -549,9 +614,10 @@
         refreshDataBtn.textContent = "Refreshing...";
       }
       statusEl.textContent = "Loading report...";
-      const [modelResponse, childResponse] = await Promise.all([
+      const [modelResponse, childResponse, klResponse] = await Promise.all([
         fetch(`/api/results-report?t=${Date.now()}`),
         fetch(`/api/human-age-accuracy?t=${Date.now()}`),
+        fetch(`/api/kl-report?t=${Date.now()}`),
       ]);
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
@@ -559,14 +625,21 @@
       if (!childResponse.ok) {
         throw new Error(`Children report HTTP ${childResponse.status}`);
       }
+      if (!klResponse.ok) {
+        throw new Error(`KL report HTTP ${klResponse.status}`);
+      }
       const payload = await modelResponse.json();
       const childPayload = await childResponse.json();
-      modelRecords = parseModelRecords(payload.report || {});
-      childRecords = parseChildRecords(childPayload || {});
+      const klPayload = await klResponse.json();
+      accuracyModelRecords = parseModelRecords(payload.report || {});
+      accuracyChildRecords = parseChildRecords(childPayload || {});
+      klModelRecords = parseKlModelRecords(klPayload || {});
       metaEl.textContent = `Model source: ${payload.source || "unknown"} | Models generated: ${
         (payload.report && payload.report.generated_at) || "n/a"
       } | Children source: ${childPayload.source || "unknown"} | Children rows: ${
         Array.isArray(childPayload.records) ? childPayload.records.length : 0
+      } | KL source: ${klPayload.source || "unknown"} | KL rows: ${
+        Array.isArray(klPayload.records) ? klPayload.records.length : 0
       }`;
       renderSelectors();
       if (preserveSelection) {
@@ -650,6 +723,12 @@
   [modelsEl, childrenEl, tasksEl, languagesEl].forEach((el) => {
     el.addEventListener("change", rerender);
   });
+  if (metricEl) {
+    metricEl.addEventListener("change", () => {
+      renderSelectors();
+      rerender();
+    });
+  }
   allModelsBtn.addEventListener("click", () => {
     setAllSelected(modelsEl);
     rerender();

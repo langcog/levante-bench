@@ -14,6 +14,8 @@ function parseCsv(csvText) {
   const idxModel = header.indexOf("model");
   const idxLang = header.indexOf("language");
   const idxSoftAge = header.indexOf("soft_age_eq_accuracy");
+  const idxExtrapolated = header.indexOf("extrapolated_age_eq_accuracy");
+  const idxStatus = header.indexOf("age_eq_status");
   const idxNearestBin = header.indexOf("nearest_age_bin");
   const idxGap = header.indexOf("accuracy_gap");
   if (idxTask < 0 || idxModel < 0 || idxSoftAge < 0) {
@@ -26,6 +28,9 @@ function parseCsv(csvText) {
     const model = (cols[idxModel] || "").trim();
     const language = idxLang >= 0 ? (cols[idxLang] || "").trim().toLowerCase() : "en";
     const soft_age_eq_accuracy = Number(cols[idxSoftAge]);
+    const extrapolated_age_eq_accuracy =
+      idxExtrapolated >= 0 ? Number(cols[idxExtrapolated]) : null;
+    const age_eq_status = idxStatus >= 0 ? (cols[idxStatus] || "").trim() : null;
     const nearest_age_bin = idxNearestBin >= 0 ? (cols[idxNearestBin] || "").trim() : "";
     const accuracy_gap = idxGap >= 0 ? Number(cols[idxGap]) : null;
     if (!task || !model || !Number.isFinite(soft_age_eq_accuracy)) {
@@ -36,6 +41,10 @@ function parseCsv(csvText) {
       model,
       language: language || "en",
       soft_age_eq_accuracy,
+      extrapolated_age_eq_accuracy: Number.isFinite(extrapolated_age_eq_accuracy)
+        ? extrapolated_age_eq_accuracy
+        : null,
+      age_eq_status: age_eq_status || null,
       nearest_age_bin: nearest_age_bin || null,
       accuracy_gap: Number.isFinite(accuracy_gap) ? accuracy_gap : null,
     });

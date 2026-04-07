@@ -8,6 +8,7 @@
   const metricColumnHeaderEl = document.getElementById("metric-column-header");
   const closestBinColumnHeaderEl = document.getElementById("closest-bin-column-header");
   const ageEqColumnHeaderEl = document.getElementById("age-eq-column-header");
+  const gapColumnHeaderEl = document.getElementById("gap-column-header");
   const summaryStatsEl = document.getElementById("summary-stats");
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
@@ -62,6 +63,34 @@
   const MODEL_SIZE_DASH_RE =
     /^(?<model>[A-Za-z0-9._-]+)-(?<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$/;
   const LANG_SUFFIX_RE = /^(?<base>.+)-(?<lang>[a-z]{2})$/;
+  const questionMarkPointPlugin = {
+    id: "questionMarkPointPlugin",
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const mask = dataset.questionMarkMask || [];
+        if (!mask.length) {
+          return;
+        }
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((pt, i) => {
+          if (!mask[i]) {
+            return;
+          }
+          ctx.fillStyle = dataset.borderColor || "#f8fafc";
+          ctx.fillText("?", pt.x, pt.y);
+        });
+      });
+      ctx.restore();
+    },
+  };
+  if (typeof Chart !== "undefined" && Chart.register) {
+    Chart.register(questionMarkPointPlugin);
+  }
   const helpContentByTopic = {
     project: {
       title: "Levante Bench",
@@ -513,7 +542,10 @@
       const key = `${baseModelName}|${language}|${task}`;
       index.set(key, {
         soft_age_eq_accuracy: Number(row.soft_age_eq_accuracy),
+        extrapolated_age_eq_accuracy: Number(row.extrapolated_age_eq_accuracy),
+        age_eq_status: row.age_eq_status ? String(row.age_eq_status) : null,
         nearest_age_bin: row.nearest_age_bin ? String(row.nearest_age_bin) : null,
+        accuracy_gap: Number(row.accuracy_gap),
       });
     });
     return index;
@@ -606,6 +638,14 @@
       if (row.nearest_age_bin) {
         rec.closestBins[task] = String(row.nearest_age_bin);
       }
+      if (!rec.ageEqMetaByTask) {
+        rec.ageEqMetaByTask = {};
+      }
+      rec.ageEqMetaByTask[task] = {
+        age_eq_status: row.age_eq_status ? String(row.age_eq_status) : null,
+        accuracy_gap: Number(row.accuracy_gap),
+        extrapolated_age_eq_accuracy: Number(row.extrapolated_age_eq_accuracy),
+      };
     });
     return Array.from(grouped.values()).sort((a, b) => a.label.localeCompare(b.label));
   }
@@ -649,7 +689,13 @@
       setAllSelected(modelsEl);
       setAllSelected(childrenEl);
       setAllSelected(tasksEl);
-      setAllSelected(languagesEl);
+      const hasEnglish = Array.from(languagesEl.options).some((option) => option.value === "en");
+      if (hasEnglish) {
+        clearAllSelected(languagesEl);
+        setSelectedFromSet(languagesEl, new Set(["en"]));
+      } else {
+        setAllSelected(languagesEl);
+      }
     }
   }
 
@@ -662,6 +708,7 @@
       const filteredTaskMeans = {};
       const filteredClosestBins = {};
       const filteredAgeEqByTask = {};
+      const filteredAgeEqMetaByTask = {};
       Object.entries(r.taskMeans).forEach(([taskId, value]) => {
         if (taskSet.has(taskId)) {
           filteredTaskMeans[taskId] = value;
@@ -671,6 +718,9 @@
           if (r.ageEqByTask && Number.isFinite(r.ageEqByTask[taskId])) {
             filteredAgeEqByTask[taskId] = r.ageEqByTask[taskId];
           }
+          if (r.ageEqMetaByTask && r.ageEqMetaByTask[taskId]) {
+            filteredAgeEqMetaByTask[taskId] = r.ageEqMetaByTask[taskId];
+          }
         }
       });
       return {
@@ -678,6 +728,7 @@
         taskMeans: filteredTaskMeans,
         closestBins: filteredClosestBins,
         ageEqByTask: filteredAgeEqByTask,
+        ageEqMetaByTask: filteredAgeEqMetaByTask,
       };
     };
 
@@ -705,7 +756,7 @@
   function renderTable(rows) {
     if (!rows.length) {
       tableBody.innerHTML =
-        '<tr><td colspan="6">No rows for current filter selection.</td></tr>';
+        '<tr><td colspan="7">No rows for current filter selection.</td></tr>';
       return;
     }
     const html = rows
@@ -715,15 +766,43 @@
         const selectedTasks = Object.keys(row.taskMeans);
         let closestBinText = "n/a";
         let ageEqText = "n/a";
+        let gapText = "n/a";
         if ((isKlMetric() || isAgeEqMetric() || isAgeEqAccuracyMetric()) && row.kind === "model") {
           if (selectedTasks.length === 1) {
             const onlyTask = selectedTasks[0];
             closestBinText = (row.closestBins && row.closestBins[onlyTask]) || "n/a";
             const ageEq = row.ageEqByTask && row.ageEqByTask[onlyTask];
-            ageEqText = Number.isFinite(ageEq) ? ageEq.toFixed(2) : "n/a";
+            if (isAgeEqAccuracyMetric()) {
+              const meta = row.ageEqMetaByTask && row.ageEqMetaByTask[onlyTask];
+              if (meta && Number.isFinite(meta.accuracy_gap)) {
+                gapText = meta.accuracy_gap.toFixed(3);
+              }
+              if (
+                meta &&
+                (meta.age_eq_status === "below_youngest_bin" ||
+                  meta.age_eq_status === "above_oldest_bin") &&
+                Number.isFinite(meta.extrapolated_age_eq_accuracy)
+              ) {
+                ageEqText = `${ageEq.toFixed(2)}* (${meta.extrapolated_age_eq_accuracy.toFixed(2)})`;
+              } else {
+                ageEqText = Number.isFinite(ageEq) ? ageEq.toFixed(2) : "n/a";
+              }
+            } else {
+              ageEqText = Number.isFinite(ageEq) ? ageEq.toFixed(2) : "n/a";
+            }
           } else if (selectedTasks.length > 1) {
             closestBinText = "select 1 task";
             ageEqText = "select 1 task";
+            if (isAgeEqAccuracyMetric()) {
+              const gaps = selectedTasks
+                .map((taskId) =>
+                  row.ageEqMetaByTask && row.ageEqMetaByTask[taskId]
+                    ? Number(row.ageEqMetaByTask[taskId].accuracy_gap)
+                    : NaN,
+                )
+                .filter((v) => Number.isFinite(v));
+              gapText = gaps.length ? mean(gaps).toFixed(3) : "n/a";
+            }
           }
         }
         return `<tr>
@@ -732,6 +811,7 @@
           <td>${taskCount}</td>
           <td>${closestBinText}</td>
           <td>${ageEqText}</td>
+          <td>${gapText}</td>
           <td>${Number.isNaN(avg) ? "n/a" : avg.toFixed(4)}</td>
         </tr>`;
       })
@@ -776,19 +856,36 @@
     const labels = sortTasks(Array.from(taskSet));
     const datasets = rows.map((row, idx) => {
       const color = levantePalette[idx % levantePalette.length];
+      const points = labels.map((taskId) => {
+        if (!Object.prototype.hasOwnProperty.call(row.taskMeans, taskId)) {
+          return { value: null, question: false };
+        }
+        let value = row.taskMeans[taskId];
+        let question = false;
+        if (isAgeEqAccuracyMetric() && row.ageEqMetaByTask && row.ageEqMetaByTask[taskId]) {
+          const meta = row.ageEqMetaByTask[taskId];
+          if (
+            meta &&
+            meta.age_eq_status === "below_youngest_bin" &&
+            Number.isFinite(meta.accuracy_gap) &&
+            Number.isFinite(value)
+          ) {
+            value = value - meta.accuracy_gap;
+            question = true;
+          }
+        }
+        return { value, question };
+      });
       return {
         label: row.label,
-        data: labels.map((taskId) =>
-          Object.prototype.hasOwnProperty.call(row.taskMeans, taskId)
-            ? row.taskMeans[taskId]
-            : null,
-        ),
+        data: points.map((p) => p.value),
+        questionMarkMask: points.map((p) => p.question),
         borderColor: color,
         backgroundColor: `${color}55`,
         pointBackgroundColor: color,
         pointBorderColor: "#f8fafc",
-        pointRadius: 4,
-        pointHoverRadius: 5,
+        pointRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 4),
+        pointHoverRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 5),
         borderWidth: 2.4,
         tension: 0.22,
         spanGaps: true,
@@ -888,6 +985,9 @@
     if (ageEqColumnHeaderEl) {
       ageEqColumnHeaderEl.textContent =
         klMetric || ageEqMetric || ageEqAccMetric ? "Age Eq (years)" : "Age Eq (KL only)";
+    }
+    if (gapColumnHeaderEl) {
+      gapColumnHeaderEl.textContent = ageEqAccMetric ? "Gap (lower better)" : "Gap";
     }
     const rows = filteredRecords();
     statusEl.textContent = klMetric

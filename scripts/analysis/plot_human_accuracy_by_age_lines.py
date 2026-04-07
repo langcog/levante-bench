@@ -104,16 +104,21 @@ def _build_age_bins(df: pd.DataFrame, min_age: float, max_age: float, bin_width:
     if bin_width <= 0:
         raise ValueError("--bin-width must be > 0")
     edges = []
-    x = min_age
-    while x < max_age:
+    x = float(min_age)
+    max_edge = float(max_age) + float(bin_width)
+    while x <= max_edge + 1e-9:
         edges.append(x)
         x += bin_width
-    edges.append(max_age + 1e-6)
+    if len(edges) < 2:
+        edges = [float(min_age), float(max_age) + float(bin_width)]
     labels = []
     for i in range(len(edges) - 1):
         lo = int(edges[i])
         hi = int(edges[i + 1] - 1e-6)
-        labels.append(f"{lo}-{hi}")
+        if lo == hi:
+            labels.append(f"{lo}")
+        else:
+            labels.append(f"{lo}-{hi}")
     out = df.copy()
     out["age_bin"] = pd.cut(
         out["age"],

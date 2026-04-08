@@ -121,7 +121,7 @@ if (nrow(irt_mapping) == 0L) {
       rds_path <- file.path(irt_dir, paste0(safe_name, ".rds"))
       if (!file.exists(rds_path)) {
         con <- base::file(rds_path, "wb")
-        redivis$file(fid)$stream(callback = function(chunk) writeBin(chunk, con))
+        irt_tbl$file(fid)$stream(callback = function(chunk) writeBin(chunk, con))
         close(con)
         message("  ", tid, ": downloaded ", rds_path)
       } else {

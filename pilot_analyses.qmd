@@ -103,3 +103,39 @@ all_results_summary |>
        y = "Accuracy",
        col = "Model class")
 ```
+
+# Item parameters
+```{r}
+item_params <- list.files(here("data", "responses", "2026-04-08", "irt_models"),
+                          pattern = "_item_params.csv",
+                          full.names = T) |> 
+  map(\(f) read_csv(f, show_col_types = F)) |> 
+  list_rbind() |> 
+  mutate(task_id = str_remove(item_uid, "_.*"),
+         item_uid = str_replace(item_uid, "_word_", "__"),
+         item_uid = ifelse(task_id == "mrot", str_remove(item_uid, "-.*"), item_uid),
+         item_uid = ifelse(task_id == "tom", str_remove(item_uid, "story[0-9]_"), item_uid),
+         item_uid = ifelse(task_id == "tom", str_replace(item_uid, "-2", "_"), item_uid)) |> 
+  distinct()
+```
+
+```{r}
+all_results_join |> 
+  mutate(item_uid_orig = item_uid,
+         item_uid = ifelse(task_id == "mrot", str_remove(item_uid, "(?<=[0-9]{3})_.*"), item_uid)) |> 
+  left_join(item_params, by = join_by(task_id, item_uid)) |> 
+  mutate(is_correct = as.numeric(is_correct)) |> 
+  ggplot(aes(x = difficulty, y = is_correct, col = model_name)) +
+  geom_point(alpha = .01) +
+  geom_smooth(aes(group = model_name), 
+              method = "glm", method.args = list(family = "binomial"),
+              se = F) +
+  facet_wrap(~ task) +
+  labs(x = "Difficulty",
+       y = "Accuracy",
+       col = "Model")
+```
+
+
+
+

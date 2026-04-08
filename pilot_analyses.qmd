@@ -1,0 +1,105 @@
+---
+title: "pilot analyses"
+format: html
+editor: source
+---
+
+```{r}
+library(tidyverse)
+library(here)
+
+theme_set(theme_bw() +
+            theme(panel.grid = element_blank()))
+```
+
+```{r}
+manifest <- read_csv(here("data", "assets", "manifest.csv")) |> 
+  filter(task_id != "sds") |> 
+  mutate(item_uid = ifelse(
+    row_number() >= 241 & row_number() <= 255,
+    str_c(item_uid, "b"),
+    item_uid
+  )) |> 
+  distinct()
+models <- read_csv(here("data", "model_info.csv"))
+```
+
+```{r}
+results_files <- list.files(here("results"), 
+                            pattern = "*.csv", 
+                            recursive = TRUE) |> 
+  str_subset("(summary|checkpoint|by-type|-de/|-es/)", negate = TRUE)
+
+all_results <- results_files |> 
+  map(\(f) {
+    df <- read_csv(here("results", f), show_col_types = FALSE) |> 
+        mutate(filepath = f, reason = as.character(reason))
+    ns <- which(df$item_uid == "ns-num-comp-10")
+    if (length(ns) == 0) return(df)
+    df |> 
+      mutate(item_uid = ifelse(
+        row_number() > ns,
+        str_c(item_uid, "b"),
+        item_uid
+      ))
+    }) |> 
+  list_rbind()
+
+all_results_join <- all_results |> 
+  mutate(model = filepath |> str_remove("/.*")) |> 
+  left_join(manifest, by = join_by(item_uid)) |> 
+  left_join(models, by = join_by(model)) |> 
+  mutate(n_params_num = map_dbl(n_params, \(n) {
+    suffix = str_sub(n, -1, -1)
+    (as.numeric(str_sub(n, 1, -2)) * case_when(
+      suffix == "M" ~ 10^6,
+      suffix == "B" ~ 10^9,
+      suffix == "T" ~ 10^12
+    ))
+  })) |> 
+  filter(!is.na(model_name))
+```
+
+```{r}
+all_results_summary <- all_results_join |> 
+  group_by(task, model_class, model_name, n_params_num) |> 
+  summarise(accuracy = mean(is_correct),
+            chance = mean(chance_level, na.rm = T),
+            .groups = "drop")
+```
+
+```{r}
+all_results_total <- all_results_join |> 
+  group_by(model_class, model_name, n_params_num) |> 
+  summarise(accuracy = mean(is_correct),
+            chance = mean(chance_level, na.rm = T),
+            .groups = "drop")
+```
+
+```{r}
+all_results_total |> 
+  ggplot(aes(x = log(n_params_num), y = accuracy, col = model_class)) +
+  geom_line() +
+  geom_point()
+```
+
+```{r}
+gpt_results <- all_results_summary |> 
+  filter(model_name == "GPT 5.3") |> 
+  arrange(desc(accuracy))
+
+all_results_summary |> 
+  mutate(task = fct_relevel(task, gpt_results$task)) |> 
+  ggplot(aes(x = log(n_params_num), y = accuracy)) +
+  geom_smooth(aes(group = "none"), 
+              method = "lm", formula = y ~ log(x),
+              lty = "dashed", se = F, col = "black") +
+  geom_hline(aes(yintercept = chance), lty = "dotted", col = "grey54") +
+  geom_line(aes(col = model_class)) +
+  geom_point(aes(col = model_class)) +
+  facet_wrap(~ task) +
+  coord_cartesian(ylim = c(0, 1)) +
+  labs(x = "Log parameters",
+       y = "Accuracy",
+       col = "Model class")
+```

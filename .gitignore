@@ -68,3 +68,4 @@ htmlcov/
 .Rhistory
 .RData
 .Ruserdata
+.Rproj.user

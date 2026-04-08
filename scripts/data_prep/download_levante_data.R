@@ -120,12 +120,9 @@ if (nrow(irt_mapping) == 0L) {
       # Download .rds via stream
       rds_path <- file.path(irt_dir, paste0(safe_name, ".rds"))
       if (!file.exists(rds_path)) {
-        fname <- reg_row$file_name[1]
-        f <- irt_tbl$file(fname)
-        f$download(path = irt_dir, overwrite = TRUE)
-        # file downloads as basename; rename to safe_name.rds if needed
-        src <- file.path(irt_dir, basename(fname))
-        if (file.exists(src) && src != rds_path) file.rename(src, rds_path)
+        con <- base::file(rds_path, "wb")
+        redivis$file(fid)$stream(callback = function(chunk) writeBin(chunk, con))
+        close(con)
         message("  ", tid, ": downloaded ", rds_path)
       } else {
         message("  ", tid, ": ", rds_path, " already exists")
@@ -173,11 +170,17 @@ dir.create(responses_dir, recursive = TRUE, showWarnings = FALSE)
 parse_distractors <- function(s) {
   if (is.null(s) || is.na(s) || !nzchar(trimws(as.character(s)))) return(character(0))
   s <- trimws(as.character(s))
-  m <- gregexpr("['\"]([^'\"]+)['\"]", s)
-  tokens <- regmatches(s, m)[[1]] %>% gsub("^['\"]|['\"]$", "", .)
-  if (length(tokens) < 2L) return(character(0))
-  # Tokens alternate: key, value, key, value, ...
-  vals <- tokens[seq(2, length(tokens), by = 2)]
+  s <- gsub("^\\{|\\}$", "", s)
+  pairs <- strsplit(s, ",(?=\\s*['\"])", perl = TRUE)[[1]]
+  vals <- character(0)
+  for (pair in pairs) {
+    kv <- strsplit(pair, ":\\s*", perl = TRUE)[[1]]
+    if (length(kv) >= 2L) {
+      val <- trimws(paste(kv[-1], collapse = ":"))
+      val <- gsub("^['\"]|['\"]$", "", val)
+      vals <- c(vals, val)
+    }
+  }
   vals
 }
 

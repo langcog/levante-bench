@@ -1,0 +1,13 @@
+# Qwen2.5-VL QLoRA fine-tuned merged checkpoint.
+
+name: qwen25vl_qlora
+hf_name: DreamingBumblebee/Qwen2.5-VL-3B-Instruct-qlora-sft-ko-1.5k
+size: 3B
+max_new_tokens: 128
+dtype: bfloat16
+
+# What input types this model supports
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

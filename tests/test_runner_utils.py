@@ -35,13 +35,7 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
     captured: dict[str, object] = {}
 
     class DummyModel:
-        def __init__(self, model_name: str, device: str, keep_me: int = 0) -> None:
-            captured["model_name"] = model_name
-            captured["device"] = device
-            captured["keep_me"] = keep_me
-
-        def load(self) -> None:
-            captured["loaded"] = True
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -57,7 +51,14 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    def _fake_build_model(model_name, model_cfg, device, auto_load):
+        captured["model_name"] = model_name
+        captured["device"] = device
+        captured["keep_me"] = model_cfg.get("keep_me")
+        captured["loaded"] = auto_load
+        return DummyModel()
+
+    monkeypatch.setattr(runner, "build_model", _fake_build_model)
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
 
@@ -74,7 +75,7 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
 
     results = runner.run_eval(cfg)
 
-    assert captured["model_name"] == "base/hf-model"
+    assert captured["model_name"] == "dummy"
     assert captured["device"] == "cpu"
     assert captured["keep_me"] == 99
     assert captured["loaded"] is True
@@ -92,11 +93,7 @@ def test_run_eval_applies_global_and_task_specific_overrides(
     captured_overrides: dict[str, dict] = {}
 
     class DummyModel:
-        def __init__(self, model_name: str, device: str) -> None:
-            pass
-
-        def load(self) -> None:
-            pass
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -110,7 +107,11 @@ def test_run_eval_applies_global_and_task_specific_overrides(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
     monkeypatch.setattr(runner, "load_task_config", lambda task_id: {"context_type": "none"})
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
@@ -149,11 +150,7 @@ def test_run_eval_appends_non_english_language_suffix_to_model_dir(
     tmp_path: Path,
 ) -> None:
     class DummyModel:
-        def __init__(self, model_name: str, device: str) -> None:
-            pass
-
-        def load(self) -> None:
-            pass
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -167,7 +164,11 @@ def test_run_eval_appends_non_english_language_suffix_to_model_dir(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
 
@@ -192,11 +193,7 @@ def test_run_eval_normalizes_legacy_output_dir_suffix(
     tmp_path: Path,
 ) -> None:
     class DummyModel:
-        def __init__(self, model_name: str, device: str) -> None:
-            pass
-
-        def load(self) -> None:
-            pass
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -210,7 +207,11 @@ def test_run_eval_normalizes_legacy_output_dir_suffix(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
 

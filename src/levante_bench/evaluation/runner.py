@@ -1,6 +1,5 @@
 """Run evaluation: for each model, evaluate all tasks, write results."""
 
-import inspect
 import json
 import sys
 from pathlib import Path
@@ -20,7 +19,7 @@ from levante_bench.evaluation.outputs import (
     write_task_csv,
     write_task_npy,
 )
-from levante_bench.models import get_model_class
+from levante_bench.runtime.modeling import build_model, resolve_model_config
 from levante_bench.tasks import get_task_dataset
 
 
@@ -132,50 +131,27 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             print(f"  Skip model {model_name}: no config found", file=sys.stderr)
             continue
 
-        # Merge experiment overrides into base model config, then resolve
-        model_cfg = OmegaConf.to_container(base_cfg, resolve=False)
-        model_cfg.update(model_overrides)
-        model_cfg = OmegaConf.to_container(OmegaConf.create(model_cfg), resolve=True)
+        model_cfg = resolve_model_config(
+            model_name=model_name,
+            model_overrides=model_overrides,
+            model_config=base_cfg,
+        )
 
         size = str(model_cfg.get("size", "")).strip()
         model_label = f"{model_name}-{size}" if size else model_name
         model_label = f"{model_label}{lang_suffix}"
 
         # Load model once for all tasks
-        model_cls = get_model_class(model_name)
-        if model_cls is None:
-            print(f"  Skip model {model_name}: not registered", file=sys.stderr)
+        try:
+            model = build_model(
+                model_name=model_name,
+                model_cfg=model_cfg,
+                device=device,
+                auto_load=True,
+            )
+        except ValueError as exc:
+            print(f"  Skip model {model_name}: {exc}", file=sys.stderr)
             continue
-
-        ctor_cfg = {
-            k: v
-            for k, v in model_cfg.items()
-            if k
-            not in {
-                "name",
-                "hf_name",
-                "size",
-                "max_new_tokens",
-                "use_json_format",
-                "capabilities",
-            }
-        }
-        sig = inspect.signature(model_cls.__init__)
-        has_var_kwargs = any(
-            p.kind == inspect.Parameter.VAR_KEYWORD
-            for p in sig.parameters.values()
-        )
-        if not has_var_kwargs:
-            accepted = {
-                name
-                for name in sig.parameters
-                if name not in {"self", "model_name", "device"}
-            }
-            ctor_cfg = {k: v for k, v in ctor_cfg.items() if k in accepted}
-
-        model = model_cls(model_name=model_cfg["hf_name"], device=device, **ctor_cfg)
-        model.use_json_format = model_cfg.get("use_json_format", True)
-        model.load()
 
         model_dir = output_base / version / model_label
         model_dir.mkdir(parents=True, exist_ok=True)

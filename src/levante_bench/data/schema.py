@@ -29,6 +29,7 @@ class TaskDef:
     option_type: str = "text"  # "text" | "image"
     include_numberline: bool = False  # egma-math manifest: include Number Line rows
     prompt_language: str = "en"  # language key in translations/item-bank-translations.csv
+    settings: dict = field(default_factory=dict)  # task-specific extra settings
 
 
 # --- Trial (one row from trials table / manifest) ---

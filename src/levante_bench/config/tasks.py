@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import Optional
 
+from omegaconf import OmegaConf
+
 from levante_bench.config.loader import get_configs_root, load_task_config
 from levante_bench.data.schema import TaskDef
 
@@ -41,6 +43,12 @@ def get_task_def(
         human_path = None
 
     overrides = task_overrides or {}
+    cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+    if not isinstance(cfg_dict, dict):
+        cfg_dict = {}
+    settings = dict(cfg_dict.get("settings", {})) if isinstance(cfg_dict.get("settings"), dict) else {}
+    if isinstance(overrides, dict):
+        settings.update(overrides)
 
     return TaskDef(
         task_id=cfg.task_id,
@@ -56,6 +64,7 @@ def get_task_def(
         option_type=cfg.get("option_type", "text"),
         include_numberline=bool(overrides.get("include_numberline", cfg.get("include_numberline", False))),
         prompt_language=str(overrides.get("prompt_language", cfg.get("prompt_language", "en"))),
+        settings=settings,
     )
 
 

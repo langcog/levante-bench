@@ -11,6 +11,9 @@ DEFAULT_SMOLVLM2_MODEL = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
 
 WORKFLOW_SCRIPTS = {
     "benchmark-v1": "run_benchmark_v1.py",
+    "shapebias-side-bias": "analyze_shapebias_side_bias.py",
+    "shapebias-bias-decomposition": "run_shapebias_bias_decomposition.py",
+    "shapebias-validity": "compute_shapebias_validity.py",
     "smol-math": "run_smolvlmv2_math_eval.py",
     "smol-tom": "run_smolvlmv2_tom_eval.py",
     "smol-vocab": "run_smolvlmv2_vocab_eval.py",

@@ -5,6 +5,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from levante_bench.evaluation.shapebias import CSV_FIELDS as SHAPEBIAS_CSV_FIELDS
+
 
 def _chance_from_options(options: list[str] | None) -> float:
     n = len(options or [])
@@ -103,6 +105,25 @@ def _write_tom_by_type(
     return out_path
 
 
+def _write_shapebias_detailed(
+    model_dir: Path,
+    task_results: list[dict],
+) -> Path | None:
+    if not task_results:
+        return None
+    out_path = model_dir / "shapebias_detailed.csv"
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=SHAPEBIAS_CSV_FIELDS,
+            extrasaction="ignore",
+            restval="",
+        )
+        writer.writeheader()
+        writer.writerows(task_results)
+    return out_path
+
+
 def postprocess_task_outputs(
     task_id: str,
     model_dir: Path,
@@ -119,4 +140,8 @@ def postprocess_task_outputs(
         by_type = _write_tom_by_type(model_dir=model_dir, task_results=task_results, task_trials=task_trials)
         if by_type is not None:
             outputs.append(by_type)
+    if task_id == "shapebias":
+        detailed = _write_shapebias_detailed(model_dir=model_dir, task_results=task_results)
+        if detailed is not None:
+            outputs.append(detailed)
     return outputs

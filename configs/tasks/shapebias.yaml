@@ -1,0 +1,26 @@
+# shapebias task config.
+
+task_id: shapebias
+benchmark_name: Shape Bias
+internal_name: shapebias
+task_type: forced-choice
+context_type: single_image
+option_type: image
+n_options: 2
+has_correct: true
+
+settings:
+  # Option A/B ordering policy: shape_first | texture_first | random | both
+  ordering: both
+  # decision_mode: 2afc | binary_pair | binary_rank_forced | logit_forced_12
+  decision_mode: logit_forced_12
+  prompt_condition: noun_label
+  swap_correct: true
+  repeats: 1
+  seed: 42
+  num_stimuli: 30
+  max_new_tokens: 128
+  temperature: 0.0
+  # Default expects symlink or copied stimuli in levante-bench/data/shapebias_stimuli.
+  # Override via experiment task_overrides.shapebias.stim_root
+  stim_set: stimuli_A_auto_contrast

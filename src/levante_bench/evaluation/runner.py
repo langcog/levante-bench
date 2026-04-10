@@ -15,6 +15,7 @@ from levante_bench.data.loaders import load_human_proportions
 from levante_bench.evaluation.adapters import postprocess_task_outputs
 from levante_bench.evaluation.cache import load_cache, save_cache, trial_hash
 from levante_bench.evaluation.human_comparison import annotate_human_metrics
+from levante_bench.evaluation.shapebias import evaluate_shapebias_trial
 from levante_bench.evaluation.outputs import (
     write_summary_csv,
     write_task_csv,
@@ -252,13 +253,18 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 task_trials.append(trial)
                 trial["task_id"] = task_id
                 trial["max_new_tokens"] = max_new_tokens
+                trial["model_key"] = model_name
+                trial["model_hf_name"] = model_cfg.get("hf_name", model_name)
                 h = trial_hash(trial)
 
                 if h in cache:
                     task_results.append(cache[h])
                     continue
 
-                result = model.evaluate_trial(trial)
+                if task_id == "shapebias":
+                    result = evaluate_shapebias_trial(model, trial)
+                else:
+                    result = model.evaluate_trial(trial)
 
                 # Annotate with human comparison metrics when data is available
                 if human_props:

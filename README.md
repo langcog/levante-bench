@@ -31,6 +31,9 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
    - `levante-bench run-benchmark --benchmark vocab --device auto`
    - `levante-bench run-workflow --workflow smol-vocab -- --help`
    - `levante-bench run-workflow --workflow benchmark-v1 -- --help`
+   - `levante-bench run-eval --task shapebias --model smolvlm2 --device cuda --shapebias-stim-root /home/djc/levante/shapebias-bench2/stimuli_pipe/stimuli_per_stl_packages --shapebias-stim-set stimuli_A_auto_contrast --shapebias-num-stimuli 30 --shapebias-decision-mode logit_forced_12 --shapebias-swap-correct`
+   - `levante-bench run-workflow --workflow shapebias-side-bias -- --input <results>/<version>/<model>/shapebias_detailed.csv --model smolvlm2`
+   - `levante-bench run-workflow --workflow shapebias-validity -- --input <results>/<version>/<model>/shapebias_detailed.csv --output results/shapebias-validity.csv`
    - `scripts/validate_all.sh`  # ruff + pytest + GPU check + benchmark smoke runs
    - `scripts/validate_all.sh --full-benchmarks`  # same checks + full v1 and vocab benchmarks
    - `scripts/validate_all.sh --with-r-validation`  # include R/Redivis package checks
@@ -38,6 +41,45 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
 5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with IRT item difficulty) and D_KL (by ability bin) to `results/comparison/`.
 
 For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
+
+## Shapebias integration
+
+`levante-bench` now includes a native `shapebias` task in the runner/registry path.
+
+- Task config: `configs/tasks/shapebias.yaml`
+- Dataset + evaluator: `src/levante_bench/tasks/shapebias.py` and `src/levante_bench/evaluation/shapebias.py`
+- Detailed scientific export: `shapebias_detailed.csv` written next to per-task CSV/NPY outputs
+
+Recommended local run:
+
+```bash
+levante-bench run-eval \
+  --task shapebias \
+  --model smolvlm2 \
+  --device cuda \
+  --shapebias-stim-root /home/djc/levante/shapebias-bench2/stimuli_pipe/stimuli_per_stl_packages \
+  --shapebias-stim-set stimuli_A_auto_contrast \
+  --shapebias-num-stimuli 30 \
+  --shapebias-ordering both \
+  --shapebias-decision-mode logit_forced_12 \
+  --shapebias-swap-correct
+```
+
+Post-hoc analyses:
+
+```bash
+levante-bench run-workflow --workflow shapebias-side-bias -- \
+  --input results/<version>/<model-size>/shapebias_detailed.csv \
+  --model smolvlm2
+
+levante-bench run-workflow --workflow shapebias-bias-decomposition -- \
+  --input results/<version>/<model-size>/shapebias_detailed.csv \
+  --output results/shapebias-decomposition.csv
+
+levante-bench run-workflow --workflow shapebias-validity -- \
+  --input results/<version>/<model-size>/shapebias_detailed.csv \
+  --output results/shapebias-validity.csv
+```
 
 ## Web results dashboard (Vercel)
 

@@ -284,6 +284,24 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
     if args.prompt_language and args.prompt_language != "en":
         print(f"  Prompt language override: {args.prompt_language}")
 
+    shapebias_overrides: dict[str, object] = {}
+    if args.shapebias_stim_root:
+        shapebias_overrides["stim_root"] = str(args.shapebias_stim_root)
+    if args.shapebias_stim_set:
+        shapebias_overrides["stim_set"] = str(args.shapebias_stim_set)
+    if args.shapebias_num_stimuli is not None:
+        shapebias_overrides["num_stimuli"] = int(args.shapebias_num_stimuli)
+    if args.shapebias_ordering:
+        shapebias_overrides["ordering"] = str(args.shapebias_ordering)
+    if args.shapebias_decision_mode:
+        shapebias_overrides["decision_mode"] = str(args.shapebias_decision_mode)
+    if args.shapebias_prompt_condition:
+        shapebias_overrides["prompt_condition"] = str(args.shapebias_prompt_condition)
+    if args.shapebias_repeats is not None:
+        shapebias_overrides["repeats"] = int(args.shapebias_repeats)
+    if args.shapebias_swap_correct:
+        shapebias_overrides["swap_correct"] = True
+
     cfg = OmegaConf.create(
         {
             "tasks": task_ids or list_tasks(),
@@ -295,6 +313,7 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
             "task_overrides": {
                 "__all__": {"prompt_language": str(args.prompt_language or "en")},
                 "egma-math": {"include_numberline": bool(args.include_numberline)},
+                "shapebias": shapebias_overrides,
             },
         }
     )
@@ -417,6 +436,57 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
         "--prompt-language",
         default="en",
         help="Prompt language code from translations CSV (e.g., en, de, es-CO).",
+    )
+    pe.add_argument(
+        "--shapebias-stim-root",
+        help="Optional root dir containing shapebias stimulus sets.",
+    )
+    pe.add_argument(
+        "--shapebias-stim-set",
+        default=None,
+        help="Shapebias stimulus set (default from task config).",
+    )
+    pe.add_argument(
+        "--shapebias-num-stimuli",
+        type=int,
+        default=None,
+        help="Optional cap on shapebias stimuli sampled.",
+    )
+    pe.add_argument(
+        "--shapebias-ordering",
+        choices=["shape_first", "texture_first", "random", "both"],
+        default=None,
+        help="Shapebias ordering policy override.",
+    )
+    pe.add_argument(
+        "--shapebias-decision-mode",
+        choices=["2afc", "binary_pair", "binary_rank_forced", "logit_forced_12"],
+        default=None,
+        help="Shapebias decision mode override.",
+    )
+    pe.add_argument(
+        "--shapebias-prompt-condition",
+        choices=[
+            "noun_label",
+            "no_word_category",
+            "binary_yes_no",
+            "binary_yes_no_conservative",
+            "binary_score",
+            "rank_forced",
+        ],
+        default=None,
+        help="Shapebias prompt condition override.",
+    )
+    pe.add_argument(
+        "--shapebias-repeats",
+        type=int,
+        default=None,
+        help="Shapebias repeats override.",
+    )
+    pe.add_argument(
+        "--shapebias-swap-correct",
+        action="store_true",
+        help="Enable shapebias swap-correction (logit_forced_12).",
     )
 
 

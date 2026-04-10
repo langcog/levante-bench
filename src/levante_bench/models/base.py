@@ -65,6 +65,15 @@ class VLMModel:
         """Clean model-specific output into plain text. Override per model."""
         return raw_output.strip()
 
+    def score_choices(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None = None,
+        choice_texts: tuple[str, str] = ("1", "2"),
+    ) -> dict:
+        """Optional: return next-token logits/probs for constrained choices."""
+        raise NotImplementedError("score_choices is not implemented for this model.")
+
     def evaluate_trial(self, trial: dict) -> dict:
         """Run a single trial: generate answer, parse it, return result."""
         prompt = trial["prompt"]

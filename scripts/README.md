@@ -120,6 +120,24 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Outputs:** `local_data/vocab_graphics/images` + manifest + summary
   - **Example:** `python scripts/build_vocab_quadrant_graphics.py --help`
 
+## Shapebias analysis utilities
+
+- `analyze_shapebias_side_bias.py`
+  - **Purpose:** compute side/ordering bias metrics from `shapebias_detailed.csv`
+  - **Inputs:** `--input`, `--model`
+  - **Outputs:** console summary (`second_pick_rate`, order gap, adjusted score)
+  - **Example:** `python scripts/analyze_shapebias_side_bias.py --input results/<version>/<model>/shapebias_detailed.csv --model smolvlm2`
+- `run_shapebias_bias_decomposition.py`
+  - **Purpose:** summarize bias signals by decision mode and prompt condition
+  - **Inputs:** `--input`, `--output`
+  - **Outputs:** decomposition CSV
+  - **Example:** `python scripts/run_shapebias_bias_decomposition.py --input results/<version>/<model>/shapebias_detailed.csv --output results/shapebias-decomposition.csv`
+- `compute_shapebias_validity.py`
+  - **Purpose:** aggregate concise validity metrics from detailed shapebias rows
+  - **Inputs:** `--input`, `--output`
+  - **Outputs:** summary CSV with adjusted shape-rate metrics
+  - **Example:** `python scripts/compute_shapebias_validity.py --input results/<version>/<model>/shapebias_detailed.csv --output results/shapebias-validity.csv`
+
 ## Validation and reporting helpers
 
 - `validate_all.sh`

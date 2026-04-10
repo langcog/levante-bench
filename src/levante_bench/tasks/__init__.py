@@ -13,6 +13,7 @@ from levante_bench.tasks import mental_rotation  # noqa: F401
 from levante_bench.tasks import theory_of_mind_manifest  # noqa: F401
 from levante_bench.tasks import trog  # noqa: F401
 from levante_bench.tasks import vocab  # noqa: F401
+from levante_bench.tasks import shapebias  # noqa: F401
 
 __all__ = [
     "get_task_dataset",

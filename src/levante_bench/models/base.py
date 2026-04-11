@@ -67,6 +67,21 @@ class VLMModel:
 
     def evaluate_trial(self, trial: dict) -> dict:
         """Run a single trial: generate answer, parse it, return result."""
+        prompt, answer_format, image_paths, max_new_tokens = self._prepare_trial_inputs(trial)
+        raw_output = self.generate(
+            prompt_text=prompt,
+            image_paths=image_paths if image_paths else None,
+            max_new_tokens=max_new_tokens,
+        )
+        clean_text = self.parse_response(raw_output)
+        return self._build_result_from_text(
+            trial=trial,
+            clean_text=clean_text,
+            answer_format=answer_format,
+        )
+
+    def _prepare_trial_inputs(self, trial: dict) -> tuple[str, str, list[str], int]:
+        """Build canonical prompt/input payload for a trial."""
         prompt = trial["prompt"]
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
         if self.use_json_format:
@@ -77,12 +92,16 @@ class VLMModel:
             else:
                 prompt += ANSWER_FORMAT_INSTRUCTION
         image_paths = trial.get("context_image_paths", []) + trial.get("option_image_paths", [])
-        raw_output = self.generate(
-            prompt_text=prompt,
-            image_paths=image_paths if image_paths else None,
-            max_new_tokens=trial.get("max_new_tokens", 64),
-        )
-        clean_text = self.parse_response(raw_output)
+        max_new_tokens = int(trial.get("max_new_tokens", 64))
+        return prompt, answer_format, image_paths, max_new_tokens
+
+    def _build_result_from_text(
+        self,
+        trial: dict,
+        clean_text: str,
+        answer_format: str,
+    ) -> dict:
+        """Convert parsed model text into the canonical benchmark result row."""
         if answer_format in {"numeric", "slider_position"}:
             strict_json = answer_format == "slider_position"
             numeric_result = self.parse_numeric_result(
@@ -154,6 +173,15 @@ class VLMModel:
             "options": trial.get("options", []),
             "option_labels": trial.get("option_labels", []),
         }
+
+    def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
+        """Evaluate a batch of trials.
+
+        Default implementation preserves existing behavior by evaluating each
+        trial independently. Model adapters can override this for true batched
+        generation.
+        """
+        return [self.evaluate_trial(trial) for trial in trials]
 
     def parse_numeric_answer(
         self,

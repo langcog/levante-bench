@@ -85,11 +85,94 @@ class InternVL35Model(VLMModel):
         input_len = inputs["input_ids"].shape[1]
         with torch.no_grad():
             output_ids = self.model.generate(
-                **inputs, do_sample=False, max_new_tokens=max_new_tokens
+                **inputs,
+                do_sample=False,
+                max_new_tokens=max_new_tokens,
+                pad_token_id=self._pad_token_id(),
             )
 
         generated_ids = output_ids[:, input_len:]
         return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+    def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
+        """Evaluate trials with batched tokenization/generation when possible.
+
+        Falls back to per-trial execution if the processor/model stack cannot
+        batch the current multimodal input layout.
+        """
+        if not trials:
+            return []
+        if len(trials) == 1:
+            return [self.evaluate_trial(trials[0])]
+
+        prepared = [self._prepare_trial_inputs(trial) for trial in trials]
+        prompts = [item[0] for item in prepared]
+        answer_formats = [item[1] for item in prepared]
+        image_path_batches = [item[2] for item in prepared]
+        max_new_tokens = max(item[3] for item in prepared)
+
+        try:
+            pil_batches = [
+                load_pil_images(image_paths) if image_paths else None
+                for image_paths in image_path_batches
+            ]
+            messages = [
+                self._build_messages(prompt_text, pil_images)
+                for prompt_text, pil_images in zip(prompts, pil_batches)
+            ]
+            texts = [
+                self.processor.apply_chat_template(
+                    m, tokenize=False, add_generation_prompt=True
+                )
+                for m in messages
+            ]
+
+            if all(batch is None for batch in pil_batches):
+                batched_images = None
+            else:
+                batched_images = pil_batches
+
+            inputs = self.processor(
+                text=texts,
+                images=batched_images,
+                return_tensors="pt",
+                padding=True,
+            ).to(self.device)
+
+            if "attention_mask" in inputs:
+                input_lens = inputs["attention_mask"].sum(dim=1).tolist()
+            else:
+                input_lens = [inputs["input_ids"].shape[1]] * len(trials)
+
+            with torch.no_grad():
+                output_ids = self.model.generate(
+                    **inputs,
+                    do_sample=False,
+                    max_new_tokens=max_new_tokens,
+                    pad_token_id=self._pad_token_id(),
+                )
+
+            results: list[dict] = []
+            for trial, answer_format, in_len, row in zip(
+                trials, answer_formats, input_lens, output_ids
+            ):
+                generated_ids = row[int(in_len):]
+                raw_text = self.processor.decode(
+                    generated_ids,
+                    skip_special_tokens=True,
+                )
+                clean_text = self.parse_response(raw_text)
+                results.append(
+                    self._build_result_from_text(
+                        trial=trial,
+                        clean_text=clean_text,
+                        answer_format=answer_format,
+                    )
+                )
+            return results
+        except Exception:
+            # Keep benchmark robustness over throughput when batch packing fails.
+            return [self.evaluate_trial(trial) for trial in trials]
 
     def _build_messages(
         self,
@@ -117,3 +200,18 @@ class InternVL35Model(VLMModel):
     def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
         """Parser with provenance, including reverse-sentence fallback."""
         return parse_answer_result_with_fallback(self, text, option_labels)
+
+    def _pad_token_id(self) -> int | None:
+        """Resolve a stable pad token id to avoid per-call generation warnings."""
+        processor_tokenizer = getattr(self.processor, "tokenizer", None)
+        model_gen_cfg = getattr(self.model, "generation_config", None)
+
+        for candidate in (
+            getattr(processor_tokenizer, "pad_token_id", None),
+            getattr(model_gen_cfg, "pad_token_id", None),
+            getattr(processor_tokenizer, "eos_token_id", None),
+            getattr(model_gen_cfg, "eos_token_id", None),
+        ):
+            if candidate is not None:
+                return int(candidate)
+        return None

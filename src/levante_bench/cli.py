@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,35 @@ from levante_bench.cli_workflows import (
     workflow_script_path,
 )
 from levante_bench.runtime import load_model, run_trials
+
+
+def _load_local_env() -> None:
+    """Load KEY=VALUE pairs from repo-local .env without overriding exports."""
+    env_path = _project_root() / ".env"
+    if not env_path.exists() or not env_path.is_file():
+        return
+
+    for raw in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key:
+            continue
+        value = value.strip()
+        if (
+            len(value) >= 2
+            and ((value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")))
+        ):
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+    # Hugging Face libraries commonly accept either env name; keep them aligned.
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        os.environ.setdefault("HUGGING_FACE_HUB_TOKEN", hf_token)
+        os.environ.setdefault("HUGGINGFACEHUB_API_TOKEN", hf_token)
 
 
 def _project_root() -> Path:
@@ -292,6 +322,7 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
             "models": model_ids or list_models(),
             "version": version,
             "device": device,
+            "batch_size": int(args.batch_size),
             "output_dir": str(output_dir),
             "data_root": str(data_root),
             "task_overrides": {
@@ -494,6 +525,12 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
     pe.add_argument("--model", action="append", help="Model ID (repeat for multiple)")
     pe.add_argument("--version", default="current", help="Data/asset version")
     pe.add_argument("--device", default="auto", help="Device for model: auto|cpu|cuda")
+    pe.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Trials per model call (uses model batch API when implemented).",
+    )
     pe.add_argument("--output-dir", help="Output directory (default: results/<version>)")
     pe.add_argument(
         "--include-numberline",
@@ -557,6 +594,8 @@ def add_run_trials_jsonl_parser(sub: argparse._SubParsersAction) -> None:
 
 
 def main() -> int:
+    _load_local_env()
+
     # Eval-branch compatibility mode:
     # python -m levante_bench.cli experiment=configs/experiment.yaml device=cuda
     raw_args = sys.argv[1:]

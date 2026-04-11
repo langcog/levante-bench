@@ -1,0 +1,15 @@
+models:
+  - name: internvl35
+    size: 4B
+    max_new_tokens: 32
+    use_json_format: false
+    dtype: float16
+
+tasks:
+  - trog
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 1

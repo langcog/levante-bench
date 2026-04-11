@@ -39,10 +39,12 @@ class InternVL35Model(VLMModel):
         device: str = "cpu",
         dtype: str = "bfloat16",
         attn_implementation: str = "sdpa",
+        max_patches: int | None = None,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
+        self.max_patches = max_patches
 
     def load(self) -> None:
         """Load InternVL3.5-HF model and processor from HuggingFace."""
@@ -53,6 +55,10 @@ class InternVL35Model(VLMModel):
             padding_side="left",
             trust_remote_code=True,
         )
+        if self.max_patches is not None:
+            image_processor = getattr(self.processor, "image_processor", None)
+            if image_processor is not None and hasattr(image_processor, "max_patches"):
+                image_processor.max_patches = int(self.max_patches)
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.model_name,
             dtype=self.dtype,

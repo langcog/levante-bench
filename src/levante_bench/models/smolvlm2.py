@@ -156,3 +156,42 @@ class SmolVLM2Model(VLMModel):
         else:
             text = raw_output
         return re.sub(r"<\|?end\|?>.*$", "", text).strip()
+
+    def score_choices(
+        self,
+        prompt_text: str,
+        image_paths: list[str],
+        choice_texts: tuple[str, str] = ("1", "2"),
+    ) -> dict:
+        """Return next-token probabilities/logits for two one-token choices."""
+        messages = self._build_messages(prompt_text, image_paths)
+        inputs = self.processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.device, dtype=self.dtype)
+
+        choice_ids: list[int] = []
+        for choice in choice_texts:
+            toks = self.processor.tokenizer.encode(choice, add_special_tokens=False)
+            if len(toks) != 1:
+                raise ValueError(
+                    f"Choice {choice!r} must map to one token; got ids={toks}"
+                )
+            choice_ids.append(toks[0])
+
+        output, elapsed = self._timed_call(lambda: self.model(**inputs))
+        next_logits = output.logits[:, -1, :].float()
+        selected = next_logits[:, choice_ids].squeeze(0)
+        probs = torch.softmax(selected, dim=-1)
+        return {
+            "choice_texts": list(choice_texts),
+            "choice_token_ids": choice_ids,
+            "choice_logits": [float(selected[0].item()), float(selected[1].item())],
+            "choice_probs": [float(probs[0].item()), float(probs[1].item())],
+            "generation_time_s": elapsed,
+            "model_name": self.model_name,
+            "num_tokens_generated": 0,
+        }

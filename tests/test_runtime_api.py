@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from levante_bench.runtime import api
 
 
@@ -71,3 +73,94 @@ def test_run_trials_sets_defaults_without_overwriting_existing() -> None:
     assert out[0]["task_id"] == "custom"
     assert out[1]["max_new_tokens"] == 5
     assert out[1]["task_id"] == "already-there"
+
+
+def test_run_logit_forced_12_without_swap() -> None:
+    class DummyModel:
+        def score_choices(self, prompt_text, image_paths, choice_texts):
+            return {
+                "choice_probs": [0.8, 0.2],
+                "choice_logits": [1.2, 0.3],
+                "model_name": "dummy",
+                "generation_time_s": 0.4,
+            }
+
+    out = api.run_logit_forced_12(
+        model=DummyModel(),
+        prompt_text="pick 1 or 2",
+        image_paths=["ref.png", "a.png", "b.png"],
+        swap_correct=False,
+    )
+    assert out["predicted_choice"] == "1"
+    assert out["choice_probs"] == [0.8, 0.2]
+    assert out["choice_logits"] == [1.2, 0.3]
+
+
+def test_run_logit_forced_12_with_swap_correction() -> None:
+    class DummyModel:
+        def __init__(self):
+            self.calls = 0
+
+        def score_choices(self, prompt_text, image_paths, choice_texts):
+            self.calls += 1
+            if self.calls == 1:
+                return {
+                    "choice_probs": [0.6, 0.4],
+                    "choice_logits": [0.7, 0.5],
+                    "model_name": "dummy",
+                    "generation_time_s": 0.5,
+                }
+            return {
+                "choice_probs": [0.3, 0.7],
+                "choice_logits": [0.2, 0.9],
+                "model_name": "dummy",
+                "generation_time_s": 0.5,
+            }
+
+    model = DummyModel()
+    out = api.run_logit_forced_12(
+        model=model,
+        prompt_text="pick 1 or 2",
+        image_paths=["ref.png", "a.png", "b.png"],
+        swap_correct=True,
+    )
+    assert out["predicted_choice"] == "1"
+    assert out["choice_probs"] == pytest.approx([0.65, 0.35])
+    assert "swap_corrected" in out
+
+
+def test_score_choices_raises_for_unsupported_model() -> None:
+    class DummyModel:
+        def score_choices(self, prompt_text, image_paths, choice_texts):
+            raise NotImplementedError
+
+    with pytest.raises(ValueError, match="does not support score_choices"):
+        api.score_choices(
+            model=DummyModel(),
+            prompt_text="pick 1 or 2",
+            image_paths=["ref.png", "a.png", "b.png"],
+            choice_texts=("1", "2"),
+        )
+
+
+def test_score_choices_validates_choice_texts_with_tokenizer() -> None:
+    class DummyTokenizer:
+        def encode(self, text, add_special_tokens=False):
+            return [1, 2] if text == "bad" else [1]
+
+    class DummyProcessor:
+        tokenizer = DummyTokenizer()
+
+    class DummyModel:
+        processor = DummyProcessor()
+
+        def score_choices(self, prompt_text, image_paths, choice_texts):
+            return {}
+
+    with pytest.raises(ValueError, match="one-token choices"):
+        api.score_choices(
+            model=DummyModel(),
+            prompt_text="pick",
+            image_paths=["ref.png", "a.png", "b.png"],
+            choice_texts=("bad", "2"),
+        )

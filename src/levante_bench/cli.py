@@ -1,6 +1,7 @@
 """CLI: run-eval, run-benchmark, run-workflow, run-comparison."""
 
 import argparse
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -16,6 +17,7 @@ from levante_bench.cli_workflows import (
     workflow_command,
     workflow_script_path,
 )
+from levante_bench.runtime import load_model, run_trials
 
 
 def _project_root() -> Path:
@@ -389,6 +391,91 @@ def cmd_run_comparison(args: argparse.Namespace) -> int:
     return run_command(cmd, cwd=root)
 
 
+def _read_jsonl(path: Path) -> list[dict]:
+    rows: list[dict] = []
+    with open(path, encoding="utf-8") as f:
+        for line_no, line in enumerate(f, start=1):
+            text = line.strip()
+            if not text:
+                continue
+            value = json.loads(text)
+            if not isinstance(value, dict):
+                raise ValueError(
+                    f"{path}:{line_no}: expected JSON object per line, got {type(value).__name__}"
+                )
+            rows.append(value)
+    return rows
+
+
+def _validate_trials(trials: list[dict], source_path: Path) -> None:
+    required = ("trial_id", "item_uid", "prompt", "option_labels")
+    for idx, trial in enumerate(trials, start=1):
+        missing = [key for key in required if key not in trial]
+        if missing:
+            raise ValueError(
+                f"{source_path}:{idx}: missing required trial field(s): {', '.join(missing)}"
+            )
+        if not isinstance(trial["option_labels"], list) or not trial["option_labels"]:
+            raise ValueError(
+                f"{source_path}:{idx}: option_labels must be a non-empty list"
+            )
+        if "answer_format" not in trial and "correct_label" not in trial and "target_value" not in trial:
+            raise ValueError(
+                f"{source_path}:{idx}: include one of correct_label, target_value, or answer_format"
+            )
+
+
+def _write_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=True) + "\n")
+
+
+def cmd_run_trials_jsonl(args: argparse.Namespace) -> int:
+    input_path = Path(args.input_jsonl)
+    output_path = Path(args.output_jsonl)
+    if not input_path.exists():
+        print(f"Input JSONL not found: {input_path}", file=sys.stderr)
+        return 1
+    if not input_path.is_file():
+        print(f"Input path is not a file: {input_path}", file=sys.stderr)
+        return 1
+    if not args.model and not args.model_config_path:
+        print(
+            "run-trials-jsonl requires --model or --model-config-path",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        trials = _read_jsonl(input_path)
+        _validate_trials(trials, input_path)
+        model = load_model(
+            model_name=args.model,
+            model_config_path=args.model_config_path,
+            configs_root=args.configs_root,
+            device=args.device,
+            auto_load=True,
+        )
+        results = run_trials(
+            model=model,
+            trials=trials,
+            max_new_tokens=args.max_new_tokens,
+            task_id=args.task_id,
+        )
+        _write_jsonl(output_path, results)
+    except Exception as exc:
+        print(f"run-trials-jsonl failed: {exc}", file=sys.stderr)
+        return 1
+
+    print(
+        f"Success: wrote {len(results)} result row(s) to {output_path}",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def add_list_tasks_parser(sub: argparse._SubParsersAction) -> None:
     sub.add_parser("list-tasks", help="List registered task IDs")
 
@@ -457,6 +544,18 @@ def add_run_comparison_parser(sub: argparse._SubParsersAction) -> None:
     pc.add_argument("--output-accuracy", help="Output path for accuracy CSV (default: <output-dir>/<task>_<model>_accuracy.csv)")
 
 
+def add_run_trials_jsonl_parser(sub: argparse._SubParsersAction) -> None:
+    pr = sub.add_parser("run-trials-jsonl", help="Run external trial JSONL through a model and write result JSONL")
+    pr.add_argument("--input-jsonl", required=True, help="Input JSONL path; one trial object per line")
+    pr.add_argument("--output-jsonl", required=True, help="Output JSONL path for evaluation results")
+    pr.add_argument("--model", help="Registered model ID (e.g. qwen35)")
+    pr.add_argument("--model-config-path", help="Path to model config YAML (can provide name/hf_name)")
+    pr.add_argument("--configs-root", help="Optional configs root for model lookup (contains models/*.yaml)")
+    pr.add_argument("--device", default="auto", help="Device for model: auto|cpu|cuda")
+    pr.add_argument("--max-new-tokens", type=int, default=None, help="Default max_new_tokens when trial field is missing")
+    pr.add_argument("--task-id", default=None, help="Optional task_id to inject when missing in trial rows")
+
+
 def main() -> int:
     # Eval-branch compatibility mode:
     # python -m levante_bench.cli experiment=configs/experiment.yaml device=cuda
@@ -473,6 +572,7 @@ def main() -> int:
     add_run_workflow_parser(sub)
     add_run_benchmark_parser(sub)
     add_run_comparison_parser(sub)
+    add_run_trials_jsonl_parser(sub)
     args = parser.parse_args()
     if args.command == "list-tasks":
         return cmd_list_tasks(args)
@@ -488,6 +588,8 @@ def main() -> int:
         return cmd_run_benchmark(args)
     if args.command == "run-comparison":
         return cmd_run_comparison(args)
+    if args.command == "run-trials-jsonl":
+        return cmd_run_trials_jsonl(args)
     return 0
 
 

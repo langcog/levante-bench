@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import json
 import re
+import time
 from typing import Any, Literal, Optional
 
 
@@ -64,6 +65,28 @@ class VLMModel:
     def parse_response(self, raw_output: str) -> str:
         """Clean model-specific output into plain text. Override per model."""
         return raw_output.strip()
+
+    def score_choices(
+        self,
+        prompt_text: str,
+        image_paths: list[str],
+        choice_texts: tuple[str, str] = ("1", "2"),
+    ) -> dict:
+        """Return next-token probabilities/logits for a fixed choice set.
+
+        Models that support logit-forced evaluation should override this method.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement score_choices()."
+        )
+
+    @staticmethod
+    def _timed_call(callable_fn):
+        """Execute callable and return (result, elapsed_seconds)."""
+        start = time.perf_counter()
+        output = callable_fn()
+        elapsed = time.perf_counter() - start
+        return output, elapsed
 
     def evaluate_trial(self, trial: dict) -> dict:
         """Run a single trial: generate answer, parse it, return result."""

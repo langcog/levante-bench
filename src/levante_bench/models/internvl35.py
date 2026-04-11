@@ -108,6 +108,48 @@ class InternVL35Model(VLMModel):
         """Return generated text as-is (already decoded from generated tokens only)."""
         return raw_output.strip()
 
+    def score_choices(
+        self,
+        prompt_text: str,
+        image_paths: list[str],
+        choice_texts: tuple[str, str] = ("1", "2"),
+    ) -> dict:
+        """Return next-token probabilities/logits for two one-token choices."""
+        pil_images = load_pil_images(image_paths)
+        messages = self._build_messages(prompt_text, pil_images)
+        text = self.processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        inputs = self.processor(
+            text=[text],
+            images=pil_images if pil_images else None,
+            return_tensors="pt",
+            padding=True,
+        ).to(self.device)
+
+        choice_ids: list[int] = []
+        for choice in choice_texts:
+            toks = self.processor.tokenizer.encode(choice, add_special_tokens=False)
+            if len(toks) != 1:
+                raise ValueError(
+                    f"Choice {choice!r} must map to one token; got ids={toks}"
+                )
+            choice_ids.append(toks[0])
+
+        output, elapsed = self._timed_call(lambda: self.model(**inputs))
+        next_logits = output.logits[:, -1, :].float()
+        selected = next_logits[:, choice_ids].squeeze(0)
+        probs = torch.softmax(selected, dim=-1)
+        return {
+            "choice_texts": list(choice_texts),
+            "choice_token_ids": choice_ids,
+            "choice_logits": [float(selected[0].item()), float(selected[1].item())],
+            "choice_probs": [float(probs[0].item()), float(probs[1].item())],
+            "generation_time_s": elapsed,
+            "model_name": self.model_name,
+            "num_tokens_generated": 0,
+        }
+
     def parse_answer(
         self, text: str, option_labels: list[str]
     ) -> tuple[Optional[str], str]:

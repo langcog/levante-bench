@@ -16,6 +16,50 @@ Use **Python 3.10–3.13**. On **3.13**, `requirements.txt` pins `torch>=2.6` an
 
 Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](requirements-dev.txt).
 
+## External runtime API (custom data)
+
+You can use the package as a model runtime in another repo without adopting LEVANTE task loaders.
+Full guide: [docs/runtime_exports.md](docs/runtime_exports.md).
+
+```python
+from levante_bench.runtime import load_model, run_trials
+
+model = load_model(model_name="qwen35", device="auto")
+
+trials = [
+    {
+        "trial_id": "sample-1",
+        "item_uid": "sample-1",
+        "prompt": "Pick the best option.",
+        "option_labels": ["A", "B", "C", "D"],
+        "correct_label": "A",
+        "context_image_paths": [],
+        "option_image_paths": [],
+        "answer_format": "label",
+    }
+]
+
+results = run_trials(model, trials, max_new_tokens=64, task_id="custom")
+```
+
+Notes:
+- Data location is provided per trial via `context_image_paths` and `option_image_paths`.
+- If a model was already downloaded in your Hugging Face cache, `load_model()` reuses it.
+- Advanced callers can pass `model_config_path=...` or `model_config={...}` to `load_model()`.
+- For 2AFC logit-forced scoring workflows, use `levante_bench.runtime.run_logit_forced_12(...)` (see `docs/runtime_exports.md`).
+
+CLI equivalent:
+
+```bash
+levante-bench run-trials-jsonl \
+  --input-jsonl ./trials.jsonl \
+  --output-jsonl ./results.jsonl \
+  --model qwen35 \
+  --device auto \
+  --max-new-tokens 64 \
+  --task-id custom
+```
+
 ## Quick start
 
 1. **IRT model mapping:** Edit `src/levante_bench/config/irt_model_mapping.csv` to map each task to its IRT model `.rds` file in the Redivis model registry (e.g. `trog,trog/multigroup_site/overlap_items/trog_rasch_f1_scalar.rds`).
@@ -216,6 +260,7 @@ See [comparison/README.md](comparison/README.md) for details.
 ## Docs
 
 See [docs/README.md](docs/README.md) for data schema, releases, adding tasks/models, and secrets setup.
+See [docs/runtime_exports.md](docs/runtime_exports.md) for reusable runtime exports (`load_model`, `run_trials`, `run-trials-jsonl`) used by sibling repos.
 See [docs/aquila-intermediate-runbook.md](docs/aquila-intermediate-runbook.md) for Aquila intermediate checkpoint integration and dual-environment setup.
 See [docs/environment-split.md](docs/environment-split.md) for benchmark vs Aquila virtualenv activation and usage.
 See [scripts/README.md](scripts/README.md) for a script-by-script command index.

@@ -21,7 +21,9 @@ manifest <- read_csv(here("data", "assets", "manifest.csv")) |>
     item_uid
   )) |> 
   distinct()
-models <- read_csv(here("data", "model_info.csv"))
+models <- googlesheets4::read_sheet(ss = "1T3DZzlBDuSFQrZwmby-IZ4Oi2s_7JBffQeoM1bwegJc",
+                          sheet = "model_info") |> 
+  write_csv(here("data", "model_info.csv"))
 ```
 
 ```{r}
@@ -120,11 +122,15 @@ item_params <- list.files(here("data", "responses", "2026-04-08", "irt_models"),
 ```
 
 ```{r}
-all_results_join |> 
+all_results_difficulty <- all_results_join |> 
   mutate(item_uid_orig = item_uid,
          item_uid = ifelse(task_id == "mrot", str_remove(item_uid, "(?<=[0-9]{3})_.*"), item_uid)) |> 
   left_join(item_params, by = join_by(task_id, item_uid)) |> 
-  mutate(is_correct = as.numeric(is_correct)) |> 
+  mutate(is_correct = as.numeric(is_correct))
+```
+
+```{r}
+all_results_difficulty |> 
   ggplot(aes(x = difficulty, y = is_correct, col = model_name)) +
   geom_point(alpha = .01) +
   geom_smooth(aes(group = model_name), 
@@ -136,6 +142,28 @@ all_results_join |>
        col = "Model")
 ```
 
+```{r}
+cor_results <- all_results_difficulty |> 
+  group_by(task, model_name, model_class, n_params_num) |> 
+  summarise(cor = cor(is_correct, difficulty, use = "pairwise.complete.obs"),
+            .groups = "drop")
+```
 
+```{r}
+cor_results |> 
+  mutate(task = fct_relevel(task, gpt_results$task)) |> 
+  ggplot(aes(x = log(n_params_num), y = cor)) +
+  geom_hline(yintercept = 0, lty = "dotted", col = "grey54") +
+  geom_smooth(aes(group = "none"), 
+              method = "lm", formula = y ~ log(x),
+              lty = "dashed", se = F, col = "black") +
+  geom_line(aes(col = model_class)) +
+  geom_point(aes(col = model_class)) +
+  facet_wrap(~ task) +
+  # coord_cartesian(ylim = c(-.5, .5)) +
+  labs(x = "Log parameters",
+       y = "Accuracy-item difficulty correlation",
+       col = "Model class")
+```
 
 

@@ -28,10 +28,12 @@ class Gemma3Model(VLMModel):
         device: str = "cpu",
         dtype: str = "bfloat16",
         attn_implementation: str = "sdpa",
+        max_image_edge: int = 1024,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
+        self.max_image_edge = int(max_image_edge)
 
     def load(self) -> None:
         """Load Gemma 3 model and processor from HuggingFace."""
@@ -52,7 +54,10 @@ class Gemma3Model(VLMModel):
         max_new_tokens: int = 128,
     ) -> str:
         """Generate text using Gemma 3."""
-        pil_images = load_pil_images(image_paths)
+        pil_images = load_pil_images(
+            image_paths,
+            max_image_edge=self.max_image_edge,
+        )
         messages = self._build_messages(prompt_text, pil_images)
 
         text = self.processor.apply_chat_template(

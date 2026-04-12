@@ -1,0 +1,16 @@
+models:
+  - name: gemma3
+    size: 12b-it
+    dtype: bfloat16
+    attn_implementation: sdpa
+    max_new_tokens: 32
+    max_image_edge: 512
+
+tasks:
+  - theory-of-mind
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 1

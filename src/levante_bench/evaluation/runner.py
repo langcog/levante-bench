@@ -108,6 +108,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
     output_base = _normalize_output_base(output_base, version)
 
     device = resolve_device(str(cfg.get("device", "auto")))
+    batch_size = max(1, int(cfg.get("batch_size", 1)))
     task_overrides_cfg = cfg.get("task_overrides") or {}
     task_overrides = OmegaConf.to_container(task_overrides_cfg, resolve=True) if isinstance(task_overrides_cfg, DictConfig) else task_overrides_cfg
     if not isinstance(task_overrides, dict):
@@ -162,6 +163,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             "model_label": model_label,
             "prompt_language": prompt_language,
             "device": device,
+            "batch_size": batch_size,
             "tasks": [str(t) for t in cfg.tasks],
         }
         (model_dir / "metadata.json").write_text(
@@ -223,28 +225,54 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             task_trials = []
             max_new_tokens = model_cfg.get("max_new_tokens", 64)
 
-            for i in tqdm(range(len(dataset)), desc=f"  {task_id}", unit="trial"):
-                trial = dataset[i]
-                task_trials.append(trial)
-                trial["task_id"] = task_id
-                trial["max_new_tokens"] = max_new_tokens
-                h = trial_hash(trial)
+            for chunk_start in tqdm(
+                range(0, len(dataset), batch_size),
+                desc=f"  {task_id}",
+                unit="batch",
+            ):
+                chunk_trials: list[dict] = []
+                chunk_hashes: list[str] = []
+                chunk_results: list[dict | None] = []
+                uncached_positions: list[int] = []
+                uncached_trials: list[dict] = []
 
-                if h in cache:
-                    task_results.append(cache[h])
-                    continue
+                chunk_end = min(chunk_start + batch_size, len(dataset))
+                for i in range(chunk_start, chunk_end):
+                    trial = dataset[i]
+                    task_trials.append(trial)
+                    trial["task_id"] = task_id
+                    trial["max_new_tokens"] = max_new_tokens
+                    h = trial_hash(trial)
+                    chunk_trials.append(trial)
+                    chunk_hashes.append(h)
 
-                result = model.evaluate_trial(trial)
+                    cached = cache.get(h)
+                    if cached is not None:
+                        chunk_results.append(cached)
+                    else:
+                        chunk_results.append(None)
+                        uncached_positions.append(len(chunk_results) - 1)
+                        uncached_trials.append(trial)
 
-                # Annotate with human comparison metrics when data is available
-                if human_props:
-                    annotate_human_metrics(
-                        result, human_props.get(result["item_uid"])
-                    )
+                if uncached_trials:
+                    uncached_results = model.evaluate_trials_batch(uncached_trials)
+                    if len(uncached_results) != len(uncached_trials):
+                        raise RuntimeError(
+                            f"Model {model_name} returned {len(uncached_results)} "
+                            f"results for {len(uncached_trials)} trials in batch."
+                        )
+                    for pos, result in zip(uncached_positions, uncached_results):
+                        # Annotate with human comparison metrics when data is available
+                        if human_props:
+                            annotate_human_metrics(
+                                result, human_props.get(result["item_uid"])
+                            )
+                        h = chunk_hashes[pos]
+                        cache[h] = result
+                        save_cache(cache_path, cache)
+                        chunk_results[pos] = result
 
-                cache[h] = result
-                save_cache(cache_path, cache)
-                task_results.append(result)
+                task_results.extend([r for r in chunk_results if r is not None])
 
             # Write per-task CSV
             write_task_csv(model_dir, task_id, task_results)

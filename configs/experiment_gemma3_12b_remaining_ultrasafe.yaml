@@ -1,0 +1,20 @@
+models:
+  - name: gemma3
+    size: 12b-it
+    dtype: float16
+    attn_implementation: sdpa
+    max_new_tokens: 16
+    max_image_edge: 512
+
+tasks:
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 1

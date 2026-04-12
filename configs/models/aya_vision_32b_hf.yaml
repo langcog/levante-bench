@@ -1,0 +1,16 @@
+name: aya_vision_32b_hf
+hf_name: CohereLabs/aya-vision-32b
+params_b: 32.0
+family: aya_vision
+api_key_env: HF_TOKEN
+api_base: https://router.huggingface.co/v1
+timeout_s: 240
+retry_attempts: 4
+max_output_tokens_cap: 1024
+max_new_tokens: 128
+use_json_format: true
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

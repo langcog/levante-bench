@@ -1,0 +1,16 @@
+models:
+  - name: internvl35
+    size: 8B
+    max_new_tokens: 32
+    dtype: float16
+    max_patches: 1
+    use_json_format: false
+
+tasks:
+  - vocab
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 1

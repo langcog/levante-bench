@@ -9,11 +9,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--version`, `--irt-dataset`, `--irt-table`
   - **Outputs:** `data/responses/<version>/...` (trials, IRT files, responses_by_ability)
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
-- `download_levante_assets.py`
+- `data_prep/download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
   - **Inputs:** `--version` (or auto-detect latest bucket version prefix; prefers `v1` for non-date prefixes), `--workers`
   - **Outputs:** `data/assets/<version>/...`
-  - **Example:** `python scripts/download_levante_assets.py --version hackathon --workers 24`
+  - **Example:** `python scripts/data_prep/download_levante_assets.py --version hackathon --workers 24`
 - `migrate_assets_to_versioned_bucket.py`
   - **Purpose:** copy corpus/visual/manifest from source bucket into versioned destination prefix
   - **Inputs:** `--version`, `--dest-bucket`, optional `--dest-root-prefix` (default `corpus_data`), optional `--task`, `--dry-run`
@@ -24,6 +24,21 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--folder-url`, `--output-dir`
   - **Outputs:** synced folders under `results/`
   - **Example:** `python scripts/download_results_from_drive.py --output-dir results`
+- `download_results_from_bucket.py`
+  - **Purpose:** sync benchmark results from `gs://...` bucket prefix into local `results/`
+  - **Inputs:** `--bucket-results-url`, `--output-dir`
+  - **Outputs:** local synced results tree
+  - **Example:** `python scripts/analysis/download_results_from_bucket.py --bucket-results-url gs://levante-bench/results --output-dir results`
+- `upload_results_to_drive.py`
+  - **Purpose:** sync local `results/` to a mounted Google Drive folder (e.g., `s:` mount)
+  - **Inputs:** `--results-dir`, required `--drive-dir`, optional `--delete`
+  - **Outputs:** synced files in destination drive folder
+  - **Example:** `python scripts/analysis/upload_results_to_drive.py --results-dir results --drive-dir /mnt/s/levante/results`
+- `upload_results_to_drive_folder_id.py`
+  - **Purpose:** sync local `results/` to an exact Google Drive folder ID via `rclone` (avoids mount path ambiguity)
+  - **Inputs:** `--results-dir`, required `--folder-id-or-url`, optional `--remote`, optional `--remote-path`, optional `--delete`
+  - **Outputs:** synced files in the specified Drive folder
+  - **Example:** `python scripts/analysis/upload_results_to_drive_folder_id.py --results-dir results/v1 --folder-id-or-url https://drive.google.com/drive/folders/1NwlA8huu9GoXuwUnq0TQI6MwPCaX779C --remote gdrive`
 - `publish_results_from_drive_to_bucket.py`
   - **Purpose:** end-to-end publish pipeline (Drive -> local staging -> comparison report -> `gs://levante-bench/results`)
   - **Inputs:** `--folder-url`, `--bucket-results-url`, `--staging-dir`, optional `--remaining-ok`, optional `--skip-download`, optional `--min-summary-files`, optional `--fallback-results-root`

@@ -11,3 +11,21 @@ To add a new vision–language model to the benchmark:
 3. **R comparison:** No change to R comparison scripts is required; they read model outputs (e.g. .npy per task/model) and expect a consistent shape. Ensure your adapter writes outputs in the same format (e.g. trial × options) as existing models.
 
 4. **Dependencies:** Add any new Python dependencies (e.g. `transformers`, model-specific packages) to `pyproject.toml` or `requirements.txt` and document in the README.
+
+## Hosted API-backed models
+
+For hosted models (for example large HF Inference Providers VLMs), you can
+reuse an existing adapter and add only a model config.
+
+- Adapter: `src/levante_bench/models/hf_hosted.py`
+- Registration: add a new `@register("<model_id>")` alias
+- Config: add `configs/models/<model_id>.yaml` with fields like:
+  - `name`
+  - `hf_name`
+  - `api_key_env` (for example `HF_TOKEN`)
+  - `api_base` (`https://router.huggingface.co/v1`)
+  - `max_new_tokens`, retry/timeout knobs, and `capabilities`
+
+Then run through standard runner/CLI flow:
+
+- `levante-bench run-eval --model <model_id> --version current --device cpu`

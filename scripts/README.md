@@ -9,11 +9,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--version`, `--irt-dataset`, `--irt-table`
   - **Outputs:** `data/responses/<version>/...` (trials, IRT files, responses_by_ability)
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
-- `download_levante_assets.py`
+- `data_prep/download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
   - **Inputs:** `--version` (or auto-detect latest bucket version prefix; prefers `v1` for non-date prefixes), `--workers`
   - **Outputs:** `data/assets/<version>/...`
-  - **Example:** `python scripts/download_levante_assets.py --version hackathon --workers 24`
+  - **Example:** `python scripts/data_prep/download_levante_assets.py --version hackathon --workers 24`
 - `migrate_assets_to_versioned_bucket.py`
   - **Purpose:** copy corpus/visual/manifest from source bucket into versioned destination prefix
   - **Inputs:** `--version`, `--dest-bucket`, optional `--dest-root-prefix` (default `corpus_data`), optional `--task`, `--dry-run`

@@ -1,0 +1,16 @@
+name: qwen3vl_235b_hf
+hf_name: Qwen/Qwen3-VL-235B-A22B-Instruct
+params_b: 235.0
+family: qwen3vl
+api_key_env: HF_TOKEN
+api_base: https://router.huggingface.co/v1
+timeout_s: 300
+retry_attempts: 4
+max_output_tokens_cap: 1024
+max_new_tokens: 128
+use_json_format: true
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

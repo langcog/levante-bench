@@ -14,6 +14,8 @@ from levante_bench.config.defaults import detect_data_version
 def _load_download_assets_module():
     repo_root = Path(__file__).resolve().parents[1]
     script_path = repo_root / "scripts" / "download_levante_assets.py"
+    if not script_path.exists():
+        script_path = repo_root / "scripts" / "data_prep" / "download_levante_assets.py"
     spec = importlib.util.spec_from_file_location("download_levante_assets", script_path)
     if spec is None or spec.loader is None:
         raise RuntimeError("Could not load download_levante_assets module for tests.")

@@ -1,0 +1,60 @@
+# EGMA Math — Task Framing (TF) × Output Format (OF) variants
+# n_options: 4 (A/B/C/D), context_type: none, option_type: text
+# Placeholders: {prompt_phrase}, {option1}-{option4}, {labels}
+
+task_id: egma-math
+n_options: 4
+labels: "A, B, C, or D"
+
+task_framings:
+  TF1_minimal:
+    description: "Manifest default — choose the same number"
+    template: >
+      Choose the same number: {prompt_phrase}.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  TF2_explicit:
+    description: "Explicit equality — which number equals this"
+    template: >
+      Which of these numbers is equal to {prompt_phrase}?
+
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  TF3_comparison:
+    description: "Comparison — find the matching value"
+    template: >
+      Target number: {prompt_phrase}
+
+      Look at each option and determine which one has the same value:
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  TF4_elimination:
+    description: "Elimination — rule out wrong answers"
+    template: >
+      The number is: {prompt_phrase}
+
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+      Eliminate the options that are clearly different from {prompt_phrase}.
+      Which option matches?
+
+output_formats:
+  OF1_bare:
+    description: "Single letter, no explanation"
+    suffix: "\nAnswer with one letter: {labels}."
+    system: "You are a math assistant. Answer with only a single letter: {labels}. Do not explain."
+
+  OF2_json:
+    description: "JSON with answer + reason"
+    suffix: "\nRespond in JSON format: {\"answer\": \"<letter>\", \"reason\": \"<short reason>\"}"
+    system: null
+
+  OF3_cot:
+    description: "Chain-of-thought then letter"
+    suffix: "\nThink step by step, then give your final answer as a single letter: {labels}."
+    system: null
+
+  OF4_tags:
+    description: "Structured answer tags"
+    suffix: "\nPut your reasoning in <think>...</think> tags and your final answer in <answer>A, B, C, or D</answer> tags."
+    system: null

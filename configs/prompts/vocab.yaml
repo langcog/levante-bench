@@ -1,0 +1,64 @@
+# Vocabulary — Task Framing (TF) × Output Format (OF) variants
+# n_options: 4 (A/B/C/D), context_type: none, option_type: image
+# Placeholders: {prompt_phrase}, {opt_images}, {labels}
+
+task_id: vocab
+n_options: 4
+labels: "A, B, C, or D"
+
+task_framings:
+  TF1_minimal:
+    description: "Manifest default — match text to image"
+    template: >
+      Choose the image that matches the text: "{prompt_phrase}".
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+  TF2_naming:
+    description: "Object naming — which image shows this object"
+    template: >
+      Below are four images of different objects.
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      Which image shows a "{prompt_phrase}"?
+
+  TF3_definition:
+    description: "Definition-oriented — describe then match"
+    template: >
+      The word is: "{prompt_phrase}"
+
+      Look at these four images:
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      Which image best represents this word?
+
+  TF4_elimination:
+    description: "Elimination — rule out non-matching images"
+    template: >
+      Word: "{prompt_phrase}"
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      First, identify the images that clearly do NOT match the word.
+      Then pick the one that matches.
+
+output_formats:
+  OF1_bare:
+    description: "Single letter, no explanation"
+    suffix: "\nAnswer with one letter: {labels}."
+    system: "You are a visual reasoning assistant. Answer with only a single letter: {labels}. Do not explain."
+
+  OF2_json:
+    description: "JSON with answer + reason"
+    suffix: "\nRespond in JSON format: {\"answer\": \"<letter>\", \"reason\": \"<short reason>\"}"
+    system: null
+
+  OF3_cot:
+    description: "Chain-of-thought then letter"
+    suffix: "\nThink step by step, then give your final answer as a single letter: {labels}."
+    system: null
+
+  OF4_tags:
+    description: "Structured answer tags"
+    suffix: "\nPut your reasoning in <think>...</think> tags and your final answer in <answer>A, B, C, or D</answer> tags."
+    system: null

@@ -1,0 +1,82 @@
+# Mental Rotation — Task Framing (TF) × Output Format (OF) variants
+# n_options: 2 (A/B), context_type: single_image, option_type: image
+# Placeholders: {ref_image}, {opt_a_image}, {opt_b_image}, {labels}
+
+task_id: mental-rotation
+n_options: 2
+labels: "A or B"
+
+task_framings:
+  TF1_minimal:
+    description: "Manifest default — minimal instruction"
+    template: >
+      {ref_image}
+      Choose the option that matches this image.
+      {opt_a_image} {opt_b_image}
+
+  TF2_elimination:
+    description: "Elimination framing — identify mirror, pick rotated"
+    template: >
+      Reference image:
+      {ref_image}
+
+      Below are two options. One is the SAME shape rotated to a different angle.
+      The other is a MIRROR IMAGE (horizontally flipped).
+
+      First, identify which option looks like a mirror/flip of the reference.
+      Then pick the OTHER option — the one that is simply rotated.
+
+      A: {opt_a_image}
+      B: {opt_b_image}
+
+  TF3_direct:
+    description: "Direct framing — straightforward rotation match"
+    template: >
+      Reference image:
+      {ref_image}
+
+      One of the options below is the reference shape rotated.
+      The other is its mirror image.
+
+      A: {opt_a_image}
+      B: {opt_b_image}
+
+      Which option is the SAME shape, just rotated?
+
+  TF4_feature:
+    description: "Feature-grounded — focus on asymmetric protrusion"
+    template: >
+      Reference shape:
+      {ref_image}
+
+      Option A: {opt_a_image}
+      Option B: {opt_b_image}
+
+      Focus on the most prominent protruding part of the reference shape.
+      Note which SIDE it is on (left or right).
+
+      One option is the same shape rotated — its protrusion is on the SAME relative side.
+      The other is a mirror image — its protrusion is on the OPPOSITE side.
+
+      Which option has the protrusion on the SAME side as the reference?
+
+output_formats:
+  OF1_bare:
+    description: "Single letter, no explanation"
+    suffix: "\nAnswer with one letter: {labels}."
+    system: "You are a visual reasoning assistant. Answer with only a single letter: {labels}. Do not explain."
+
+  OF2_json:
+    description: "JSON with answer + reason"
+    suffix: "\nRespond in JSON format: {\"answer\": \"<letter>\", \"reason\": \"<short reason>\"}"
+    system: null
+
+  OF3_cot:
+    description: "Chain-of-thought then letter"
+    suffix: "\nThink step by step, then give your final answer as a single letter: {labels}."
+    system: null
+
+  OF4_tags:
+    description: "Structured answer tags"
+    suffix: "\nPut your reasoning in <think>...</think> tags and your final answer in <answer>A or B</answer> tags."
+    system: null

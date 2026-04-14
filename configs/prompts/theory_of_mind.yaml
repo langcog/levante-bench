@@ -1,0 +1,59 @@
+# Theory of Mind — Task Framing (TF) × Output Format (OF) variants
+# n_options: 2 (A/B), context_type: none, option_type: image
+# NOTE: ToM prompts contain the full story in the manifest's full_prompt.
+# TF variants wrap the story differently. {story} = the full_prompt from manifest.
+
+task_id: theory-of-mind
+n_options: 2
+labels: "A or B"
+
+task_framings:
+  TF1_minimal:
+    description: "Manifest default — story + question inline"
+    template: "{full_prompt}"
+
+  TF2_perspective:
+    description: "Perspective-taking — explicit belief tracking"
+    template: >
+      Read this story carefully and think about what each character
+      BELIEVES to be true (which may differ from what is actually true).
+
+      {full_prompt}
+
+  TF3_separation:
+    description: "Belief-reality separation — highlight the distinction"
+    template: >
+      {full_prompt}
+
+      Important: the character may not know about changes that happened
+      when they were away. Answer based on the character's BELIEF,
+      not on what actually happened.
+
+  TF4_stepbystep:
+    description: "Step-by-step belief tracking"
+    template: >
+      {full_prompt}
+
+      To answer: first identify what the character saw and what they
+      did NOT see. Then determine what they would believe.
+
+output_formats:
+  OF1_bare:
+    description: "Single letter, no explanation"
+    suffix: "\nAnswer with one letter: {labels}."
+    system: "You are a helpful assistant. Answer with only a single letter: {labels}. Do not explain."
+
+  OF2_json:
+    description: "JSON with answer + reason"
+    suffix: "\nRespond in JSON format: {\"answer\": \"<letter>\", \"reason\": \"<short reason>\"}"
+    system: null
+
+  OF3_cot:
+    description: "Chain-of-thought then letter"
+    suffix: "\nThink step by step, then give your final answer as a single letter: {labels}."
+    system: null
+
+  OF4_tags:
+    description: "Structured answer tags"
+    suffix: "\nPut your reasoning in <think>...</think> tags and your final answer in <answer>A or B</answer> tags."
+    system: null

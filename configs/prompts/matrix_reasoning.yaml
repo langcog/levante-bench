@@ -1,0 +1,74 @@
+# Matrix Reasoning — Task Framing (TF) × Output Format (OF) variants
+# n_options: 4 (A/B/C/D), context_type: multi_image, option_type: image
+# Placeholders: {context_image}, {opt_images}, {labels}
+
+task_id: matrix-reasoning
+n_options: 4
+labels: "A, B, C, or D"
+
+task_framings:
+  TF1_minimal:
+    description: "Manifest default — minimal instruction"
+    template: >
+      {context_image}
+      Choose the best option to fill in the blank.
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+  TF2_pattern:
+    description: "Pattern analysis — explicit row/column reasoning"
+    template: >
+      Look at the pattern grid:
+      {context_image}
+
+      The grid follows a rule across rows and columns. One cell is missing.
+      Examine what changes across each row and each column, then pick
+      the option that completes the pattern.
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+  TF3_elimination:
+    description: "Elimination — rule out inconsistent options"
+    template: >
+      {context_image}
+
+      One option below correctly completes the pattern in the grid.
+      For each option, check if it is consistent with the rule across
+      the row AND the column. Eliminate options that break the pattern.
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      Which option completes the pattern?
+
+  TF4_analogy:
+    description: "Analogy framing — A:B as C:?"
+    template: >
+      {context_image}
+
+      This grid shows shapes that transform according to a rule.
+      The same transformation applies to each row (left to right) and
+      each column (top to bottom). One cell is missing.
+
+      Which option continues the transformation?
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+output_formats:
+  OF1_bare:
+    description: "Single letter, no explanation"
+    suffix: "\nAnswer with one letter: {labels}."
+    system: "You are a visual reasoning assistant. Answer with only a single letter: {labels}. Do not explain."
+
+  OF2_json:
+    description: "JSON with answer + reason"
+    suffix: "\nRespond in JSON format: {\"answer\": \"<letter>\", \"reason\": \"<short reason>\"}"
+    system: null
+
+  OF3_cot:
+    description: "Chain-of-thought then letter"
+    suffix: "\nThink step by step, then give your final answer as a single letter: {labels}."
+    system: null
+
+  OF4_tags:
+    description: "Structured answer tags"
+    suffix: "\nPut your reasoning in <think>...</think> tags and your final answer in <answer>A, B, C, or D</answer> tags."
+    system: null

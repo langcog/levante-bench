@@ -62,6 +62,7 @@ all_results_join <- all_results |>
   filter(!is.na(model_name))
 ```
 
+# Accuracy
 ```{r}
 all_results_summary <- all_results_join |> 
   group_by(task, model_class, model_name, n_params_num) |> 
@@ -164,6 +165,148 @@ cor_results |>
   labs(x = "Log parameters",
        y = "Accuracy-item difficulty correlation",
        col = "Model class")
+```
+
+# Task difficulty
+Recover run_id to user_id mapping
+```{r}
+id_link <- list.files(here("data", "responses", "2026-04-08", "tasks"),
+                             pattern = "_trials.csv",
+                             full.names = T) |> 
+  map(\(f) {
+    read_csv(f, show_col_types = F) |> 
+      select(task = task_id, user_id, run_id) |> 
+      distinct()
+  }) |> 
+  list_rbind()
+```
+
+First, estimate performance for all participants
+```{r}
+ability_groups <- list.files(here("data", "responses", "2026-04-08", "irt_models"),
+                             pattern = ".rds",
+                             full.names = T) |> 
+  map(\(f) {
+    model = readRDS(f)
+    tibble(group = model@groups) |> 
+      cbind(model@scores) |> 
+      mutate(task = str_remove(f, ".*/") |> str_remove(".rds"))
+  }) |> 
+  list_rbind()
+
+full_item_params <- list.files(here("data", "responses", "2026-04-08", "irt_models"),
+                             pattern = ".rds",
+                             full.names = T) |> 
+  map(\(f) (readRDS(f))@model_vals |> 
+        mutate(task = str_remove(f, ".*/") |> str_remove(".rds"),
+               item = str_remove(item, "-1$"))) |> 
+  list_rbind() |> 
+  select(group, task, item, name, value) |> 
+  filter(item != "GROUP") |> 
+  rename(item_uid = item) |> 
+  pivot_wider(names_from = "name",
+              values_from = "value") |> 
+  mutate(task_id = str_remove(item_uid, "_.*"),
+         item_uid = str_replace(item_uid, "_word_", "__"),
+         item_uid = ifelse(task_id == "mrot", str_remove(item_uid, "-.*"), item_uid),
+         item_uid = ifelse(task_id == "tom", str_remove(item_uid, "story[0-9]_"), item_uid),
+         item_uid = ifelse(task_id == "tom", str_replace(item_uid, "-2", "_"), item_uid)) |> 
+  distinct()
+```
+
+```{r}
+item_by_group <- full_item_params |> 
+  nest(items = -c(group, task)) |> 
+  left_join(ability_groups |> 
+              nest(abilities = -c(group, task)),
+            by = join_by(group, task))
+```
+
+```{r}
+calc_prob_4pl <- function(theta, a1, d, g, u) {
+  b <- d / a1
+  g + (u - g) / (1 + exp(-a1 * (theta - b)))
+}
+
+included_items <- all_results_difficulty |> 
+  distinct(item_uid) |> 
+  pull(item_uid)
+
+item_by_group_cross <- item_by_group |> 
+  mutate(est_scores = map2(items, abilities, \(it, ab) {
+    full_data <- cross_join(it, ab) |> 
+      filter(item_uid %in% included_items) |> 
+      mutate(prob = pmap_dbl(list(ability, a1, d, g, u), calc_prob_4pl))
+  }))
+
+est_sumscores <- item_by_group_cross |> 
+  mutate(sumscores = map(est_scores, \(s) {
+    s |> group_by(run_id) |> 
+      summarise(sumscore = sum(prob),
+                n_trials = n(),
+                accuracy = sumscore / n_trials)
+  })) |> 
+  select(group, task, sumscores) |> 
+  unnest(sumscores) |> 
+  left_join(ability_groups, by = join_by(group, task, run_id)) |> 
+  left_join(id_link, by = join_by(task, run_id))
+```
+
+```{r}
+est_sumscores |> 
+  mutate(task = fct_reorder(task, accuracy)) |> 
+  ggplot(aes(x = task, y = accuracy)) +
+  geom_point(alpha = .05, position = position_jitter(width = .4, seed = 123)) +
+  geom_point(aes(col = model_name), data = all_results_summary) +
+  geom_line(aes(col = model_name, group = model_name), data = all_results_summary) +
+  labs(x = "Task", y = "Accuracy")
+```
+
+```{r}
+est_sumscores |> 
+  group_by(user_id, task) |> 
+  summarise(n = n(), .groups = "drop_last") |> 
+  summarise(n = n()) |> 
+  ggplot(aes(x = n)) +
+  geom_histogram() +
+  labs(x = "Number of tasks", y = "Count")
+```
+
+```{r}
+human_est <- est_sumscores |> 
+  group_by(task) |> 
+  summarise(accuracy = mean(accuracy, na.rm = T))
+```
+
+```{r}
+p_task <- all_results_summary |> 
+  left_join(human_est |> rename(human_accuracy = accuracy), by = join_by(task)) |> 
+  ggplot(aes(x = human_accuracy, y = accuracy, col = model_name)) +
+  geom_abline(intercept = 0, slope = 1, lty = "dashed", col = "grey54") +
+  geom_point(aes(shape = task)) +
+  geom_smooth(method = "lm", se = F) +
+  # geom_line() +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1)) +
+  labs(x = "Human task accuracy", y = "Model task accuracy",
+       col = "Model", shape = "Task") +
+  theme(legend.box = "horizontal")
+
+p_task
+```
+
+```{r}
+p_task_rank <- all_results_summary |> 
+  bind_rows(human_est |> mutate(model_name = "Human")) |> 
+  group_by(model_name) |> 
+  arrange(desc(accuracy)) |> 
+  mutate(task_rank = row_number()) |> 
+  ungroup() |> 
+  mutate(model_name = factor(model_name) |> fct_reorder(accuracy) |> fct_relevel("Human") |> fct_rev(),
+         task = factor(task, levels = human_est |> arrange(desc(accuracy)) |> pull(task))) |> 
+  ggplot(aes(x = task, y = model_name, fill = task_rank)) +
+  geom_tile() +
+  labs(x = "Task", y = "Model", fill = "Task rank")
+p_task_rank
 ```
 
 

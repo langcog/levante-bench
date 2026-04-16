@@ -4,7 +4,10 @@ import csv
 from pathlib import Path
 
 from levante_bench.data.datasets import VLMDataset
-from levante_bench.tasks.option_order import deterministic_option_order
+from levante_bench.tasks.option_order import (
+    derive_true_random_item_seed,
+    deterministic_option_order,
+)
 from levante_bench.tasks.registry import register_task
 
 LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -96,11 +99,20 @@ class EgmaMathDataset(VLMDataset):
                 options = deduped
 
                 seed_value = (row.get("item_uid") or "").strip() or answer
-                options, correct_label = deterministic_option_order(
+                true_random = bool(getattr(self.task_def, "true_random_option_order", False))
+                run_seed = getattr(self.task_def, "option_order_run_seed", None)
+                true_random_seed = (
+                    derive_true_random_item_seed(run_seed=int(run_seed), item_key=seed_value)
+                    if true_random and run_seed is not None
+                    else None
+                )
+                options, correct_label, option_order_seed = deterministic_option_order(
                     answer=answer,
                     alternatives=options[1:],
                     seed_value=seed_value,
                     option_labels=LETTERS,
+                    true_random=true_random,
+                    true_random_seed=true_random_seed,
                 )
                 prompt_text = _build_prompt(row, options)
 
@@ -113,6 +125,7 @@ class EgmaMathDataset(VLMDataset):
                         "options": options,
                         "option_labels": LETTERS[: len(options)],
                         "correct_label": correct_label,
+                        "option_order_seed": option_order_seed,
                         "context_image_paths": [],
                         "option_image_paths": [],
                         "context_type": "none",

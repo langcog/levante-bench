@@ -10,7 +10,10 @@ import pandas as pd
 from levante_bench.data.datasets import VLMDataset
 from levante_bench.tasks.registry import register_task
 from levante_bench.tasks.image_index import build_image_index
-from levante_bench.tasks.option_order import deterministic_option_order
+from levante_bench.tasks.option_order import (
+    derive_true_random_item_seed,
+    deterministic_option_order,
+)
 
 LABELS = ["A", "B", "C", "D"]
 NUMBERLINE_CORPUS_INSTRUCTION = (
@@ -237,12 +240,23 @@ class EgmaMathDataset(VLMDataset):
         alternatives = [a.strip() for a in alternatives if a.strip()]
         all_options: list[str] = []
         correct_label = ""
+        option_order_seed = ""
         if not (is_numberline_slider and include_numberline):
-            all_options, correct_label = deterministic_option_order(
+            item_uid = str(row["item_uid"]).strip()
+            true_random = bool(getattr(self.task_def, "true_random_option_order", False))
+            run_seed = getattr(self.task_def, "option_order_run_seed", None)
+            true_random_seed = (
+                derive_true_random_item_seed(run_seed=int(run_seed), item_key=item_uid)
+                if true_random and run_seed is not None
+                else None
+            )
+            all_options, correct_label, option_order_seed = deterministic_option_order(
                 answer=answer,
                 alternatives=alternatives,
                 seed_value=row["item_uid"],
                 option_labels=LABELS,
+                true_random=true_random,
+                true_random_seed=true_random_seed,
             )
 
         # Build prompt from template.
@@ -306,6 +320,7 @@ class EgmaMathDataset(VLMDataset):
             "options": all_options,
             "option_labels": LABELS[: len(all_options)],
             "correct_label": correct_label,
+            "option_order_seed": option_order_seed,
             "context_image_paths": context_image_paths,
             "option_image_paths": [],
             "context_type": "image" if context_image_paths else "none",

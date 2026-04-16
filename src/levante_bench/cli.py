@@ -265,6 +265,11 @@ def _run_experiment_style_args(cli_args: list[str]) -> int:
         version=version,
         device=device,
         output_dir=output_dir,
+        batch_size=int(cfg.get("batch_size", 1)),
+        include_numberline=bool(cfg.get("include_numberline", False)),
+        prompt_language=str(cfg.get("prompt_language", "en")),
+        num_runs=int(cfg.get("num_runs", 1)),
+        true_random_option_order=bool(cfg.get("true_random_option_order", False)),
     )
     return cmd_run_eval(run_eval_ns)
 
@@ -315,6 +320,10 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
         print("  Egma-math override: include Number Line items")
     if args.prompt_language and args.prompt_language != "en":
         print(f"  Prompt language override: {args.prompt_language}")
+    if int(args.num_runs) > 1:
+        print(f"  num_runs: {int(args.num_runs)}")
+    if bool(args.true_random_option_order):
+        print("  Option ordering mode: true_random")
 
     cfg = OmegaConf.create(
         {
@@ -323,6 +332,8 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
             "version": version,
             "device": device,
             "batch_size": int(args.batch_size),
+            "num_runs": int(args.num_runs),
+            "true_random_option_order": bool(args.true_random_option_order),
             "output_dir": str(output_dir),
             "data_root": str(data_root),
             "task_overrides": {
@@ -541,6 +552,20 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
         "--prompt-language",
         default="en",
         help="Prompt language code from translations CSV (e.g., en, de, es-CO).",
+    )
+    pe.add_argument(
+        "--num-runs",
+        type=int,
+        default=1,
+        help="Number of evaluation runs (used for true-random option ordering).",
+    )
+    pe.add_argument(
+        "--true-random-option-order",
+        action="store_true",
+        help=(
+            "Use true-random option ordering. "
+            "When enabled, outputs are written to per-run subfolders (0001, 0002, ...)."
+        ),
     )
 
 

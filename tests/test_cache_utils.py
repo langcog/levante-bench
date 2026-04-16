@@ -30,9 +30,12 @@ def test_trial_hash_changes_when_key_fields_change() -> None:
     changed_prompt["prompt"] = "pick two"
     changed_options = dict(base)
     changed_options["options"] = ["red", "green"]
+    changed_seed = dict(base)
+    changed_seed["option_order_seed"] = "123"
 
     assert trial_hash(base) != trial_hash(changed_prompt)
     assert trial_hash(base) != trial_hash(changed_options)
+    assert trial_hash(base) != trial_hash(changed_seed)
 
 
 def test_load_cache_missing_file_returns_empty_dict(tmp_path: Path) -> None:

@@ -142,6 +142,8 @@ def test_run_eval_applies_global_and_task_specific_overrides(
     assert captured_overrides["trog"] == {
         "prompt_language": "de",
         "include_numberline": False,
+        "true_random_option_order": False,
+        "option_order_run_seed": None,
     }
 
 
@@ -228,3 +230,50 @@ def test_run_eval_normalizes_legacy_output_dir_suffix(
 
     results = runner.run_eval(cfg)
     assert results["gemma4"] == tmp_path / "results" / "v1" / "gemma4-E4B-it" / "summary.csv"
+
+
+def test_run_eval_true_random_writes_numbered_run_subdirs(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class DummyModel:
+        pass
+
+    monkeypatch.setattr(
+        runner,
+        "load_model_config",
+        lambda model_name: OmegaConf.create(
+            {
+                "hf_name": "base/hf-model",
+                "size": "tiny",
+                "max_new_tokens": 64,
+                "use_json_format": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
+    monkeypatch.setattr(runner, "load_cache", lambda path: {})
+    monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
+
+    cfg = OmegaConf.create(
+        {
+            "data_root": str(tmp_path / "data"),
+            "output_dir": str(tmp_path / "out"),
+            "version": "unit-test",
+            "device": "cpu",
+            "models": ["dummy"],
+            "tasks": [],
+            "num_runs": 2,
+            "true_random_option_order": True,
+        }
+    )
+
+    results = runner.run_eval(cfg)
+    assert "dummy:0001" in results
+    assert "dummy:0002" in results
+    assert results["dummy:0001"].parent.name == "0001"
+    assert results["dummy:0002"].parent.name == "0002"

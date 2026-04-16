@@ -1,6 +1,6 @@
 # Runner suite: Aquila production checkpoint on full benchmark.
 # Run in `.venv-aquila`:
-#   PYTHONPATH=src python -m levante_bench.cli experiment=configs/experiment_aquila_production_full.yaml device=cuda
+#   PYTHONPATH=src python -m levante_bench.cli experiment=configs/experiments/aquila_production_full.yaml device=cuda
 
 models:
   - name: aquila_vl

@@ -20,7 +20,11 @@ def load_experiment(
 ) -> DictConfig:
     """Load experiment config, merge CLI overrides."""
     if experiment_path is None:
-        experiment_path = get_configs_root(configs_root=configs_root) / "experiment.yaml"
+        experiment_path = (
+            get_configs_root(configs_root=configs_root)
+            / "experiments"
+            / "experiment.yaml"
+        )
     cfg = OmegaConf.load(experiment_path)
     if cli_overrides:
         cli_cfg = OmegaConf.from_dotlist(cli_overrides)

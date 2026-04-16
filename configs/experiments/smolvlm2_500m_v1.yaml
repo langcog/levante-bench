@@ -1,5 +1,5 @@
-# Runner experiment: SmolVLM2 500M Instruct (local transformers inference).
-# Run: python -m levante_bench.cli experiment=configs/experiment_smolvlm2_500m.yaml device=auto
+# Runner experiment: SmolVLM2 500M Instruct on v1 benchmark tasks.
+# Run: python -m levante_bench.cli experiment=configs/experiments/smolvlm2_500m_v1.yaml device=auto
 
 models:
   - name: smolvlm2
@@ -16,5 +16,5 @@ tasks:
 
 data_root: data
 output_dir: results
-version: current
+version: v1
 device: cuda

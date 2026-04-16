@@ -597,7 +597,7 @@ def main() -> int:
     _load_local_env()
 
     # Eval-branch compatibility mode:
-    # python -m levante_bench.cli experiment=configs/experiment.yaml device=cuda
+    # python -m levante_bench.cli experiment=configs/experiments/experiment.yaml device=cuda
     raw_args = sys.argv[1:]
     if any(arg.startswith("experiment=") for arg in raw_args):
         return _run_experiment_style_args(raw_args)

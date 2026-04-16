@@ -1,9 +1,9 @@
-# Runner experiment: InternVL3.5-HF 2B (next size up from 1B).
-# Run: python -m levante_bench.cli experiment=configs/experiment_internvl35_2b.yaml device=auto
+# Runner experiment: InternVL3.5-HF at smallest size in configs (1B).
+# Run: python -m levante_bench.cli experiment=configs/experiments/internvl35.yaml device=auto
 
 models:
   - name: internvl35
-    size: 2B
+    size: 1B
 
 tasks:
   - egma-math

@@ -1,5 +1,5 @@
 # Runner experiment: Qwen3.5-VL 2B (next size up from 0.8B in configs/models/qwen35.yaml).
-# Run: python -m levante_bench.cli experiment=configs/experiment_qwen35_2b.yaml device=auto
+# Run: python -m levante_bench.cli experiment=configs/experiments/qwen35_2b.yaml device=auto
 
 models:
   - name: qwen35

@@ -41,7 +41,7 @@ source .venv-aquila/bin/activate
 Run Aquila experiment:
 
 ```bash
-PYTHONPATH=src python -m levante_bench.cli experiment=configs/experiment_aquila_vl.yaml device=cuda
+PYTHONPATH=src python -m levante_bench.cli experiment=configs/experiments/aquila_vl.yaml device=cuda
 ```
 
 ## Notes

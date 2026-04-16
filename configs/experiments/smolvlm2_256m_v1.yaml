@@ -1,9 +1,9 @@
-# Runner experiment: SmolVLM2 2.2B Instruct on v1 benchmark tasks.
-# Run: python -m levante_bench.cli experiment=configs/experiment_smolvlm2_2p2b_v1.yaml device=auto
+# Runner experiment: SmolVLM2 256M Instruct on v1 benchmark tasks.
+# Run: python -m levante_bench.cli experiment=configs/experiments/smolvlm2_256m_v1.yaml device=auto
 
 models:
   - name: smolvlm2
-    size: 2.2B
+    size: 256M
     use_json_format: false
 
 tasks:

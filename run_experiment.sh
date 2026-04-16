@@ -1,8 +1,8 @@
 #!/bin/bash
 # Run an evaluation experiment.
 # Usage:
-#   ./run_experiment.sh configs/experiment.yaml
-#   ./run_experiment.sh configs/experiment.yaml device=cuda
+#   ./run_experiment.sh configs/experiments/experiment.yaml
+#   ./run_experiment.sh configs/experiments/experiment.yaml device=cuda
 #   ./run_experiment.sh configs/my_custom_exp.yaml models=[smolvlm2] device=cuda
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

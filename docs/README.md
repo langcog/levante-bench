@@ -35,14 +35,14 @@ This directory contains user-facing and developer documentation for the LEVANTE 
 
 You can run YAML-defined experiments directly through the CLI:
 
-- `python -m levante_bench.cli experiment=configs/experiment.yaml`
-- `bash run_experiment.sh configs/experiment.yaml`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml`
+- `bash run_experiment.sh configs/experiments/experiment.yaml`
 
 You can also use OmegaConf dotlist overrides for task subsets and smoke caps:
 
-- `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu`
-- `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
-- `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
 
 ## Runner migration checklist
 

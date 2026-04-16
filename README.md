@@ -83,6 +83,26 @@ levante-bench run-trials-jsonl \
 
 For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
 
+### Multi-run option ordering
+
+`run-eval` supports repeated runs when using true-random option ordering:
+
+```bash
+levante-bench run-eval \
+  --task trog \
+  --model qwen25vl_72b_hf \
+  --version v1 \
+  --true-random-option-order \
+  --num-runs 3
+```
+
+- Deterministic mode (default) stays at `results/<version>/<model>/`.
+- True-random mode writes sequential run folders:
+  - `results/<version>/<model>/0001/`
+  - `results/<version>/<model>/0002/`
+  - ...
+- Per-item option ordering seed is recorded in each run's `cache/responses.json` as `option_order_seed`.
+
 ## Web results dashboard (Vercel)
 
 - A lightweight dashboard is available at `/` when deployed with Vercel.

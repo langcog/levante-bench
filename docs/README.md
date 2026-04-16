@@ -19,6 +19,7 @@ This directory contains user-facing and developer documentation for the LEVANTE 
    - `levante-bench check-gpu`
 5. Run evaluation and benchmarks:
    - `levante-bench run-eval --task <task> --model <model> [--version <version>]`
+   - `levante-bench run-eval --task <task> --model <model> --true-random-option-order --num-runs 3`
    - `levante-bench run-benchmark --benchmark v1 --device auto`
    - `levante-bench run-benchmark --benchmark vocab --device auto`
 6. Run comparison (R):
@@ -43,6 +44,8 @@ You can also use OmegaConf dotlist overrides for task subsets and smoke caps:
 - `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu`
 - `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
 - `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
+
+When `true_random_option_order` is enabled (CLI flag or experiment YAML), run outputs are written under numbered subfolders (`0001`, `0002`, ...) and per-item option ordering seeds are recorded in `cache/responses.json`.
 
 ## Runner migration checklist
 

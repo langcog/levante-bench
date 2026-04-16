@@ -1,10 +1,10 @@
 """EgmaMath dataset. Context: none, options: text."""
 
 import csv
-import random
 from pathlib import Path
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.tasks.option_order import deterministic_option_order
 from levante_bench.tasks.registry import register_task
 
 LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -95,9 +95,13 @@ class EgmaMathDataset(VLMDataset):
                         seen.add(option)
                 options = deduped
 
-                rng = random.Random((row.get("item_uid") or "").strip() or answer)
-                rng.shuffle(options)
-                gold_index = options.index(answer)
+                seed_value = (row.get("item_uid") or "").strip() or answer
+                options, correct_label = deterministic_option_order(
+                    answer=answer,
+                    alternatives=options[1:],
+                    seed_value=seed_value,
+                    option_labels=LETTERS,
+                )
                 prompt_text = _build_prompt(row, options)
 
                 records.append(
@@ -108,7 +112,7 @@ class EgmaMathDataset(VLMDataset):
                         "prompt": prompt_text,
                         "options": options,
                         "option_labels": LETTERS[: len(options)],
-                        "correct_label": LETTERS[gold_index],
+                        "correct_label": correct_label,
                         "context_image_paths": [],
                         "option_image_paths": [],
                         "context_type": "none",

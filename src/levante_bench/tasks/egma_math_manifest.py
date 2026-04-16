@@ -1,7 +1,6 @@
 """EgmaMath dataset. Context: optional image, options: text."""
 
 import csv
-import random
 import re
 
 from pathlib import Path
@@ -11,6 +10,7 @@ import pandas as pd
 from levante_bench.data.datasets import VLMDataset
 from levante_bench.tasks.registry import register_task
 from levante_bench.tasks.image_index import build_image_index
+from levante_bench.tasks.option_order import deterministic_option_order
 
 LABELS = ["A", "B", "C", "D"]
 NUMBERLINE_CORPUS_INSTRUCTION = (
@@ -238,12 +238,12 @@ class EgmaMathDataset(VLMDataset):
         all_options: list[str] = []
         correct_label = ""
         if not (is_numberline_slider and include_numberline):
-            all_options = [answer] + alternatives
-            # Deterministic shuffle seeded by item_uid
-            rng = random.Random(row["item_uid"])
-            rng.shuffle(all_options)
-            correct_idx = all_options.index(answer)
-            correct_label = LABELS[correct_idx]
+            all_options, correct_label = deterministic_option_order(
+                answer=answer,
+                alternatives=alternatives,
+                seed_value=row["item_uid"],
+                option_labels=LABELS,
+            )
 
         # Build prompt from template.
         # egma-math uses <optionX> placeholders (not <imageX>) so we must substitute option text.

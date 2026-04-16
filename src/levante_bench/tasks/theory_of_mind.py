@@ -1,10 +1,10 @@
 """Theory of Mind (Stories) dataset. Context: text story, options: text."""
 
 import csv
-import random
 from pathlib import Path
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.tasks.option_order import deterministic_option_order
 from levante_bench.tasks.registry import register_task
 
 LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -96,10 +96,13 @@ class TheoryOfMindDataset(VLMDataset):
                 if len(options) < 2:
                     continue
 
-                rng = random.Random((row.get("item_uid") or "").strip() or prompt)
-                rng.shuffle(options)
-                gold_idx = options.index(answer)
-                correct_label = LETTERS[gold_idx]
+                seed_value = (row.get("item_uid") or "").strip() or prompt
+                options, correct_label = deterministic_option_order(
+                    answer=answer,
+                    alternatives=options[1:],
+                    seed_value=seed_value,
+                    option_labels=LETTERS,
+                )
 
                 prompt_text = _build_prompt(prompt, context_lines, options)
                 records.append(

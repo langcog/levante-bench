@@ -1,11 +1,10 @@
 """Theory of Mind dataset. Context: none, options: images."""
 
-import random
-
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
 from levante_bench.tasks.image_index import build_image_index
+from levante_bench.tasks.option_order import deterministic_option_order
 from levante_bench.tasks.registry import register_task
 
 LABELS = ["A", "B", "C", "D"]
@@ -34,14 +33,12 @@ class TheoryOfMindDataset(VLMDataset):
 
         answer = row["answer"]
         alternatives = row["response_alternatives"].split(",")
-        all_options = [answer] + alternatives
-
-        # Deterministic shuffle seeded by item_uid
-        rng = random.Random(row["item_uid"])
-        rng.shuffle(all_options)
-
-        correct_idx = all_options.index(answer)
-        correct_label = LABELS[correct_idx]
+        all_options, correct_label = deterministic_option_order(
+            answer=answer,
+            alternatives=alternatives,
+            seed_value=row["item_uid"],
+            option_labels=LABELS,
+        )
 
         # Resolve option image paths from cached index
         option_image_paths = []

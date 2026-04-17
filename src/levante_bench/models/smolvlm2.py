@@ -1,6 +1,7 @@
 """SmolVLM2 model implementation."""
 
 import re
+import sys
 from pathlib import Path
 
 import torch
@@ -26,6 +27,7 @@ class SmolVLM2Model(VLMModel):
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
         self.prompt_profile = str(prompt_profile).strip().lower() or "baseline"
+        self._batch_fallback_count = 0
 
     def load(self) -> None:
         """Load SmolVLM2 model and processor from HuggingFace."""
@@ -141,7 +143,16 @@ class SmolVLM2Model(VLMModel):
                     )
                 )
             return results
-        except Exception:
+        except Exception as exc:
+            self._batch_fallback_count += 1
+            # Log fallback path to help tune batch_size and debug packing failures.
+            print(
+                (
+                    f"[smolvlm2] batch fallback #{self._batch_fallback_count}: "
+                    f"{type(exc).__name__}: {exc}"
+                ),
+                file=sys.stderr,
+            )
             return [self.evaluate_trial(trial) for trial in trials]
 
     def _upgraded_prompt(self, prompt: str, task_id: str) -> str:

@@ -1,6 +1,7 @@
 """Run evaluation: for each model, evaluate all tasks, write results."""
 
 import json
+import os
 import random
 import sys
 from pathlib import Path
@@ -91,6 +92,51 @@ def resolve_device(device: str) -> str:
         return "cpu"
 
 
+def _slurm_run_label() -> str | None:
+    """Build a unique run label from Slurm environment variables."""
+    job_id = str(os.getenv("SLURM_JOB_ID") or "").strip()
+    if not job_id:
+        return None
+    task_id = str(os.getenv("SLURM_ARRAY_TASK_ID") or "").strip()
+    proc_id = str(os.getenv("SLURM_PROCID") or "").strip()
+    if task_id:
+        return f"job{job_id}-task{task_id}"
+    if proc_id:
+        return f"job{job_id}-proc{proc_id}"
+    return f"job{job_id}"
+
+
+def _resolve_run_label(
+    *,
+    cfg: DictConfig,
+    run_index: int,
+    num_runs: int,
+    true_random_option_order: bool,
+) -> str:
+    """Resolve run folder label for deterministic or true-random mode."""
+    if not true_random_option_order:
+        return "default"
+
+    run_label_cfg = str(cfg.get("run_label") or "").strip()
+    if run_label_cfg:
+        try:
+            return run_label_cfg.format(
+                run_index=run_index,
+                run_index_padded=f"{run_index:04d}",
+            )
+        except Exception:
+            return run_label_cfg
+
+    if bool(cfg.get("slurm_run_label", True)):
+        slurm_label = _slurm_run_label()
+        if slurm_label:
+            if num_runs > 1:
+                return f"{slurm_label}-r{run_index:04d}"
+            return slurm_label
+
+    return f"{run_index:04d}"
+
+
 def run_eval(cfg: DictConfig) -> dict[str, Path]:
     """Evaluate each model across all tasks using experiment config."""
     data_root = Path(cfg.data_root)
@@ -171,8 +217,14 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 if true_random_option_order
                 else None
             )
+            run_label = _resolve_run_label(
+                cfg=cfg,
+                run_index=run_index,
+                num_runs=num_runs,
+                true_random_option_order=true_random_option_order,
+            )
             model_dir = (
-                model_base_dir / f"{run_index:04d}"
+                model_base_dir / run_label
                 if true_random_option_order
                 else model_base_dir
             )
@@ -187,6 +239,7 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 "batch_size": batch_size,
                 "num_runs": num_runs,
                 "run_index": run_index,
+                "run_label": run_label,
                 "true_random_option_order": true_random_option_order,
                 "run_seed": run_seed,
                 "tasks": [str(t) for t in cfg.tasks],
@@ -198,7 +251,6 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             cache_path = model_dir / "cache" / "responses.json"
             cache = load_cache(cache_path)
             task_accuracies = {}
-            run_label = f"{run_index:04d}" if true_random_option_order else "default"
             run_desc = f" [{run_label}]" if true_random_option_order else ""
 
             for task_id in cfg.tasks:

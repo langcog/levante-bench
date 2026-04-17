@@ -61,7 +61,7 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Example:** `bash run_experiment.sh configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8`
 - `slurm/run_eval_multirun.sbatch`
   - **Purpose:** Slurm template for runner-based true-random multi-run evaluations
-  - **Inputs:** sbatch exports (`MODEL`, `VERSION`, `NUM_RUNS`, `BATCH_SIZE`, etc.)
+  - **Inputs:** sbatch exports (`MODEL`, `VERSION`, `NUM_RUNS`, `BATCH_SIZE`, optional `CONDA_ENV_NAME`/`CONDA_SH`, etc.)
   - **Outputs:** `results/<version>/<model>/<job-label>/<0001...>/...`
   - **Example:** `sbatch --export=ALL,MODEL=smolvlm2,VERSION=v1,NUM_RUNS=7 scripts/slurm/run_eval_multirun.sbatch`
 - Gemma 3 smoke eval example: `python -m levante_bench.cli run-eval --task trog --model gemma3 --version v1 --device cuda`

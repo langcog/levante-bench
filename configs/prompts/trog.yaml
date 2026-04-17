@@ -1,0 +1,66 @@
+# TROG (Sentence Understanding) — Task Framing (TF) × Output Format (OF) variants
+# n_options: 4 (A/B/C/D), context_type: none, option_type: image
+# Placeholders: {prompt_phrase}, {opt_images}, {labels}
+
+task_id: trog
+n_options: 4
+labels: "A, B, C, or D"
+
+task_framings:
+  TF1_minimal:
+    description: "Manifest default — match sentence to image"
+    template: >
+      Choose the image that matches the text: "{prompt_phrase}".
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+  TF2_comprehension:
+    description: "Comprehension — read sentence, find matching scene"
+    template: >
+      Read this sentence carefully: "{prompt_phrase}"
+
+      Now look at four images:
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      Which image correctly depicts what the sentence describes?
+
+  TF3_linguistic:
+    description: "Linguistic focus — attend to grammar and meaning"
+    template: >
+      Sentence: "{prompt_phrase}"
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      Pay attention to the exact wording — who is doing what, to whom,
+      and any spatial relationships. Which image matches the sentence exactly?
+
+  TF4_elimination:
+    description: "Elimination — rule out mismatches"
+    template: >
+      Sentence: "{prompt_phrase}"
+
+      A: {opt_a_image}; B: {opt_b_image}; C: {opt_c_image}; D: {opt_d_image}
+
+      For each image, check if it matches every detail of the sentence.
+      Eliminate images that contradict any part of the text.
+      Which image matches?
+
+output_formats:
+  OF1_bare:
+    description: "Single letter, no explanation"
+    suffix: "\nAnswer with one letter: {labels}."
+    system: "You are a visual reasoning assistant. Answer with only a single letter: {labels}. Do not explain."
+
+  OF2_json:
+    description: "JSON with answer + reason"
+    suffix: "\nRespond in JSON format: {\"answer\": \"<letter>\", \"reason\": \"<short reason>\"}"
+    system: null
+
+  OF3_cot:
+    description: "Chain-of-thought then letter"
+    suffix: "\nThink step by step, then give your final answer as a single letter: {labels}."
+    system: null
+
+  OF4_tags:
+    description: "Structured answer tags"
+    suffix: "\nPut your reasoning in <think>...</think> tags and your final answer in <answer>A, B, C, or D</answer> tags."
+    system: null

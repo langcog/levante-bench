@@ -1,0 +1,79 @@
+# Prompt Robustness Sweep — Preliminary experiment configuration
+#
+# Tests 4 Task Framings × 4 Output Formats = 16 prompt variants per task,
+# across representative models from each family.
+#
+# Run with:
+#   python scripts/prompt_robustness_sweep.py \
+#       --models qwen35 internvl35 smolvlm2 \
+#       --tasks mental-rotation matrix-reasoning vocab trog theory-of-mind egma-math \
+#       --subset-fraction 0.3 \
+#       --output-dir results/prompt_robustness
+#
+# For a fast local pilot on a single model:
+#   python scripts/prompt_robustness_sweep.py \
+#       --models qwen35 --model-sizes 0.8B \
+#       --tasks mental-rotation vocab \
+#       --subset-fraction 0.3
+
+# ── Model families to test ────────────────────────────────────────────
+# One representative per family for the pilot sweep.
+# Scale up later with more sizes per family.
+
+models:
+  # Small local models (runnable on consumer hardware)
+  - name: qwen35
+    size: 0.8B
+    family: qwen
+  - name: smolvlm2
+    size: 2.2B
+    family: smolvlm
+  - name: internvl35
+    size: 1B
+    family: internvl
+
+  # Larger local models (need 16+ GB VRAM)
+  # - name: qwen35
+  #   size: 4B
+  #   family: qwen
+  # - name: internvl35
+  #   size: 4B
+  #   family: internvl
+  # - name: gemma3
+  #   size: 4b-it
+  #   family: gemma
+
+  # API models (need API keys)
+  # - name: gpt53
+  #   family: openai
+  # - name: gemini_pro
+  #   family: google
+
+# ── Tasks ─────────────────────────────────────────────────────────────
+tasks:
+  - mental-rotation      # 83 trials, 2-option, image context + image options
+  - matrix-reasoning     # 80 trials, 4-option, image context + image options
+  - vocab                # 170 trials, 4-option, no context + image options
+  - trog                 # 99 trials, 4-option, no context + image options
+  - theory-of-mind       # 37 trials, 2-option, text context + image options
+  - egma-math            # 255 trials, 4-option, text context + text options
+
+# ── Sweep parameters ─────────────────────────────────────────────────
+subset_fraction: 0.3     # Use 30% of trials for pilot (stratified by label)
+output_dir: results/prompt_robustness
+
+# ── Design ────────────────────────────────────────────────────────────
+# Per task: 4 TF × 4 OF = 16 cells
+# Per cell: ~30% of trials × ~3s/trial = varies by task
+#
+# Estimated compute per model (subset=0.3):
+#   mental-rotation:  25 trials × 16 cells × 3s = ~20 min
+#   matrix-reasoning: 24 trials × 16 cells × 3s = ~19 min
+#   vocab:            51 trials × 16 cells × 3s = ~41 min
+#   trog:             30 trials × 16 cells × 3s = ~24 min
+#   theory-of-mind:   11 trials × 16 cells × 3s =  ~9 min
+#   egma-math:        77 trials × 16 cells × 3s = ~62 min
+#                                          Total: ~175 min/model (~3h)
+#
+# With 3 models: ~9h total for the full sweep.
+# To run faster, start with 2 tasks (e.g., mental-rotation + vocab).

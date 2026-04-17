@@ -104,8 +104,8 @@ levante-bench run-eval \
 - Per-item option ordering seed is recorded in each run's `cache/responses.json` as `option_order_seed`.
 
 For Slurm/`sbatch` jobs, true-random mode is Slurm-aware by default and uses
-job-based run folder labels (for example `job12345-task7`) to avoid cross-job
-collisions. You can override with:
+job-based parent folders (for example `job12345-task7/0001`) to avoid
+cross-job collisions while keeping numbered run subfolders. You can override with:
 
 ```bash
 levante-bench run-eval \
@@ -120,7 +120,7 @@ Equivalent experiment YAML controls:
 true_random_option_order: true
 num_runs: 7
 slurm_run_label: true     # default; uses SLURM_JOB_ID/SLURM_ARRAY_TASK_ID when available
-run_label: ""             # optional override, supports {run_index} and {run_index_padded}
+run_label: ""             # optional parent folder override; runs stay 0001, 0002, ...
 ```
 
 ## Web results dashboard (Vercel)

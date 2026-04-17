@@ -324,5 +324,6 @@ def test_run_eval_true_random_uses_slurm_labels(
     )
 
     results = runner.run_eval(cfg)
-    assert "dummy:job12345-task7" in results
-    assert results["dummy:job12345-task7"].parent.name == "job12345-task7"
+    assert "dummy:job12345-task7:0001" in results
+    assert results["dummy:job12345-task7:0001"].parent.name == "0001"
+    assert results["dummy:job12345-task7:0001"].parent.parent.name == "job12345-task7"

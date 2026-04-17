@@ -327,9 +327,9 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
     if bool(args.true_random_option_order):
         print("  Option ordering mode: true_random")
     if str(args.run_label or "").strip():
-        print(f"  Run label template: {str(args.run_label).strip()}")
+        print(f"  Run group label: {str(args.run_label).strip()}")
     elif bool(args.true_random_option_order) and bool(args.slurm_run_label):
-        print("  Run labels: Slurm-aware (job/task IDs when available)")
+        print("  Run groups: Slurm-aware (job/task IDs when available)")
 
     cfg = OmegaConf.create(
         {
@@ -579,8 +579,8 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
         "--run-label",
         default="",
         help=(
-            "Optional folder label for true-random runs. Supports {run_index} and "
-            "{run_index_padded} when num_runs > 1."
+            "Optional parent folder label for true-random runs. "
+            "Run subfolders remain sequential (0001, 0002, ...)."
         ),
     )
     pe.add_argument(

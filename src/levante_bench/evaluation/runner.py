@@ -109,32 +109,22 @@ def _slurm_run_label() -> str | None:
 def _resolve_run_label(
     *,
     cfg: DictConfig,
-    run_index: int,
-    num_runs: int,
     true_random_option_order: bool,
-) -> str:
-    """Resolve run folder label for deterministic or true-random mode."""
+) -> str | None:
+    """Resolve optional run-group label (parent folder) for true-random runs."""
     if not true_random_option_order:
-        return "default"
+        return None
 
     run_label_cfg = str(cfg.get("run_label") or "").strip()
     if run_label_cfg:
-        try:
-            return run_label_cfg.format(
-                run_index=run_index,
-                run_index_padded=f"{run_index:04d}",
-            )
-        except Exception:
-            return run_label_cfg
+        return run_label_cfg
 
     if bool(cfg.get("slurm_run_label", True)):
         slurm_label = _slurm_run_label()
         if slurm_label:
-            if num_runs > 1:
-                return f"{slurm_label}-r{run_index:04d}"
             return slurm_label
 
-    return f"{run_index:04d}"
+    return None
 
 
 def run_eval(cfg: DictConfig) -> dict[str, Path]:
@@ -217,14 +207,17 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 if true_random_option_order
                 else None
             )
-            run_label = _resolve_run_label(
+            run_group = _resolve_run_label(
                 cfg=cfg,
-                run_index=run_index,
-                num_runs=num_runs,
                 true_random_option_order=true_random_option_order,
             )
+            run_subdir = f"{run_index:04d}"
             model_dir = (
-                model_base_dir / run_label
+                (
+                    model_base_dir / run_group / run_subdir
+                    if run_group
+                    else model_base_dir / run_subdir
+                )
                 if true_random_option_order
                 else model_base_dir
             )
@@ -239,7 +232,8 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
                 "batch_size": batch_size,
                 "num_runs": num_runs,
                 "run_index": run_index,
-                "run_label": run_label,
+                "run_group": run_group,
+                "run_subdir": run_subdir if true_random_option_order else None,
                 "true_random_option_order": true_random_option_order,
                 "run_seed": run_seed,
                 "tasks": [str(t) for t in cfg.tasks],
@@ -251,7 +245,11 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             cache_path = model_dir / "cache" / "responses.json"
             cache = load_cache(cache_path)
             task_accuracies = {}
-            run_desc = f" [{run_label}]" if true_random_option_order else ""
+            run_desc = (
+                f" [{run_group}/{run_subdir}]"
+                if (true_random_option_order and run_group)
+                else (f" [{run_subdir}]" if true_random_option_order else "")
+            )
 
             for task_id in cfg.tasks:
                 task_cfg = load_task_config(task_id)
@@ -386,7 +384,11 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
             # Write cross-task summary
             summary_path = write_summary_csv(model_dir, task_accuracies)
             result_key = (
-                f"{model_name}:{run_label}"
+                (
+                    f"{model_name}:{run_group}:{run_subdir}"
+                    if run_group
+                    else f"{model_name}:{run_subdir}"
+                )
                 if true_random_option_order
                 else model_name
             )

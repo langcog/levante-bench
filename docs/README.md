@@ -45,7 +45,7 @@ You can also use OmegaConf dotlist overrides for task subsets and smoke caps:
 - `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
 - `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
 
-When `true_random_option_order` is enabled (CLI flag or experiment YAML), run outputs are written under numbered subfolders (`0001`, `0002`, ...) and per-item option ordering seeds are recorded in `cache/responses.json`. On Slurm/`sbatch`, run folders default to job-based labels (for example `job12345-task7`) to prevent cross-job collisions.
+When `true_random_option_order` is enabled (CLI flag or experiment YAML), run outputs are written under numbered subfolders (`0001`, `0002`, ...) and per-item option ordering seeds are recorded in `cache/responses.json`. On Slurm/`sbatch`, run folders default to `job.../0001` style parents (for example `job12345-task7/0001`) to prevent cross-job collisions.
 
 ## Runner migration checklist
 

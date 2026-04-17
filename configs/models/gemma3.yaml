@@ -1,0 +1,17 @@
+# Gemma 3 model config.
+#
+# Common sizes:
+# - 4b-it
+# - 12b-it
+# - 27b-it
+
+name: gemma3
+hf_name: google/gemma-3-${size}
+size: 4b-it
+max_new_tokens: 128
+dtype: bfloat16
+
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

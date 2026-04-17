@@ -292,10 +292,16 @@ class GeminiProModel(VLMModel):
         device: str = "cpu",
         api_key_env: str = "GEMINI_API_KEY",
         timeout_s: int = 120,
+        retry_attempts: int = 4,
+        max_output_tokens_cap: int = 2048,
+        thinking_budget: int = 128,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.api_key_env = api_key_env
         self.timeout_s = timeout_s
+        self.retry_attempts = max(1, int(retry_attempts))
+        self.max_output_tokens_cap = max(1, int(max_output_tokens_cap))
+        self.thinking_budget = max(0, int(thinking_budget))
         self.api_key: str | None = None
 
     def load(self) -> None:
@@ -322,28 +328,55 @@ class GeminiProModel(VLMModel):
             "generationConfig": {
                 "temperature": 0.0,
                 "maxOutputTokens": int(max_new_tokens),
+                "thinkingConfig": {
+                    "thinkingBudget": self.thinking_budget,
+                },
             },
         }
 
         url = f"{self.API_BASE}/models/{self.model_name}:generateContent"
-        response = requests.post(
-            url,
-            params={"key": self.api_key},
-            json=payload,
-            timeout=self.timeout_s,
-        )
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"Gemini API error {response.status_code}: {response.text[:500]}"
+        for attempt in range(self.retry_attempts):
+            response = requests.post(
+                url,
+                params={"key": self.api_key},
+                json=payload,
+                timeout=self.timeout_s,
             )
-        data = response.json()
-        candidates = data.get("candidates") or []
-        if not candidates:
-            raise RuntimeError(f"Gemini returned no candidates: {data}")
-        content = candidates[0].get("content", {})
-        out_parts = content.get("parts", [])
-        text_chunks = [p.get("text", "") for p in out_parts if isinstance(p, dict)]
-        return "\n".join([t for t in text_chunks if t]).strip()
+            if response.status_code != 200:
+                raise RuntimeError(
+                    f"Gemini API error {response.status_code}: {response.text[:500]}"
+                )
+            data = response.json()
+            candidates = data.get("candidates") or []
+            if not candidates:
+                raise RuntimeError(f"Gemini returned no candidates: {data}")
+
+            candidate = candidates[0]
+            content = candidate.get("content", {})
+            out_parts = content.get("parts", []) if isinstance(content, dict) else []
+            text_chunks = [p.get("text", "") for p in out_parts if isinstance(p, dict)]
+            text = "\n".join([t for t in text_chunks if t]).strip()
+            if text:
+                return text
+
+            # Gemini 2.5 can consume all output budget in thoughts and emit no text.
+            # Retry with a larger output budget before giving up.
+            finish_reason = str(candidate.get("finishReason") or "").upper()
+            current_budget = int(payload["generationConfig"]["maxOutputTokens"])
+            if (
+                finish_reason == "MAX_TOKENS"
+                and current_budget < self.max_output_tokens_cap
+                and attempt < self.retry_attempts - 1
+            ):
+                payload["generationConfig"]["maxOutputTokens"] = min(
+                    self.max_output_tokens_cap,
+                    current_budget * 2,
+                )
+                continue
+
+            return ""
+
+        return ""
 
     def _build_parts(self, prompt_text: str, image_paths: list[str] | None) -> list[dict]:
         """Build Gemini parts from prompt + optional image placeholders."""

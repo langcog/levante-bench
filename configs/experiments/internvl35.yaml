@@ -1,0 +1,19 @@
+# Runner experiment: InternVL3.5-HF at smallest size in configs (1B).
+# Run: python -m levante_bench.cli experiment=configs/experiments/internvl35.yaml device=auto
+
+models:
+  - name: internvl35
+    size: 1B
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: current
+device: cuda

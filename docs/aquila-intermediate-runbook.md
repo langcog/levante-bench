@@ -10,7 +10,7 @@ The Aquila integration lives in these tracked files:
 
 - `src/levante_bench/models/aquila_vl.py`
 - `configs/models/aquila_vl.yaml`
-- `configs/experiment_aquila_vl.yaml`
+- `configs/experiments/aquila_vl.yaml`
 - `src/levante_bench/models/__init__.py` (register import)
 - `.gitignore` (adds `.venv-aquila/`)
 - `docs/environment-split.md`
@@ -98,7 +98,7 @@ Run full Aquila experiment:
 
 ```bash
 PYTHONPATH=src python -m levante_bench.cli \
-  experiment=configs/experiment_aquila_vl.yaml \
+  experiment=configs/experiments/aquila_vl.yaml \
   device=cuda
 ```
 

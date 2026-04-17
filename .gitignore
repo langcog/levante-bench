@@ -4,10 +4,13 @@
 !/data/assets/
 /data/assets/*
 !/data/assets/manifest.csv
+.tmp/
 .secrets
 .env
 .env.*
 !.env.example
+.vercel
+node_modules/
 
 # Generated evaluation artifacts
 /results/
@@ -65,3 +68,4 @@ htmlcov/
 .Rhistory
 .RData
 .Ruserdata
+.Rproj.user

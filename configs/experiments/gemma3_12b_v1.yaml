@@ -1,0 +1,20 @@
+# Runner experiment: Gemma 3 12B IT on v1 benchmark tasks.
+# Run: python -m levante_bench.cli experiment=configs/experiments/gemma3_12b_v1.yaml device=auto
+
+models:
+  - name: gemma3
+    size: 12b-it
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Levante-Bench Results Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/levante_icon.svg" />
+    <link rel="stylesheet" href="/results-dashboard.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <div class="header-top-row">
+          <div class="header-title-row">
+            <img class="header-logo" src="/levante_icon.svg" alt="Levante logo" />
+            <h1>Levante-Bench Results Dashboard</h1>
+          </div>
+          <div class="help-menu">
+            <button id="help-menu-button" class="help-menu-button" type="button" aria-haspopup="true" aria-expanded="false">
+              Help
+            </button>
+            <div id="help-menu-dropdown" class="help-menu-dropdown" role="menu" aria-hidden="true">
+              <button class="help-menu-item" type="button" data-help-topic="project">Levante Bench...</button>
+              <button class="help-menu-item" type="button" data-help-topic="dataset">Our Dataset...</button>
+              <button class="help-menu-item" type="button" data-help-topic="models">Models...</button>
+              <button class="help-menu-item" type="button" data-help-topic="benchmark">Benchmark...</button>
+              <button class="help-menu-item" type="button" data-help-topic="age-equivalency">Age Equivalency...</button>
+              <button class="help-menu-item" type="button" data-help-topic="parser">Our Parser...</button>
+              <button class="help-menu-item" type="button" data-help-topic="parser-issues">Current Parser/Prompt Issues...</button>
+              <button class="help-menu-item" type="button" data-help-topic="getting-started">Getting Started...</button>
+            </div>
+          </div>
+        </div>
+        <p>Filter models and child age bins by task and language. Compare task-level accuracy, KL-D, and age-equivalency curves.</p>
+      </header>
+
+      <section class="dashboard-grid">
+        <aside class="sidebar">
+          <div class="control-group">
+            <label>Series</label>
+            <div class="tab-row">
+              <button id="tab-models" type="button" class="tab-button active">Models</button>
+              <button id="tab-children" type="button" class="tab-button">Children</button>
+            </div>
+            <div id="panel-models" class="tab-panel active">
+              <select id="models" multiple size="8"></select>
+              <div class="button-row">
+                <button id="all-models" type="button">All</button>
+                <button id="clear-models" type="button" class="secondary">Clear All</button>
+              </div>
+            </div>
+            <div id="panel-children" class="tab-panel">
+              <select id="children" multiple size="8"></select>
+              <div class="button-row">
+                <button id="all-children" type="button">All</button>
+                <button id="clear-children" type="button" class="secondary">Clear All</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label for="metric">Metric</label>
+            <select id="metric" size="4">
+              <option value="accuracy" selected>Accuracy</option>
+              <option value="d_kl">D_KL</option>
+              <option value="age_eq">Age Equivalency</option>
+              <option value="age_eq_acc">Age Eq (Accuracy)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="tasks">Tasks</label>
+            <select id="tasks" multiple size="10"></select>
+            <button id="all-tasks" type="button">All</button>
+          </div>
+
+          <div class="control-group">
+            <label for="languages">Languages</label>
+            <select id="languages" multiple size="6"></select>
+            <button id="all-languages" type="button">All</button>
+          </div>
+        </aside>
+
+        <div class="main-panel">
+          <section class="status-row">
+            <div class="status-left">
+              <div id="status">Loading report...</div>
+              <div id="meta"></div>
+            </div>
+            <div class="status-actions">
+              <button id="refresh-data" type="button" class="refresh-data-button">Refresh Data</button>
+            </div>
+          </section>
+
+          <section class="chart-wrap">
+            <canvas id="results-chart"></canvas>
+          </section>
+
+          <section class="summary-wrap">
+            <h2>Summary</h2>
+            <div id="summary-stats"></div>
+          </section>
+
+          <section class="table-wrap">
+            <table id="results-table">
+              <thead>
+                <tr>
+                  <th>Series</th>
+                  <th>Language</th>
+                  <th>Tasks</th>
+                  <th id="closest-bin-column-header" title="In D_KL mode with one selected task, this is the ability bin with the lowest mean D_KL for the model.">Closest IRT Bin</th>
+                  <th id="age-eq-column-header" title="In D_KL mode with one selected task, this is the soft age-equivalency estimate derived from KL across IRT ability bins (approximate, task-specific).">Age Eq (KL only)</th>
+                  <th id="gap-column-header" title="In Age Eq (Accuracy) mode, this is the absolute accuracy gap to the fitted child curve (lower is better).">Gap</th>
+                  <th id="metric-column-header">Mean Accuracy</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div id="help-modal" class="help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+      <div class="help-modal-card">
+        <button id="help-modal-close" class="help-modal-close" type="button" aria-label="Close help dialog">×</button>
+        <h2 id="help-modal-title"></h2>
+        <div id="help-modal-content" class="help-modal-content"></div>
+      </div>
+    </div>
+
+    <script src="/results-dashboard.js"></script>
+  </body>
+</html>

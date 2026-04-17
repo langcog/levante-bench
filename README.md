@@ -16,16 +16,61 @@ Use **Python 3.10–3.13**. On **3.13**, `requirements.txt` pins `torch>=2.6` an
 
 Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](requirements-dev.txt).
 
+## External runtime API (custom data)
+
+You can use the package as a model runtime in another repo without adopting LEVANTE task loaders.
+Full guide: [docs/runtime_exports.md](docs/runtime_exports.md).
+
+```python
+from levante_bench.runtime import load_model, run_trials
+
+model = load_model(model_name="qwen35", device="auto")
+
+trials = [
+    {
+        "trial_id": "sample-1",
+        "item_uid": "sample-1",
+        "prompt": "Pick the best option.",
+        "option_labels": ["A", "B", "C", "D"],
+        "correct_label": "A",
+        "context_image_paths": [],
+        "option_image_paths": [],
+        "answer_format": "label",
+    }
+]
+
+results = run_trials(model, trials, max_new_tokens=64, task_id="custom")
+```
+
+Notes:
+- Data location is provided per trial via `context_image_paths` and `option_image_paths`.
+- If a model was already downloaded in your Hugging Face cache, `load_model()` reuses it.
+- Advanced callers can pass `model_config_path=...` or `model_config={...}` to `load_model()`.
+- For 2AFC logit-forced scoring workflows, use `levante_bench.runtime.run_logit_forced_12(...)` (see `docs/runtime_exports.md`).
+
+CLI equivalent:
+
+```bash
+levante-bench run-trials-jsonl \
+  --input-jsonl ./trials.jsonl \
+  --output-jsonl ./results.jsonl \
+  --model qwen35 \
+  --device auto \
+  --max-new-tokens 64 \
+  --task-id custom
+```
+
 ## Quick start
 
 1. **IRT model mapping:** Edit `src/levante_bench/config/irt_model_mapping.csv` to map each task to its IRT model `.rds` file in the Redivis model registry (e.g. `trog,trog/multigroup_site/overlap_items/trog_rasch_f1_scalar.rds`).
 2. **Data (R):** Install R and the `redivis` package; run `Rscript scripts/download_levante_data.R` to fetch trials and IRT models into `data/responses/<version>/`.
-3. **Assets (Python):** Run `python scripts/download_levante_assets.py [--version VERSION]` to download corpus and images from a versioned bucket prefix into `data/assets/<version>/`. If `--version` is omitted, the script uses `LEVANTE_DATA_VERSION` or auto-detects a bucket default (latest date-style prefix, or the sole non-date prefix). Visual asset downloads are parallelized (`--workers`, default `8`).
+3. **Assets (Python):** Run `python scripts/data_prep/download_levante_assets.py [--version VERSION]` to download corpus and images from a versioned bucket prefix into `data/assets/<version>/`. If `--version` is omitted, the script uses `LEVANTE_DATA_VERSION` or auto-detects a bucket default (latest date-style prefix; otherwise prefers `v1` when present; otherwise the sole non-date prefix). Visual asset downloads are parallelized (`--workers`, default `8`).
 4. **Evaluate:** Then:
    - `levante-bench list-tasks`
    - `levante-bench list-models`
    - `levante-bench check-gpu`  # verify local CUDA availability
    - `levante-bench run-eval --task trog --model clip_base [--version VERSION] [--prompt-language de]`
+   - `levante-bench run-eval --task trog --model gemma3 --version v1 --device cuda`  # Gemma 3 smoke run
    - `levante-bench run-benchmark --benchmark v1 --device auto`
    - `levante-bench run-benchmark --benchmark vocab --device auto`
    - `levante-bench run-workflow --workflow smol-vocab -- --help`
@@ -38,29 +83,97 @@ Pinned deps: [requirements.txt](requirements.txt). Dev: [requirements-dev.txt](r
 
 For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
 
+### Multi-run option ordering
+
+`run-eval` supports repeated runs when using true-random option ordering:
+
+```bash
+levante-bench run-eval \
+  --task trog \
+  --model qwen25vl_72b_hf \
+  --version v1 \
+  --true-random-option-order \
+  --num-runs 3
+```
+
+- Deterministic mode (default) stays at `results/<version>/<model>/`.
+- True-random mode writes sequential run folders:
+  - `results/<version>/<model>/0001/`
+  - `results/<version>/<model>/0002/`
+  - ...
+- Per-item option ordering seed is recorded in each run's `cache/responses.json` as `option_order_seed`.
+
+For Slurm/`sbatch` jobs, true-random mode is Slurm-aware by default and uses
+job-based parent folders (for example `job12345-task7/0001`) to avoid
+cross-job collisions while keeping numbered run subfolders. You can override with:
+
+```bash
+levante-bench run-eval \
+  --true-random-option-order \
+  --run-label "job{run_index_padded}" \
+  --no-slurm-run-label
+```
+
+Equivalent experiment YAML controls:
+
+```yaml
+true_random_option_order: true
+num_runs: 7
+slurm_run_label: true     # default; uses SLURM_JOB_ID/SLURM_ARRAY_TASK_ID when available
+run_label: ""             # optional parent folder override; runs stay 0001, 0002, ...
+```
+
+## Web results dashboard (Vercel)
+
+- A lightweight dashboard is available at `/` when deployed with Vercel.
+- API endpoint `/api/results-report` supports:
+  1. live bucket aggregation (`RESULTS_SOURCE_MODE=bucket_compute`, default),
+  2. remote prebuilt JSON (`RESULTS_SOURCE_MODE=remote` + `RESULTS_REPORT_URL`), or
+  3. local JSON fallback (`RESULTS_SOURCE_MODE=local`).
+- API endpoint `/api/human-age-accuracy` serves aggregated child accuracy lines from
+  `results/human-accuracy-by-age-lines.csv` (bucket or local mode).
+- The dashboard supports model-vs-children comparison with:
+  - tabbed series selection (`Models` / `Children`),
+  - shared task and language filters across both tabs,
+  - child series grouped by age bin and filtered by the same language selector used for models.
+- Generate or refresh child comparison data from Redivis trials with:
+
+```bash
+python scripts/analysis/plot_human_accuracy_by_age_lines.py \
+  --trials-csv data/responses/v1/trials.csv \
+  --output-csv results/human-accuracy-by-age-lines.csv \
+  --output results/human-accuracy-by-age-lines.png
+```
+
+- Build report data before local preview:
+
+```bash
+python scripts/analysis/build_model_comparison_report.py --results-root results --output-json results/model-comparison-report.json
+```
+
 ## Experiment YAML mode (eval-style)
 
 You can run experiment configs directly using the eval-style command structure:
 
 ```bash
 # Direct
-python -m levante_bench.cli experiment=configs/experiment.yaml
+python -m levante_bench.cli experiment=configs/experiments/experiment.yaml
 
 # Wrapper (same behavior)
-bash run_experiment.sh configs/experiment.yaml
+bash run_experiment.sh configs/experiments/experiment.yaml
 ```
 
 Use dotlist-style overrides to change task subsets and smoke caps:
 
 ```bash
 # Vocab smoke
-python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu
+python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu
 
 # Math smoke
-python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu
+python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu
 
 # ToM smoke
-python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu
+python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu
 ```
 
 ## Recent updates (March 2026)
@@ -187,6 +300,7 @@ See [comparison/README.md](comparison/README.md) for details.
 ## Docs
 
 See [docs/README.md](docs/README.md) for data schema, releases, adding tasks/models, and secrets setup.
+See [docs/runtime_exports.md](docs/runtime_exports.md) for reusable runtime exports (`load_model`, `run_trials`, `run-trials-jsonl`) used by sibling repos.
 See [docs/aquila-intermediate-runbook.md](docs/aquila-intermediate-runbook.md) for Aquila intermediate checkpoint integration and dual-environment setup.
 See [docs/environment-split.md](docs/environment-split.md) for benchmark vs Aquila virtualenv activation and usage.
 See [scripts/README.md](scripts/README.md) for a script-by-script command index.
@@ -213,7 +327,7 @@ Then point downloads at the destination bucket:
 
 ```bash
 export LEVANTE_ASSETS_BUCKET_URL=https://storage.googleapis.com/levante-bench/corpus_data
-python scripts/download_levante_assets.py --version hackathon --workers 8
+python scripts/data_prep/download_levante_assets.py --version hackathon --workers 8
 ```
 
 `corpus_data` is the default destination prefix in the migration script, and can
@@ -227,6 +341,32 @@ Versioned snapshots also include:
 When running benchmark/eval commands with `--version current`, local version
 resolution now picks the most recently modified folder under `data/assets/`
 (not only `YYYY-MM-DD` names), so labels like `hackathon` are supported.
+
+## Hosted HF VLMs
+
+Large hosted vision models can be run through the registry/runner path via
+`src/levante_bench/models/hf_hosted.py` and model configs under `configs/models/`.
+
+Set one HF token env var before running:
+
+```bash
+export HF_TOKEN=...  # or HUGGINGFACEHUB_API_TOKEN
+```
+
+Example hosted model IDs:
+
+- `qwen25vl_72b_hf` (`Qwen/Qwen2.5-VL-72B-Instruct`)
+- `qwen3vl_30b_hf` (`Qwen/Qwen3-VL-30B-A3B-Instruct`)
+- `qwen3vl_235b_hf` (`Qwen/Qwen3-VL-235B-A22B-Instruct`)
+
+Run full eval with a hosted model:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m levante_bench.cli run-eval \
+  --model qwen25vl_72b_hf \
+  --version current \
+  --device cpu
+```
 
 ## Citing
 

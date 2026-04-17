@@ -9,11 +9,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--version`, `--irt-dataset`, `--irt-table`
   - **Outputs:** `data/responses/<version>/...` (trials, IRT files, responses_by_ability)
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
-- `download_levante_assets.py`
+- `data_prep/download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
-  - **Inputs:** `--version` (or auto-detect latest bucket version prefix), `--workers`
+  - **Inputs:** `--version` (or auto-detect latest bucket version prefix; prefers `v1` for non-date prefixes), `--workers`
   - **Outputs:** `data/assets/<version>/...`
-  - **Example:** `python scripts/download_levante_assets.py --version hackathon --workers 24`
+  - **Example:** `python scripts/data_prep/download_levante_assets.py --version hackathon --workers 24`
 - `migrate_assets_to_versioned_bucket.py`
   - **Purpose:** copy corpus/visual/manifest from source bucket into versioned destination prefix
   - **Inputs:** `--version`, `--dest-bucket`, optional `--dest-root-prefix` (default `corpus_data`), optional `--task`, `--dry-run`
@@ -24,6 +24,31 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--folder-url`, `--output-dir`
   - **Outputs:** synced folders under `results/`
   - **Example:** `python scripts/download_results_from_drive.py --output-dir results`
+- `download_results_from_bucket.py`
+  - **Purpose:** sync benchmark results from `gs://...` bucket prefix into local `results/`
+  - **Inputs:** `--bucket-results-url`, `--output-dir`
+  - **Outputs:** local synced results tree
+  - **Example:** `python scripts/analysis/download_results_from_bucket.py --bucket-results-url gs://levante-bench/results --output-dir results`
+- `upload_results_to_drive.py`
+  - **Purpose:** sync local `results/` to a mounted Google Drive folder (e.g., `s:` mount)
+  - **Inputs:** `--results-dir`, required `--drive-dir`, optional `--delete`
+  - **Outputs:** synced files in destination drive folder
+  - **Example:** `python scripts/analysis/upload_results_to_drive.py --results-dir results --drive-dir /mnt/s/levante/results`
+- `upload_results_to_drive_folder_id.py`
+  - **Purpose:** sync local `results/` to an exact Google Drive folder ID via `rclone` (avoids mount path ambiguity)
+  - **Inputs:** `--results-dir`, required `--folder-id-or-url`, optional `--remote`, optional `--remote-path`, optional `--delete`
+  - **Outputs:** synced files in the specified Drive folder
+  - **Example:** `python scripts/analysis/upload_results_to_drive_folder_id.py --results-dir results/v1 --folder-id-or-url https://drive.google.com/drive/folders/1NwlA8huu9GoXuwUnq0TQI6MwPCaX779C --remote gdrive`
+- `publish_results_from_drive_to_bucket.py`
+  - **Purpose:** end-to-end publish pipeline (Drive -> local staging -> comparison report -> `gs://levante-bench/results`)
+  - **Inputs:** `--folder-url`, `--bucket-results-url`, `--staging-dir`, optional `--remaining-ok`, optional `--skip-download`, optional `--min-summary-files`, optional `--fallback-results-root`
+  - **Outputs:** synced benchmark results + `model-comparison-report.json` in bucket prefix; report cache-control set to no-store; excludes `*:Zone.Identifier` artifacts from rsync
+  - **Example:** `python scripts/analysis/publish_results_from_drive_to_bucket.py --remaining-ok`
+- `publish_results.sh`
+  - **Purpose:** convenience wrapper for `publish_results_from_drive_to_bucket.py`
+  - **Inputs:** same flags as the Python script (passthrough)
+  - **Outputs:** same as publish pipeline
+  - **Example:** `scripts/publish_results.sh --remaining-ok`
 - `run_benchmark_v1.py`
   - **Purpose:** run the v1 benchmark bundle (math + ToM robustness)
   - **Inputs:** `--data-version`, `--model-id`, `--device`, `--max-items-*`
@@ -33,7 +58,8 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Purpose:** eval-style wrapper for experiment YAML runs
   - **Inputs:** experiment YAML path + OmegaConf dotlist overrides
   - **Outputs:** task-dependent experiment artifacts under configured output dirs
-  - **Example:** `bash run_experiment.sh configs/experiment.yaml tasks=[vocab] max_items_vocab=8`
+  - **Example:** `bash run_experiment.sh configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8`
+- Gemma 3 smoke eval example: `python -m levante_bench.cli run-eval --task trog --model gemma3 --version v1 --device cuda`
 - `run_smolvlmv2_vocab_eval.py`
   - **Purpose:** run vocab image-grid evaluation
   - **Inputs:** `--corpus-csv`, `--visual-dir`, `--model-id`
@@ -136,11 +162,27 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--report-json`, `--output`, `--min-tasks`
   - **Outputs:** PNG line chart (tasks on x-axis, accuracy on y-axis)
   - **Example:** `python scripts/plot_model_comparison_lines.py --report-json results/model-comparison-report.json --output results/model-comparison-line-chart.png`
+- `normalize_results_layout.py`
+  - **Purpose:** migrate legacy `results/<model>/<version>/...` folders into canonical `results/<version>/<model-size[-lang]>/...`
+  - **Inputs:** `--results-root`, optional `--apply` (default dry-run)
+  - **Outputs:** moved/merged results folders; conflict skips are printed
+  - **Example:** `python scripts/analysis/normalize_results_layout.py --results-root results --apply`
 - `plot_aquila_stages.py`
   - **Purpose:** compare Aquila intermediate stages (`stage2a/b/c`, `stage3`) and final production performance by task
   - **Inputs:** `--results-root`, `--output`
   - **Outputs:** PNG with task-wise stage lines + mean-accuracy bars
   - **Example:** `python scripts/analysis/plot_aquila_stages.py --results-root scripts/results/aquila-checkpoints/2026-03-29`
+- `check_parser_glitches.py`
+  - **Purpose:** scan trial CSVs for parser anomalies (high unparseable/empty prediction rates), write a diagnostics report, and suggest parser/prompt fixes
+  - **Inputs:** `--local` or `--bucket` (default bucket), `--results-root` (for local mode), `--bucket-results-url` and `--staging-dir` (for bucket mode), `--output-json`, `--output-markdown`, optional thresholds
+  - **Outputs:** JSON + Markdown parser-glitch reports
+  - **Example:** `python scripts/analysis/check_parser_glitches.py --bucket --bucket-results-url gs://levante-bench/results`
+- `plot_human_accuracy_by_age_lines.py`
+  - **Purpose:** aggregate human trial accuracy by age bin/language and plot task-wise line chart
+  - **Inputs:** `--trials-csv`, `--min-age`, `--max-age`, `--bin-width`, `--min-samples`
+  - **Outputs:** PNG line chart + CSV aggregate table with columns `age_bin,task_id,language,n,accuracy`
+  - **Usage in dashboard:** powers `/api/human-age-accuracy` for model-vs-children comparison with shared task/language filters
+  - **Example:** `python scripts/analysis/plot_human_accuracy_by_age_lines.py --trials-csv data/responses/v1/trials.csv`
 
 ## Notes
 

@@ -6,11 +6,12 @@ This directory contains user-facing and developer documentation for the LEVANTE 
 - **[releases.md](releases.md)** – How to obtain LEVANTE trials data (Redivis) and run the R download script; versioning.
 - **[adding_tasks.md](adding_tasks.md)** – How to add a LEVANTE task to the benchmark.
 - **[adding_models.md](adding_models.md)** – How to add a VLM to the benchmark.
+- **[runtime_exports.md](runtime_exports.md)** – Public runtime API for external repos (`load_model`, `run_trials`, `run-trials-jsonl`).
 
 ## Quick start
 
 1. Install R and the `redivis` package; configure auth per [releases.md](releases.md).
-2. Run `scripts/download_levante_assets.py` (optional `--version YYYY-MM-DD`) to download corpus and images from the public LEVANTE assets bucket.
+2. Run `scripts/data_prep/download_levante_assets.py` (optional `--version YYYY-MM-DD`) to download corpus and images from the public LEVANTE assets bucket.
 3. Run `scripts/download_levante_data.R` to fetch trials from Redivis into `data/responses/<version>/`.
 4. Validate environment and GPU:
    - `levante-bench list-tasks`
@@ -18,6 +19,7 @@ This directory contains user-facing and developer documentation for the LEVANTE 
    - `levante-bench check-gpu`
 5. Run evaluation and benchmarks:
    - `levante-bench run-eval --task <task> --model <model> [--version <version>]`
+   - `levante-bench run-eval --task <task> --model <model> --true-random-option-order --num-runs 3`
    - `levante-bench run-benchmark --benchmark v1 --device auto`
    - `levante-bench run-benchmark --benchmark vocab --device auto`
 6. Run comparison (R):
@@ -34,14 +36,16 @@ This directory contains user-facing and developer documentation for the LEVANTE 
 
 You can run YAML-defined experiments directly through the CLI:
 
-- `python -m levante_bench.cli experiment=configs/experiment.yaml`
-- `bash run_experiment.sh configs/experiment.yaml`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml`
+- `bash run_experiment.sh configs/experiments/experiment.yaml`
 
 You can also use OmegaConf dotlist overrides for task subsets and smoke caps:
 
-- `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu`
-- `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
-- `python -m levante_bench.cli experiment=configs/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8 device=cpu`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[egma-math] max_items_math=2 device=cpu`
+- `python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu`
+
+When `true_random_option_order` is enabled (CLI flag or experiment YAML), run outputs are written under numbered subfolders (`0001`, `0002`, ...) and per-item option ordering seeds are recorded in `cache/responses.json`. On Slurm/`sbatch`, run folders default to `job.../0001` style parents (for example `job12345-task7/0001`) to prevent cross-job collisions.
 
 ## Runner migration checklist
 

@@ -15,6 +15,10 @@ from pathlib import Path
 
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MODEL_SIZE_RE = re.compile(r"^(?P<model>[A-Za-z0-9.-]+)_(?P<size>[0-9]+(?:\.[0-9]+)?[A-Za-z]+)$")
+MODEL_SIZE_DASH_RE = re.compile(
+    r"^(?P<model>[A-Za-z0-9._-]+)-(?P<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$"
+)
+LANG_SUFFIX_RE = re.compile(r"^(?P<base>.+)-(?P<lang>[a-z]{2})$")
 
 
 @dataclass
@@ -24,7 +28,9 @@ class SummaryRun:
     run_id: str
     model: str
     size: str | None
+    language: str | None
     model_tag: str
+    canonical_model_tag: str
     version: str | None
     modified_at: str
     task_metrics: dict[str, float]
@@ -93,11 +99,39 @@ def _infer_model_tag(relative_summary_path: Path) -> str:
     return relative_summary_path.parent.name
 
 
-def _split_model_and_size(model_tag: str) -> tuple[str, str | None]:
+def _split_model_size_language(model_tag: str) -> tuple[str, str | None, str | None]:
+    # First parse without language stripping so size suffixes like "-it" are kept.
     m = MODEL_SIZE_RE.fullmatch(model_tag)
     if m:
-        return m.group("model"), m.group("size")
-    return model_tag, None
+        return m.group("model"), m.group("size"), None
+
+    dm = MODEL_SIZE_DASH_RE.fullmatch(model_tag)
+    if dm:
+        return dm.group("model"), dm.group("size"), None
+
+    lang = None
+    base = model_tag
+    lm = LANG_SUFFIX_RE.fullmatch(model_tag)
+    if lm:
+        base = lm.group("base")
+        lang = lm.group("lang")
+
+    m = MODEL_SIZE_RE.fullmatch(base)
+    if m:
+        return m.group("model"), m.group("size"), lang
+
+    dm = MODEL_SIZE_DASH_RE.fullmatch(base)
+    if dm:
+        return dm.group("model"), dm.group("size"), lang
+
+    return base, None, lang
+
+
+def _canonical_model_tag(model: str, size: str | None, language: str | None) -> str:
+    base = f"{model}-{size}" if size else model
+    if language:
+        return f"{base}-{language}"
+    return base
 
 
 def _infer_version(relative_summary_path: Path) -> str | None:
@@ -110,7 +144,8 @@ def _infer_version(relative_summary_path: Path) -> str | None:
 def _build_run(summary_path: Path, results_root: Path) -> SummaryRun:
     rel = summary_path.relative_to(results_root)
     model_tag = _infer_model_tag(rel)
-    model, size = _split_model_and_size(model_tag)
+    model, size, language = _split_model_size_language(model_tag)
+    canonical_tag = _canonical_model_tag(model, size, language)
     task_metrics = _parse_summary_csv(summary_path)
     mean_accuracy = (
         sum(task_metrics.values()) / len(task_metrics) if task_metrics else None
@@ -125,7 +160,9 @@ def _build_run(summary_path: Path, results_root: Path) -> SummaryRun:
         run_id=run_id,
         model=model,
         size=size,
+        language=language,
         model_tag=model_tag,
+        canonical_model_tag=canonical_tag,
         version=_infer_version(rel),
         modified_at=modified_at,
         task_metrics=task_metrics,
@@ -136,13 +173,14 @@ def _build_run(summary_path: Path, results_root: Path) -> SummaryRun:
 def _aggregate_runs(runs: list[SummaryRun]) -> dict[str, dict]:
     grouped: dict[str, list[SummaryRun]] = defaultdict(list)
     for run in runs:
-        key = f"{run.model}|{run.size or ''}"
+        key = f"{run.model}|{run.size or ''}|{run.language or ''}"
         grouped[key].append(run)
 
     out: dict[str, dict] = {}
     for key, group_runs in sorted(grouped.items()):
         model = group_runs[0].model
         size = group_runs[0].size
+        language = group_runs[0].language
         task_values: dict[str, list[float]] = defaultdict(list)
         for run in group_runs:
             for task_id, acc in run.task_metrics.items():
@@ -161,6 +199,8 @@ def _aggregate_runs(runs: list[SummaryRun]) -> dict[str, dict]:
         out[key] = {
             "model": model,
             "size": size,
+            "language": language,
+            "canonical_model_tag": _canonical_model_tag(model, size, language),
             "model_tag_examples": sorted({r.model_tag for r in group_runs}),
             "run_count": len(group_runs),
             "runs": sorted(r.run_id for r in group_runs),
@@ -190,7 +230,9 @@ def main() -> int:
             "run_id": run.run_id,
             "model": run.model,
             "size": run.size,
+            "language": run.language,
             "model_tag": run.model_tag,
+            "canonical_model_tag": run.canonical_model_tag,
             "version": run.version,
             "modified_at": run.modified_at,
             "task_metrics": run.task_metrics,

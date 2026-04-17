@@ -1,0 +1,18 @@
+models:
+  - name: internvl35
+    size: 4B
+    max_new_tokens: 32
+    use_json_format: false
+
+tasks:
+  - trog
+
+task_overrides:
+  trog:
+    corpus_file: trog-item-bank-full-params-skip77.csv
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 1

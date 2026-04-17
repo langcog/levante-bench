@@ -55,12 +55,30 @@ def test_run_eval_uses_cache_on_second_pass(monkeypatch, tmp_path: Path) -> None
                 "option_labels": trial["option_labels"],
             }
 
+        def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
+            return [self.evaluate_trial(trial) for trial in trials]
+
     monkeypatch.setattr(
         runner,
         "load_model_config",
         lambda _: OmegaConf.create({"hf_name": "dummy/hf", "max_new_tokens": 8}),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda _: DummyModel)
+    monkeypatch.setattr(
+        runner,
+        "resolve_model_config",
+        lambda model_name, model_overrides=None, model_config=None: {
+            "hf_name": "dummy/hf",
+            "max_new_tokens": 8,
+        },
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load=True: DummyModel(
+            model_name=model_cfg["hf_name"],
+            device=device,
+        ),
+    )
     monkeypatch.setattr(runner, "load_task_config", lambda _: {"context_type": "none"})
     monkeypatch.setattr(
         runner,

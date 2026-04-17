@@ -1,0 +1,24 @@
+# Runner suite: Aquila production checkpoint on full benchmark.
+# Run in `.venv-aquila`:
+#   PYTHONPATH=src python -m levante_bench.cli experiment=configs/experiments/aquila_production_full.yaml device=cuda
+
+models:
+  - name: aquila_vl
+    size: production
+    hf_name: BAAI/Aquila-VL-2B-llava-qwen
+    checkpoint_subdir: null
+    max_new_tokens: 256
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results/aquila-checkpoints
+version: current
+device: cuda

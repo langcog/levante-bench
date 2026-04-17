@@ -15,12 +15,25 @@ DTYPE_MAP = {
     "bfloat16": torch.bfloat16,
 }
 
+_MAX_IMAGE_EDGE = 1024
 
-def load_pil_images(image_paths: list[str] | None) -> Optional[list]:
+
+def load_pil_images(
+    image_paths: list[str] | None,
+    max_image_edge: int | None = None,
+) -> Optional[list]:
     """Load a list of file paths as RGB PIL Images."""
     if not image_paths:
         return None
-    return [Image.open(p).convert("RGB") for p in image_paths]
+    images = []
+    edge_limit = int(max_image_edge) if max_image_edge is not None else _MAX_IMAGE_EDGE
+    for path in image_paths:
+        img = Image.open(path).convert("RGB")
+        # Keep very large option images from destabilizing CUDA vision forward passes.
+        if max(img.size) > edge_limit:
+            img.thumbnail((edge_limit, edge_limit), Image.Resampling.LANCZOS)
+        images.append(img)
+    return images
 
 
 def build_pil_content(

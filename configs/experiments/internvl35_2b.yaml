@@ -1,0 +1,19 @@
+# Runner experiment: InternVL3.5-HF 2B (next size up from 1B).
+# Run: python -m levante_bench.cli experiment=configs/experiments/internvl35_2b.yaml device=auto
+
+models:
+  - name: internvl35
+    size: 2B
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: current
+device: cuda

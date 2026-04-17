@@ -26,7 +26,7 @@ To use a new Redivis release, run the R script with the new dataset/table identi
 Assets (corpus CSVs and images) are in a **public** GCP bucket. No authentication is required; the download script uses standard HTTP.
 
 - **Base URL:** `https://storage.googleapis.com/levante-assets-prod` (configurable in `levante_bench.config.defaults` or env `LEVANTE_ASSETS_BUCKET_URL`).
-- **Corpus (item mapping):** `{base}/corpus/{internal_name}/{corpus_file}` – e.g. `corpus/egma-math/test-combined-math-cat.csv`. The mapping from benchmark task name to internal name and corpus filename is in `config/task_name_mapping.csv`.
+- **Corpus (item mapping):** `{base}/corpus/{internal_name}/{corpus_file}` – e.g. `corpus/egma-math/math-item-bank.csv`. The mapping from benchmark task name to internal name and corpus filename is in `config/task_name_mapping.csv`.
 - **Images:** `{base}/visual/{internal_name}/...` – per-task subdirectories.
 
 Run `scripts/download_levante_assets.py` with optional `--version YYYY-MM-DD` (default: today). Assets are written to `data/assets/<version>/` and an item_uid → paths index is built. Production assets change over time, so versioning by **download date** is used.

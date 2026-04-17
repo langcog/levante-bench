@@ -49,8 +49,38 @@ def _task_sort_key(task_id: str) -> tuple[int, str]:
     return (1, task_id)
 
 
-def _model_label(model: str, size: str | None) -> str:
-    return f"{model}_{size}" if size else model
+def _model_label(model: str, size: str | None, language: str | None = None) -> str:
+    base = f"{model}-{size}" if size else model
+    if language:
+        return f"{base}-{language}"
+    return base
+
+
+def _marker_for_label(label: str) -> str:
+    s = label.lower()
+    if "gemma3" in s:
+        return "s"  # square
+    if "gemma4" in s:
+        return "^"  # triangle
+    return "o"  # default dot
+
+
+def _line_style_for_label(label: str) -> dict:
+    s = label.lower()
+    if "gemma3" in s or "gemma4" in s:
+        return {
+            "linewidth": 3.0,
+            "markersize": 7.5,
+            "markeredgewidth": 1.2,
+            "markeredgecolor": "black",
+            "zorder": 5,
+        }
+    return {
+        "linewidth": 2.0,
+        "markersize": 5.0,
+        "markeredgewidth": 0.0,
+        "zorder": 2,
+    }
 
 
 def main() -> int:
@@ -80,7 +110,11 @@ def main() -> int:
                 task_means[task_id] = float(mean_value)
         if len(task_means) < args.min_tasks:
             continue
-        label = _model_label(str(info.get("model", "")), info.get("size"))
+        label = _model_label(
+            str(info.get("model", "")),
+            info.get("size"),
+            info.get("language"),
+        )
         model_series.append((label, task_means))
         all_tasks.update(task_means.keys())
 
@@ -93,7 +127,18 @@ def main() -> int:
     fig, ax = plt.subplots(figsize=(max(10, len(tasks) * 1.6), 6))
     for label, task_means in model_series:
         y = [task_means.get(task_id, float("nan")) for task_id in tasks]
-        ax.plot(x, y, marker="o", linewidth=2, markersize=5, label=label)
+        style = _line_style_for_label(label)
+        ax.plot(
+            x,
+            y,
+            marker=_marker_for_label(label),
+            label=label,
+            linewidth=style["linewidth"],
+            markersize=style["markersize"],
+            markeredgewidth=style["markeredgewidth"],
+            markeredgecolor=style.get("markeredgecolor"),
+            zorder=style["zorder"],
+        )
 
     ax.set_title("Model Accuracy by Task")
     ax.set_xlabel("Task")

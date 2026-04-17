@@ -1,0 +1,24 @@
+# Runner experiment: SmolVLM2 256M Instruct on German prompts.
+# Run: python -m levante_bench.cli experiment=configs/experiments/smolvlm2_256m_de.yaml device=auto
+
+models:
+  - name: smolvlm2
+    size: 256M
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+task_overrides:
+  __all__:
+    prompt_language: de
+
+data_root: data
+output_dir: results/german-full
+version: hackathon
+device: cuda

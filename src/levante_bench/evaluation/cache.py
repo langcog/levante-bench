@@ -14,6 +14,7 @@ def trial_hash(trial: dict) -> str:
         trial.get("prompt", ""),
         str(trial.get("options", [])),
         str(trial.get("option_labels", [])),
+        str(trial.get("option_order_seed", "")),
     ]
     key = "|".join(key_parts)
     return hashlib.sha256(key.encode()).hexdigest()[:16]

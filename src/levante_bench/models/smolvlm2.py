@@ -1,6 +1,7 @@
 """SmolVLM2 model implementation."""
 
 import re
+import sys
 from pathlib import Path
 
 import torch
@@ -20,10 +21,13 @@ class SmolVLM2Model(VLMModel):
         device: str = "cpu",
         dtype: str = "bfloat16",
         attn_implementation: str = "eager",
+        prompt_profile: str = "baseline",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
+        self.prompt_profile = str(prompt_profile).strip().lower() or "baseline"
+        self._batch_fallback_count = 0
 
     def load(self) -> None:
         """Load SmolVLM2 model and processor from HuggingFace."""
@@ -60,6 +64,136 @@ class SmolVLM2Model(VLMModel):
 
         return self.processor.batch_decode(output_ids, skip_special_tokens=True)[0]
 
+    def evaluate_trial(self, trial: dict) -> dict:
+        """Apply task-tuned prompt upgrades before base evaluation."""
+        if self.prompt_profile != "upgraded":
+            return super().evaluate_trial(trial)
+        trial_with_prompt = dict(trial)
+        prompt = str(trial.get("prompt", ""))
+        task_id = str(trial.get("task_id", "") or "").strip().lower()
+        if prompt:
+            trial_with_prompt["prompt"] = self._upgraded_prompt(prompt, task_id)
+        return super().evaluate_trial(trial_with_prompt)
+
+    def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
+        """Evaluate trials with batched tokenization/generation when possible."""
+        if not trials:
+            return []
+        if len(trials) == 1:
+            return [self.evaluate_trial(trials[0])]
+
+        prepared_trials: list[dict] = []
+        prepared_inputs: list[tuple[str, str, list[str], int]] = []
+        for trial in trials:
+            trial_for_eval = dict(trial)
+            if self.prompt_profile == "upgraded":
+                prompt = str(trial_for_eval.get("prompt", ""))
+                task_id = str(trial_for_eval.get("task_id", "") or "").strip().lower()
+                if prompt:
+                    trial_for_eval["prompt"] = self._upgraded_prompt(prompt, task_id)
+            prepared_trials.append(trial_for_eval)
+            prepared_inputs.append(self._prepare_trial_inputs(trial_for_eval))
+
+        prompts = [item[0] for item in prepared_inputs]
+        answer_formats = [item[1] for item in prepared_inputs]
+        image_path_batches = [item[2] for item in prepared_inputs]
+        max_new_tokens = max(item[3] for item in prepared_inputs)
+
+        try:
+            messages_batch = [
+                self._build_messages(prompt_text, image_paths)
+                for prompt_text, image_paths in zip(prompts, image_path_batches)
+            ]
+            inputs = self.processor.apply_chat_template(
+                messages_batch,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt",
+                padding=True,
+            ).to(self.device, dtype=self.dtype)
+
+            if "attention_mask" in inputs:
+                input_lens = inputs["attention_mask"].sum(dim=1).tolist()
+            else:
+                input_lens = [inputs["input_ids"].shape[1]] * len(prepared_trials)
+
+            with torch.no_grad():
+                output_ids = self.model.generate(
+                    **inputs,
+                    do_sample=False,
+                    max_new_tokens=max_new_tokens,
+                )
+
+            results: list[dict] = []
+            for trial, answer_format, in_len, row in zip(
+                prepared_trials, answer_formats, input_lens, output_ids
+            ):
+                generated_ids = row[int(in_len):]
+                raw_text = self.processor.decode(
+                    generated_ids,
+                    skip_special_tokens=True,
+                )
+                clean_text = self.parse_response(raw_text)
+                results.append(
+                    self._build_result_from_text(
+                        trial=trial,
+                        clean_text=clean_text,
+                        answer_format=answer_format,
+                    )
+                )
+            return results
+        except Exception as exc:
+            self._batch_fallback_count += 1
+            # Log fallback path to help tune batch_size and debug packing failures.
+            print(
+                (
+                    f"[smolvlm2] batch fallback #{self._batch_fallback_count}: "
+                    f"{type(exc).__name__}: {exc}"
+                ),
+                file=sys.stderr,
+            )
+            return [self.evaluate_trial(trial) for trial in trials]
+
+    def _upgraded_prompt(self, prompt: str, task_id: str) -> str:
+        """Append concise, task-specific instructions from prompt optimization runs."""
+        base_instruction = (
+            "Final answer format: respond with exactly one option letter (A, B, C, or D)."
+        )
+        additions: list[str] = [base_instruction]
+
+        if task_id == "vocab":
+            additions.append(
+                "Only one image matches the target word. Compare all options and choose the single best match."
+            )
+        elif task_id == "trog":
+            additions.append(
+                "Ground the sentence meaning in the images: who is doing what to whom, and where."
+            )
+            additions.append(
+                "Use image details that distinguish grammar roles, then choose one letter."
+            )
+        elif task_id == "egma-math":
+            additions.append(
+                "Solve the math carefully before choosing. Double-check arithmetic and pick the best option."
+            )
+        elif task_id == "theory-of-mind":
+            additions.append(
+                "Use each character's perspective: they only know what they saw or were told."
+            )
+            additions.append(
+                "Ignore events that happened while a character was away unless they were informed later."
+            )
+        elif task_id == "matrix-reasoning":
+            additions.append(
+                "Identify the transformation rule across rows and columns, then apply the same rule to the missing cell."
+            )
+            additions.append(
+                "Prefer the option that best matches both row and column patterns."
+            )
+
+        return f"{prompt}\n\n" + "\n".join(additions)
+
     def _build_messages(
         self,
         prompt_text: str,
@@ -87,6 +221,14 @@ class SmolVLM2Model(VLMModel):
                 for path in image_paths:
                     content.append({"type": "image", "url": str(Path(path).resolve())})
             content.append({"type": "text", "text": prompt_text})
+        if self.prompt_profile == "upgraded":
+            return [
+                {
+                    "role": "system",
+                    "content": "You are a precise visual reasoning assistant.",
+                },
+                {"role": "user", "content": content},
+            ]
         return [{"role": "user", "content": content}]
 
     def parse_response(self, raw_output: str) -> str:
@@ -96,3 +238,42 @@ class SmolVLM2Model(VLMModel):
         else:
             text = raw_output
         return re.sub(r"<\|?end\|?>.*$", "", text).strip()
+
+    def score_choices(
+        self,
+        prompt_text: str,
+        image_paths: list[str],
+        choice_texts: tuple[str, str] = ("1", "2"),
+    ) -> dict:
+        """Return next-token probabilities/logits for two one-token choices."""
+        messages = self._build_messages(prompt_text, image_paths)
+        inputs = self.processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.device, dtype=self.dtype)
+
+        choice_ids: list[int] = []
+        for choice in choice_texts:
+            toks = self.processor.tokenizer.encode(choice, add_special_tokens=False)
+            if len(toks) != 1:
+                raise ValueError(
+                    f"Choice {choice!r} must map to one token; got ids={toks}"
+                )
+            choice_ids.append(toks[0])
+
+        output, elapsed = self._timed_call(lambda: self.model(**inputs))
+        next_logits = output.logits[:, -1, :].float()
+        selected = next_logits[:, choice_ids].squeeze(0)
+        probs = torch.softmax(selected, dim=-1)
+        return {
+            "choice_texts": list(choice_texts),
+            "choice_token_ids": choice_ids,
+            "choice_logits": [float(selected[0].item()), float(selected[1].item())],
+            "choice_probs": [float(probs[0].item()), float(probs[1].item())],
+            "generation_time_s": elapsed,
+            "model_name": self.model_name,
+            "num_tokens_generated": 0,
+        }

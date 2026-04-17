@@ -56,6 +56,18 @@ def get_task_def(
         option_type=cfg.get("option_type", "text"),
         include_numberline=bool(overrides.get("include_numberline", cfg.get("include_numberline", False))),
         prompt_language=str(overrides.get("prompt_language", cfg.get("prompt_language", "en"))),
+        true_random_option_order=bool(
+            overrides.get("true_random_option_order", cfg.get("true_random_option_order", False))
+        ),
+        option_order_run_seed=(
+            int(overrides.get("option_order_run_seed"))
+            if overrides.get("option_order_run_seed") is not None
+            else (
+                int(cfg.get("option_order_run_seed"))
+                if cfg.get("option_order_run_seed") is not None
+                else None
+            )
+        ),
     )
 
 

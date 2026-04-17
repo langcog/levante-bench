@@ -35,13 +35,7 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
     captured: dict[str, object] = {}
 
     class DummyModel:
-        def __init__(self, model_name: str, device: str, keep_me: int = 0) -> None:
-            captured["model_name"] = model_name
-            captured["device"] = device
-            captured["keep_me"] = keep_me
-
-        def load(self) -> None:
-            captured["loaded"] = True
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -57,7 +51,14 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    def _fake_build_model(model_name, model_cfg, device, auto_load):
+        captured["model_name"] = model_name
+        captured["device"] = device
+        captured["keep_me"] = model_cfg.get("keep_me")
+        captured["loaded"] = auto_load
+        return DummyModel()
+
+    monkeypatch.setattr(runner, "build_model", _fake_build_model)
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
 
@@ -74,7 +75,7 @@ def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
 
     results = runner.run_eval(cfg)
 
-    assert captured["model_name"] == "base/hf-model"
+    assert captured["model_name"] == "dummy"
     assert captured["device"] == "cpu"
     assert captured["keep_me"] == 99
     assert captured["loaded"] is True
@@ -92,11 +93,7 @@ def test_run_eval_applies_global_and_task_specific_overrides(
     captured_overrides: dict[str, dict] = {}
 
     class DummyModel:
-        def __init__(self, model_name: str, device: str) -> None:
-            pass
-
-        def load(self) -> None:
-            pass
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -110,7 +107,11 @@ def test_run_eval_applies_global_and_task_specific_overrides(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
     monkeypatch.setattr(runner, "load_task_config", lambda task_id: {"context_type": "none"})
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
@@ -141,6 +142,8 @@ def test_run_eval_applies_global_and_task_specific_overrides(
     assert captured_overrides["trog"] == {
         "prompt_language": "de",
         "include_numberline": False,
+        "true_random_option_order": False,
+        "option_order_run_seed": None,
     }
 
 
@@ -149,11 +152,7 @@ def test_run_eval_appends_non_english_language_suffix_to_model_dir(
     tmp_path: Path,
 ) -> None:
     class DummyModel:
-        def __init__(self, model_name: str, device: str) -> None:
-            pass
-
-        def load(self) -> None:
-            pass
+        pass
 
     monkeypatch.setattr(
         runner,
@@ -167,7 +166,11 @@ def test_run_eval_appends_non_english_language_suffix_to_model_dir(
             }
         ),
     )
-    monkeypatch.setattr(runner, "get_model_class", lambda model_name: DummyModel)
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
     monkeypatch.setattr(runner, "load_cache", lambda path: {})
     monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
 
@@ -185,3 +188,142 @@ def test_run_eval_appends_non_english_language_suffix_to_model_dir(
 
     results = runner.run_eval(cfg)
     assert results["dummy"].parent.name == "dummy-tiny-de"
+
+
+def test_run_eval_normalizes_legacy_output_dir_suffix(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class DummyModel:
+        pass
+
+    monkeypatch.setattr(
+        runner,
+        "load_model_config",
+        lambda model_name: OmegaConf.create(
+            {
+                "hf_name": "base/hf-model",
+                "size": "E4B-it",
+                "max_new_tokens": 64,
+                "use_json_format": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
+    monkeypatch.setattr(runner, "load_cache", lambda path: {})
+    monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
+
+    cfg = OmegaConf.create(
+        {
+            "data_root": str(tmp_path / "data"),
+            "output_dir": str(tmp_path / "results" / "gemma4-v1"),
+            "version": "v1",
+            "device": "cpu",
+            "models": ["gemma4"],
+            "tasks": [],
+        }
+    )
+
+    results = runner.run_eval(cfg)
+    assert results["gemma4"] == tmp_path / "results" / "v1" / "gemma4-E4B-it" / "summary.csv"
+
+
+def test_run_eval_true_random_writes_numbered_run_subdirs(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class DummyModel:
+        pass
+
+    monkeypatch.setattr(
+        runner,
+        "load_model_config",
+        lambda model_name: OmegaConf.create(
+            {
+                "hf_name": "base/hf-model",
+                "size": "tiny",
+                "max_new_tokens": 64,
+                "use_json_format": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
+    monkeypatch.setattr(runner, "load_cache", lambda path: {})
+    monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
+
+    cfg = OmegaConf.create(
+        {
+            "data_root": str(tmp_path / "data"),
+            "output_dir": str(tmp_path / "out"),
+            "version": "unit-test",
+            "device": "cpu",
+            "models": ["dummy"],
+            "tasks": [],
+            "num_runs": 2,
+            "true_random_option_order": True,
+            "slurm_run_label": False,
+        }
+    )
+
+    results = runner.run_eval(cfg)
+    assert "dummy:0001" in results
+    assert "dummy:0002" in results
+    assert results["dummy:0001"].parent.name == "0001"
+    assert results["dummy:0002"].parent.name == "0002"
+
+
+def test_run_eval_true_random_uses_slurm_labels(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class DummyModel:
+        pass
+
+    monkeypatch.setattr(
+        runner,
+        "load_model_config",
+        lambda model_name: OmegaConf.create(
+            {
+                "hf_name": "base/hf-model",
+                "size": "tiny",
+                "max_new_tokens": 64,
+                "use_json_format": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
+    monkeypatch.setattr(runner, "load_cache", lambda path: {})
+    monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
+    monkeypatch.setenv("SLURM_JOB_ID", "12345")
+    monkeypatch.setenv("SLURM_ARRAY_TASK_ID", "7")
+
+    cfg = OmegaConf.create(
+        {
+            "data_root": str(tmp_path / "data"),
+            "output_dir": str(tmp_path / "out"),
+            "version": "unit-test",
+            "device": "cpu",
+            "models": ["dummy"],
+            "tasks": [],
+            "num_runs": 1,
+            "true_random_option_order": True,
+            "slurm_run_label": True,
+        }
+    )
+
+    results = runner.run_eval(cfg)
+    assert "dummy:job12345-task7:0001" in results
+    assert results["dummy:job12345-task7:0001"].parent.name == "0001"
+    assert results["dummy:job12345-task7:0001"].parent.parent.name == "job12345-task7"

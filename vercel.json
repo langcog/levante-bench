@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "functions": {
+    "api/results-report.js": {
+      "maxDuration": 60
+    },
+    "api/parser-glitch-report.js": {
+      "maxDuration": 60
+    },
+    "api/human-age-accuracy.js": {
+      "maxDuration": 60
+    },
+    "api/model-age-equivalency.js": {
+      "maxDuration": 60
+    },
+    "api/model-age-equivalency-accuracy.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/results-report",
+      "destination": "/api/results-report.js"
+    },
+    {
+      "source": "/api/parser-glitch-report",
+      "destination": "/api/parser-glitch-report.js"
+    },
+    {
+      "source": "/api/human-age-accuracy",
+      "destination": "/api/human-age-accuracy.js"
+    },
+    {
+      "source": "/api/model-age-equivalency",
+      "destination": "/api/model-age-equivalency.js"
+    },
+    {
+      "source": "/api/model-age-equivalency-accuracy",
+      "destination": "/api/model-age-equivalency-accuracy.js"
+    },
+    {
+      "source": "/",
+      "destination": "/results-dashboard.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

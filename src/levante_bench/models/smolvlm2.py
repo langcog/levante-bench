@@ -73,6 +73,77 @@ class SmolVLM2Model(VLMModel):
             trial_with_prompt["prompt"] = self._upgraded_prompt(prompt, task_id)
         return super().evaluate_trial(trial_with_prompt)
 
+    def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
+        """Evaluate trials with batched tokenization/generation when possible."""
+        if not trials:
+            return []
+        if len(trials) == 1:
+            return [self.evaluate_trial(trials[0])]
+
+        prepared_trials: list[dict] = []
+        prepared_inputs: list[tuple[str, str, list[str], int]] = []
+        for trial in trials:
+            trial_for_eval = dict(trial)
+            if self.prompt_profile == "upgraded":
+                prompt = str(trial_for_eval.get("prompt", ""))
+                task_id = str(trial_for_eval.get("task_id", "") or "").strip().lower()
+                if prompt:
+                    trial_for_eval["prompt"] = self._upgraded_prompt(prompt, task_id)
+            prepared_trials.append(trial_for_eval)
+            prepared_inputs.append(self._prepare_trial_inputs(trial_for_eval))
+
+        prompts = [item[0] for item in prepared_inputs]
+        answer_formats = [item[1] for item in prepared_inputs]
+        image_path_batches = [item[2] for item in prepared_inputs]
+        max_new_tokens = max(item[3] for item in prepared_inputs)
+
+        try:
+            messages_batch = [
+                self._build_messages(prompt_text, image_paths)
+                for prompt_text, image_paths in zip(prompts, image_path_batches)
+            ]
+            inputs = self.processor.apply_chat_template(
+                messages_batch,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt",
+                padding=True,
+            ).to(self.device, dtype=self.dtype)
+
+            if "attention_mask" in inputs:
+                input_lens = inputs["attention_mask"].sum(dim=1).tolist()
+            else:
+                input_lens = [inputs["input_ids"].shape[1]] * len(prepared_trials)
+
+            with torch.no_grad():
+                output_ids = self.model.generate(
+                    **inputs,
+                    do_sample=False,
+                    max_new_tokens=max_new_tokens,
+                )
+
+            results: list[dict] = []
+            for trial, answer_format, in_len, row in zip(
+                prepared_trials, answer_formats, input_lens, output_ids
+            ):
+                generated_ids = row[int(in_len):]
+                raw_text = self.processor.decode(
+                    generated_ids,
+                    skip_special_tokens=True,
+                )
+                clean_text = self.parse_response(raw_text)
+                results.append(
+                    self._build_result_from_text(
+                        trial=trial,
+                        clean_text=clean_text,
+                        answer_format=answer_format,
+                    )
+                )
+            return results
+        except Exception:
+            return [self.evaluate_trial(trial) for trial in trials]
+
     def _upgraded_prompt(self, prompt: str, task_id: str) -> str:
         """Append concise, task-specific instructions from prompt optimization runs."""
         base_instruction = (

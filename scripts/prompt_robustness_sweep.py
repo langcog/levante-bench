@@ -359,8 +359,12 @@ def run_sweep(args):
             tf_configs = prompt_cfg.get("task_framings", {})
             of_configs = prompt_cfg.get("output_formats", {})
 
+            skip_fmts = set(args.skip_formats) if args.skip_formats else set()
+
             for tf_name, tf_cfg in tf_configs.items():
                 for of_name, of_cfg in of_configs.items():
+                    if of_name in skip_fmts:
+                        continue
                     cell_name = f"{tf_name}×{of_name}"
                     t0 = time.time()
 
@@ -491,6 +495,10 @@ def main():
     parser.add_argument(
         "--device", default="auto",
         help="Device (auto, cpu, cuda, mps)",
+    )
+    parser.add_argument(
+        "--skip-formats", nargs="*", default=[],
+        help="Output format keys to skip (e.g., OF3_cot)",
     )
     args = parser.parse_args()
     run_sweep(args)

@@ -163,8 +163,6 @@ def _detect_latest_bucket_version(bucket_name: str, base_prefix: str = "") -> st
         return versions[-1]
 
     non_hidden = sorted(p for p in prefixes if p and not p.startswith("."))
-    if "v1" in non_hidden:
-        return "v1"
     if len(non_hidden) == 1:
         return non_hidden[0]
 

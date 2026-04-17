@@ -270,6 +270,8 @@ def _run_experiment_style_args(cli_args: list[str]) -> int:
         prompt_language=str(cfg.get("prompt_language", "en")),
         num_runs=int(cfg.get("num_runs", 1)),
         true_random_option_order=bool(cfg.get("true_random_option_order", False)),
+        run_label=str(cfg.get("run_label", "") or ""),
+        slurm_run_label=bool(cfg.get("slurm_run_label", True)),
     )
     return cmd_run_eval(run_eval_ns)
 
@@ -324,6 +326,10 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
         print(f"  num_runs: {int(args.num_runs)}")
     if bool(args.true_random_option_order):
         print("  Option ordering mode: true_random")
+    if str(args.run_label or "").strip():
+        print(f"  Run group label: {str(args.run_label).strip()}")
+    elif bool(args.true_random_option_order) and bool(args.slurm_run_label):
+        print("  Run groups: Slurm-aware (job/task IDs when available)")
 
     cfg = OmegaConf.create(
         {
@@ -334,6 +340,8 @@ def cmd_run_eval(args: argparse.Namespace) -> int:
             "batch_size": int(args.batch_size),
             "num_runs": int(args.num_runs),
             "true_random_option_order": bool(args.true_random_option_order),
+            "run_label": str(args.run_label or ""),
+            "slurm_run_label": bool(args.slurm_run_label),
             "output_dir": str(output_dir),
             "data_root": str(data_root),
             "task_overrides": {
@@ -567,6 +575,21 @@ def add_run_eval_parser(sub: argparse._SubParsersAction) -> None:
             "When enabled, outputs are written to per-run subfolders (0001, 0002, ...)."
         ),
     )
+    pe.add_argument(
+        "--run-label",
+        default="",
+        help=(
+            "Optional parent folder label for true-random runs. "
+            "Run subfolders remain sequential (0001, 0002, ...)."
+        ),
+    )
+    pe.add_argument(
+        "--no-slurm-run-label",
+        action="store_false",
+        dest="slurm_run_label",
+        help="Disable automatic Slurm job/task run labels in true-random mode.",
+    )
+    pe.set_defaults(slurm_run_label=True)
 
 
 def add_run_workflow_parser(sub: argparse._SubParsersAction) -> None:

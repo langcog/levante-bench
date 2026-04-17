@@ -269,6 +269,7 @@ def test_run_eval_true_random_writes_numbered_run_subdirs(
             "tasks": [],
             "num_runs": 2,
             "true_random_option_order": True,
+            "slurm_run_label": False,
         }
     )
 
@@ -277,3 +278,52 @@ def test_run_eval_true_random_writes_numbered_run_subdirs(
     assert "dummy:0002" in results
     assert results["dummy:0001"].parent.name == "0001"
     assert results["dummy:0002"].parent.name == "0002"
+
+
+def test_run_eval_true_random_uses_slurm_labels(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class DummyModel:
+        pass
+
+    monkeypatch.setattr(
+        runner,
+        "load_model_config",
+        lambda model_name: OmegaConf.create(
+            {
+                "hf_name": "base/hf-model",
+                "size": "tiny",
+                "max_new_tokens": 64,
+                "use_json_format": True,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "build_model",
+        lambda model_name, model_cfg, device, auto_load: DummyModel(),
+    )
+    monkeypatch.setattr(runner, "load_cache", lambda path: {})
+    monkeypatch.setattr(runner, "write_summary_csv", lambda model_dir, _: model_dir / "summary.csv")
+    monkeypatch.setenv("SLURM_JOB_ID", "12345")
+    monkeypatch.setenv("SLURM_ARRAY_TASK_ID", "7")
+
+    cfg = OmegaConf.create(
+        {
+            "data_root": str(tmp_path / "data"),
+            "output_dir": str(tmp_path / "out"),
+            "version": "unit-test",
+            "device": "cpu",
+            "models": ["dummy"],
+            "tasks": [],
+            "num_runs": 1,
+            "true_random_option_order": True,
+            "slurm_run_label": True,
+        }
+    )
+
+    results = runner.run_eval(cfg)
+    assert "dummy:job12345-task7:0001" in results
+    assert results["dummy:job12345-task7:0001"].parent.name == "0001"
+    assert results["dummy:job12345-task7:0001"].parent.parent.name == "job12345-task7"

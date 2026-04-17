@@ -1,0 +1,305 @@
+---
+title: "response_distribution"
+author: "sunny yu"
+date: "2026-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(jsonlite)
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(readr)
+```
+
+
+
+### DATA PREPROCESSING
+## pre-process model response to show the image number for each option chosen
+
+```{r cars}
+## maps predicted label back to the image number and update the df
+
+
+library(jsonlite)
+library(dplyr)
+library(purrr)
+library(tibble)
+library(readr)
+
+process_task_predictions <- function(task_name) {
+  allowed_tasks <- c(
+    "egma-math",
+    "matrix-reasoning",
+    "mental-rotation",
+    "theory-of-mind",
+    "trog",
+    "vocab"
+  )
+  
+  if (!task_name %in% allowed_tasks) {
+    stop("task_name must be one of: ", paste(allowed_tasks, collapse = ", "))
+  }
+  
+  task_prefix <- gsub("-", "_", task_name)
+  simulated_df_name <- paste0(task_prefix, "_simulated")
+  option_key_df_name <- paste0(task_prefix, "_option_key")
+  
+  if (!exists(simulated_df_name, envir = .GlobalEnv)) {
+    stop("Object not found: ", simulated_df_name)
+  }
+  if (!exists(option_key_df_name, envir = .GlobalEnv)) {
+    stop("Object not found: ", option_key_df_name)
+  }
+  
+  simulated_df <- get(simulated_df_name, envir = .GlobalEnv)
+  option_key_df <- get(option_key_df_name, envir = .GlobalEnv)
+  
+  option_orders <- fromJSON(
+    "/Users/sunnyyu/Desktop/research/levante/data/option_orders_default.json",
+    simplifyVector = FALSE
+  )
+  
+  task_trials <- option_orders$tasks[[task_name]]$trials
+  
+  option_lookup <- map_dfr(task_trials, function(trial) {
+    tibble(
+      item_uid = trial$item_uid,
+      label = map_chr(trial$option_order, "label"),
+      option = map_chr(trial$option_order, "option")
+    )
+  })
+  
+  # special case: vocab item_uid mismatch between JSON and option key
+if (task_name == "vocab") {
+  simulated_df <- simulated_df %>%
+    mutate(item_uid = sub("^vocab__", "vocab_word_", item_uid))
+  
+  option_lookup <- option_lookup %>%
+    mutate(item_uid = sub("^vocab__", "vocab_word_", item_uid))
+}
+  
+  simulated_df <- simulated_df %>%
+    mutate(
+      item_uid = as.character(item_uid),
+      predicted_label = as.character(predicted_label)
+    )
+  
+  option_key_df <- option_key_df %>%
+    mutate(
+      item_uid = as.character(item_uid),
+      across(starts_with("image"), as.character)
+    )
+  
+  processed_df <- simulated_df %>%
+    left_join(
+      option_lookup,
+      by = c("item_uid", "predicted_label" = "label")
+    ) %>%
+    rename(predicted_option = option) %>%
+    left_join(option_key_df, by = "item_uid")
+  
+  # special case: mental-rotation has only image1-image3
+  if (task_name == "mental-rotation") {
+    processed_df <- processed_df %>%
+      mutate(
+        matched_image = case_when(
+          predicted_option == image1 ~ "image1",
+          predicted_option == image2 ~ "image2",
+          predicted_option == image3 ~ "image3",
+          TRUE ~ NA_character_
+        )
+      )
+  } else {
+    processed_df <- processed_df %>%
+      mutate(
+        matched_image = case_when(
+          predicted_option == image1 ~ "image1",
+          predicted_option == image2 ~ "image2",
+          predicted_option == image3 ~ "image3",
+          predicted_option == image4 ~ "image4",
+          TRUE ~ NA_character_
+        )
+      )
+  }
+  
+  processed_df %>%
+    select(any_of(c(
+      "item_uid", "predicted_label", "predicted_option",
+      "image1", "image2", "image3", "image4", "matched_image"
+    ))) %>%
+    print(n = 20)
+  
+  output_file <- paste0(task_name, "_processed.csv")
+  write_csv(processed_df, output_file)
+  
+  message("Saved processed file to: ", output_file)
+  
+  processed_df
+}
+
+```
+
+```{r}
+process_task_predictions("vocab")
+```
+
+
+
+
+
+
+# process the processed_df above into a distribution df (same format as the human distribution)
+```{r}
+
+make_item_distribution <- function(processed_df, output_file = "distribution.csv") {
+  
+  # detect which image columns are present in matched_image
+  possible_images <- c("image1", "image2", "image3", "image4")
+  
+  distribution_df <- processed_df %>%
+    filter(!is.na(matched_image)) %>%
+    
+    # count occurrences
+    count(item_uid, matched_image) %>%
+    
+    # reshape wide
+    pivot_wider(
+      names_from = matched_image,
+      values_from = n,
+      values_fill = 0
+    )
+  
+  # add any missing image columns as 0
+  for (img in possible_images) {
+    if (!img %in% names(distribution_df)) {
+      distribution_df[[img]] <- 0
+    }
+  }
+  
+  # normalize rows to sum to 1
+  distribution_df <- distribution_df %>%
+    mutate(
+      image1 = coalesce(image1, 0),
+      image2 = coalesce(image2, 0),
+      image3 = coalesce(image3, 0),
+      image4 = coalesce(image4, 0)
+    ) %>%
+    rowwise() %>%
+    mutate(
+      total = sum(c_across(image1:image4)),
+      image1 = ifelse(total > 0, image1 / total, 0),
+      image2 = ifelse(total > 0, image2 / total, 0),
+      image3 = ifelse(total > 0, image3 / total, 0),
+      image4 = ifelse(total > 0, image4 / total, 0)
+    ) %>%
+    ungroup() %>%
+    select(item_uid, image1, image2, image3, image4)
+  
+  # save
+  write_csv(distribution_df, output_file)
+  message("Saved distribution file to: ", output_file)
+  
+  return(distribution_df)
+}
+
+
+```
+
+
+```{r}
+egma_math_distribution <- make_item_distribution(
+  egma_math_processed,
+  output_file = "egma-math_distribution.csv"
+)
+
+matrix_reasoning_distribution <- make_item_distribution(
+  matrix_reasoning_processed,
+  output_file = "matrix-reasoning_distribution.csv"
+)
+
+
+tom_distribution <- make_item_distribution(
+  theory_of_mind_processed,
+  output_file = "theory-of-mind_distribution.csv"
+)
+
+trog_distribution <- make_item_distribution(
+  trog_processed,
+  output_file = "trog_distribution.csv"
+)
+
+vocab_distribution <- make_item_distribution(
+  vocab_processed,
+  output_file = "vocab_distribution.csv"
+)
+
+
+```
+
+### distribution analysis 
+## get KL divergence
+
+
+```{r pressure, echo=FALSE}
+
+# KL divergence for two probability vectors
+kl_divergence <- function(p, q, epsilon = 1e-12) {
+  p <- as.numeric(p)
+  q <- as.numeric(q)
+  
+  # add epsilon for numerical stability
+  p <- p + epsilon
+  q <- q + epsilon
+  
+  # renormalize
+  p <- p / sum(p)
+  q <- q / sum(q)
+  
+  sum(p * log(p / q))
+}
+
+# main function
+get_kl_by_item <- function(human_df, model_df, epsilon = 1e-12) {
+  
+  prob_cols <- c("image1", "image2", "image3", "image4")
+  
+  # keep only needed columns from model df
+  model_small <- model_df %>%
+    select(item_uid, all_of(prob_cols))
+  
+  # join model distribution onto every human row by item_uid
+  joined_df <- human_df %>%
+    left_join(
+      model_small,
+      by = "item_uid",
+      suffix = c("_human", "_model")
+    )
+  
+  # compute KL(human || model) for each human row
+  kl_df <- joined_df %>%
+    rowwise() %>%
+    mutate(
+      kl_divergence = kl_divergence(
+        p = c_across(all_of(paste0(prob_cols, "_human"))),
+        q = c_across(all_of(paste0(prob_cols, "_model"))),
+        epsilon = epsilon
+      )
+    ) %>%
+    ungroup()
+  
+  return(kl_df)
+}
+```
+
+
+
+```{r}
+kl_results <- get_kl_by_item(
+  human_df = egma_math_proportions_by_ability,
+  model_df = egma_math_distribution
+)
+kl_results
+```
+

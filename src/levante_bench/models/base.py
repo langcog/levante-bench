@@ -108,15 +108,18 @@ class VLMModel:
         prompt = trial["prompt"]
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
         if self.use_json_format:
-            if answer_format == "slider_position":
-                prompt += SLIDER_POSITION_FORMAT_INSTRUCTION
-            elif answer_format == "numeric":
-                prompt += NUMERIC_ANSWER_FORMAT_INSTRUCTION
-            else:
-                prompt += ANSWER_FORMAT_INSTRUCTION
+            prompt += self._answer_format_instruction(answer_format)
         image_paths = trial.get("context_image_paths", []) + trial.get("option_image_paths", [])
         max_new_tokens = int(trial.get("max_new_tokens", 64))
         return prompt, answer_format, image_paths, max_new_tokens
+
+    def _answer_format_instruction(self, answer_format: str) -> str:
+        """Return answer-format instruction appended to trial prompts."""
+        if answer_format == "slider_position":
+            return SLIDER_POSITION_FORMAT_INSTRUCTION
+        if answer_format == "numeric":
+            return NUMERIC_ANSWER_FORMAT_INSTRUCTION
+        return ANSWER_FORMAT_INSTRUCTION
 
     def _build_result_from_text(
         self,

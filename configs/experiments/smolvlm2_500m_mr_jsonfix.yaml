@@ -1,0 +1,20 @@
+# Runner experiment: SmolVLM2 500M Instruct on v1 mental-rotation only.
+# Uses JSON answer mode with explicit-letter example (no "<letter>" placeholder).
+#
+# Run:
+#   python -m levante_bench.cli experiment=configs/experiments/smolvlm2_500m_mr_jsonfix.yaml device=auto
+
+models:
+  - name: smolvlm2
+    size: 500M
+    use_json_format: true
+    json_answer_placeholder: false
+
+tasks:
+  - mental-rotation
+
+data_root: data
+output_dir: results/mr_jsonfix_500m
+version: v1
+device: cuda
+batch_size: 1

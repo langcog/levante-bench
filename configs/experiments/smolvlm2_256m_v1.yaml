@@ -4,7 +4,8 @@
 models:
   - name: smolvlm2
     size: 256M
-    use_json_format: false
+    use_json_format: true
+    json_answer_placeholder: false
 
 tasks:
   - egma-math

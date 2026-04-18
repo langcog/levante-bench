@@ -22,11 +22,13 @@ class SmolVLM2Model(VLMModel):
         dtype: str = "bfloat16",
         attn_implementation: str = "eager",
         prompt_profile: str = "baseline",
+        json_answer_placeholder: bool = True,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
         self.prompt_profile = str(prompt_profile).strip().lower() or "baseline"
+        self.json_answer_placeholder = bool(json_answer_placeholder)
         self._batch_fallback_count = 0
 
     def load(self) -> None:
@@ -184,6 +186,17 @@ class SmolVLM2Model(VLMModel):
             )
 
         return f"{prompt}\n\n" + "\n".join(additions)
+
+    def _answer_format_instruction(self, answer_format: str) -> str:
+        """Allow toggleable JSON answer template style for SmolVLM2 experiments."""
+        if answer_format in {"slider_position", "numeric"}:
+            return super()._answer_format_instruction(answer_format)
+        if self.json_answer_placeholder:
+            return super()._answer_format_instruction(answer_format)
+        return (
+            '\n\nRespond in JSON format: {"answer": "A", "reason": "brief reason"}. '
+            "The answer must be exactly one option letter (A, B, C, or D)."
+        )
 
     def _build_messages(
         self,

@@ -18,6 +18,9 @@ get_arg <- function(name, default = NA_character_) {
   if (length(args) < i + 1L) return(default)
   args[i + 1L]
 }
+has_flag <- function(name) {
+  paste0("--", name) %in% args
+}
 
 dataset_id    <- get_arg("dataset", "levante_data_pilots:68kn:v2_0")
 table_name    <- get_arg("table", "trials:ztnm")
@@ -29,9 +32,44 @@ version       <- get_arg("version", NA_character_)
 if (is.na(version) || nchar(version) == 0L) {
   version <- format(Sys.Date(), "%Y-%m-%d")
 }
+write_split_manifests <- !has_flag("no-write-split-manifests")
+parquet_available <- write_split_manifests && requireNamespace("arrow", quietly = TRUE)
 
 data_raw <- here("data", "responses", version)
 dir.create(data_raw, recursive = TRUE, showWarnings = FALSE)
+manifests_dir <- file.path(data_raw, "manifests")
+if (write_split_manifests) {
+  dir.create(manifests_dir, recursive = TRUE, showWarnings = FALSE)
+  if (!parquet_available) {
+    message(
+      "Parquet engine not available (arrow not installed); ",
+      "writing CSV split manifests."
+    )
+  }
+}
+
+write_split_manifest <- function(df, name) {
+  if (!write_split_manifests) return(invisible(NULL))
+  if (!is.data.frame(df)) return(invisible(NULL))
+  out_parquet <- file.path(manifests_dir, paste0(name, ".parquet"))
+  out_csv <- file.path(manifests_dir, paste0(name, ".csv"))
+  if (parquet_available) {
+    ok <- tryCatch({
+      arrow::write_parquet(df, out_parquet)
+      TRUE
+    }, error = function(e) {
+      message(
+        "  manifest ", name, ": parquet write failed (",
+        conditionMessage(e),
+        "); writing CSV fallback."
+      )
+      FALSE
+    })
+    if (ok) return(invisible(NULL))
+  }
+  readr::write_csv(df, out_csv)
+  invisible(NULL)
+}
 
 if (!requireNamespace("redivis", quietly = TRUE)) {
   stop("Install the redivis R package. See https://docs.redivis.com/")
@@ -71,6 +109,7 @@ if ("run_id" %in% scores_cols && length(scores_cols) > 1L) {
 trials_path <- file.path(data_raw, "trials.csv")
 readr::write_csv(trials, trials_path)
 message("Wrote ", trials_path, " (", nrow(trials), " rows)")
+write_split_manifest(trials, "trials_all")
 
 # Per-task trials
 tasks <- unique(trials$task_id)
@@ -81,6 +120,7 @@ for (tid in tasks) {
   task_trials <- trials %>% filter(task_id == !!tid)
   safe_name <- gsub("[^a-zA-Z0-9_-]", "_", tid)
   readr::write_csv(task_trials, file.path(tasks_dir, paste0(safe_name, "_trials.csv")))
+  write_split_manifest(task_trials, paste0("trials_", safe_name))
 }
 message("Wrote per-task trials to ", tasks_dir)
 
@@ -164,6 +204,9 @@ if (nrow(irt_mapping) == 0L) {
 n_opts <- 4L
 responses_dir <- file.path(data_raw, "responses_by_ability")
 dir.create(responses_dir, recursive = TRUE, showWarnings = FALSE)
+all_option_keys <- list()
+all_overall_props <- list()
+all_binned_props <- list()
 
 # Parse distractors from Python-dict-like string: {'0': 'coconut', '1': 'key', '2': 'clothesline'}
 # Returns a character vector in key order (0, 1, 2, ...).
@@ -265,6 +308,8 @@ for (tid in tasks) {
   key_path <- file.path(responses_dir, paste0(safe_name, "_option_key.csv"))
   readr::write_csv(option_key, key_path)
   message("Wrote ", key_path, " (", nrow(option_key), " item_uids; image1 = target)")
+  write_split_manifest(option_key, paste0("option_key_", safe_name))
+  all_option_keys[[safe_name]] <- option_key %>% mutate(task_id = tid)
 
   # Try to join ability scores from IRT model
   ability_path <- file.path(data_raw, "irt_models", paste0(safe_name, "_ability_scores.csv"))
@@ -301,6 +346,8 @@ for (tid in tasks) {
   overall_path <- file.path(responses_dir, paste0(safe_name, "_proportions.csv"))
   readr::write_csv(agg_all, overall_path)
   message("Wrote ", overall_path, " (", n_uids_all, " item_uids)")
+  write_split_manifest(agg_all, paste0("responses_overall_", safe_name))
+  all_overall_props[[safe_name]] <- agg_all %>% mutate(task_id = tid)
 
   # Write ability-binned proportions (only rows with actual ability bins)
   if (nrow(agg_binned) > 0L) {
@@ -308,9 +355,24 @@ for (tid in tasks) {
     readr::write_csv(agg_binned, binned_path)
     message("Wrote ", binned_path, " (", nrow(agg_binned), " rows; ",
             n_uids_binned, " item_uids)")
+    write_split_manifest(agg_binned, paste0("responses_by_ability_", safe_name))
+    all_binned_props[[safe_name]] <- agg_binned %>% mutate(task_id = tid)
   } else {
     message("  ", tid, ": no ability-binned rows (no IRT scores matched)")
   }
+}
+
+if (write_split_manifests) {
+  if (length(all_option_keys) > 0L) {
+    write_split_manifest(bind_rows(all_option_keys), "option_key_all")
+  }
+  if (length(all_overall_props) > 0L) {
+    write_split_manifest(bind_rows(all_overall_props), "responses_overall_all")
+  }
+  if (length(all_binned_props) > 0L) {
+    write_split_manifest(bind_rows(all_binned_props), "responses_by_ability_all")
+  }
+  message("Wrote split manifests to ", manifests_dir)
 }
 
 message("Data version: ", version, " at ", data_raw)

@@ -311,6 +311,91 @@ def _print_completeness(
             print(f"    -> corpus path-like refs: {found}/{len(seen)} on disk" + (f" ({missing} missing)" if missing else ""))
 
 
+def _build_split_tables(manifest_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Build canonical split dataframes for benchmark manifests."""
+    if "task" not in manifest_df.columns:
+        return {}
+    tables: dict[str, pd.DataFrame] = {}
+    v1_tasks = {
+        "egma-math",
+        "matrix-reasoning",
+        "mental-rotation",
+        "theory-of-mind",
+        "trog",
+        "vocab",
+    }
+    tables["v1_eval_all"] = manifest_df[manifest_df["task"].isin(v1_tasks)].copy()
+    for task in sorted(v1_tasks):
+        tables[task] = manifest_df[manifest_df["task"] == task].copy()
+    vocab = manifest_df[manifest_df["task"] == "vocab"].copy()
+    tables["vocab_all"] = vocab
+    if "trial_type" in vocab.columns:
+        for split in ("test", "practice", "catch"):
+            tables[f"vocab_{split}"] = vocab[
+                vocab["trial_type"].fillna("").astype(str).str.lower() == split
+            ].copy()
+    return tables
+
+
+def _write_split_manifests(
+    manifest_path: Path,
+    assets_dir: Path,
+    version: str,
+) -> None:
+    """Dual-write split manifests (Parquet primary, CSV fallback) for Croissant prep."""
+    if not manifest_path.exists():
+        print(f"Warning: manifest not found for split export: {manifest_path}")
+        return
+    df = pd.read_csv(manifest_path)
+    # Preserve stable row-level metadata for downstream dataset generation.
+    df = df.copy()
+    df["dataset_version"] = version
+    df["manifest_source"] = str(manifest_path)
+    tables = _build_split_tables(df)
+    if not tables:
+        print("Warning: could not derive split tables (missing task column).")
+        return
+
+    manifests_dir = assets_dir / "manifests"
+    manifests_dir.mkdir(parents=True, exist_ok=True)
+    parquet_supported = False
+    for candidate in ("pyarrow", "fastparquet"):
+        try:
+            __import__(candidate)
+            parquet_supported = True
+            break
+        except Exception:
+            continue
+    if not parquet_supported:
+        print(
+            "Warning: parquet engine not available (install pyarrow or fastparquet); "
+            "writing CSV split manifests."
+        )
+
+    parquet_ok = 0
+    csv_fallback = 0
+    for split_name, split_df in tables.items():
+        out_parquet = manifests_dir / f"{split_name}.parquet"
+        if parquet_supported:
+            try:
+                split_df.to_parquet(out_parquet, index=False)
+                parquet_ok += 1
+                continue
+            except Exception as exc:
+                print(
+                    f"Warning: failed to write {out_parquet.name} "
+                    f"({type(exc).__name__}: {exc}); writing CSV fallback."
+                )
+        # Default path (or parquet fallback): write CSV split.
+        out_csv = manifests_dir / f"{split_name}.csv"
+        split_df.to_csv(out_csv, index=False)
+        csv_fallback += 1
+    print(
+        f"Wrote split manifests to {manifests_dir} "
+        f"({parquet_ok} parquet, {csv_fallback} csv fallback)."
+    )
+
+
 def run(
     version: str | None = None,
     task_filter: str | None = None,
@@ -318,6 +403,7 @@ def run(
     base_url: str | None = None,
     check_completeness: bool = False,
     workers: int = 8,
+    write_split_manifests: bool = True,
 ) -> None:
     data_root = data_root or _project_root() / "data"
     base_url = base_url or get_assets_base_url()
@@ -357,6 +443,13 @@ def run(
         print(
             f"Warning: {manifest_key} not found in bucket; keeping existing "
             f"{manifest_compat} if present."
+        )
+    if write_split_manifests:
+        source_manifest = manifest_snapshot if manifest_snapshot.exists() else manifest_compat
+        _write_split_manifests(
+            manifest_path=source_manifest,
+            assets_dir=assets_dir,
+            version=version,
         )
 
     # Optional translations snapshot.
@@ -485,6 +578,11 @@ def main() -> None:
         default=8,
         help="Parallel download workers for visual assets (default: 8).",
     )
+    p.add_argument(
+        "--no-write-split-manifests",
+        action="store_true",
+        help="Disable split manifest emission under data/assets/<version>/manifests.",
+    )
     args = p.parse_args()
     run(
         version=args.version,
@@ -493,6 +591,7 @@ def main() -> None:
         base_url=args.base_url,
         check_completeness=args.check_completeness,
         workers=max(1, int(args.workers)),
+        write_split_manifests=not bool(args.no_write_split_manifests),
     )
 
 

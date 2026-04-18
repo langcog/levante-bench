@@ -13,6 +13,7 @@ data_root: data
 output_dir: results/mr_prompts_image_first
 version: v1
 device: cuda
+batch_size: 1
 
 task_overrides:
   mental-rotation:

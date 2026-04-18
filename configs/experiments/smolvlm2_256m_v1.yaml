@@ -18,3 +18,4 @@ data_root: data
 output_dir: results
 version: v1
 device: cuda
+batch_size: 1

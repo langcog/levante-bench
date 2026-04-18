@@ -287,6 +287,7 @@ class SmolVLM2Model(VLMModel):
                 messages,
                 add_generation_prompt=True,
                 tokenize=True,
+                return_dict=True,
                 processor_kwargs=processor_kwargs,
             )
         except TypeError:

@@ -1,0 +1,112 @@
+dataset:
+  id: levante-v1
+  name: LEVANTE Benchmark v1
+  version: v1
+  description: >
+    Canonical manifest for the LEVANTE v1 multimodal benchmark bundle used by
+    run-eval workflows. Includes six forced-choice tasks spanning text and
+    image reasoning.
+  license: unknown
+  citation:
+    - LEVANTE manuscript (cite project manuscript when available).
+    - DevBench (NeurIPS 2024).
+  task_type: forced-choice multimodal reasoning
+
+distribution:
+  local_root: data/assets/v1
+  bucket_prefix: gs://levante-bench/corpus_data/v1
+  uri_templates:
+    manifest_csv: data/assets/manifest.csv
+    corpus_task_csv: data/assets/v1/corpus/{task}/{corpus_file}
+    visual_assets_dir: data/assets/v1/visual/{task}/
+    translations_csv: data/assets/v1/translations/item-bank-translations.csv
+
+splits:
+  - name: v1_eval_all
+    description: Union of benchmark tasks used in v1 evaluation runs.
+    filter:
+      task_in:
+        - egma-math
+        - matrix-reasoning
+        - mental-rotation
+        - theory-of-mind
+        - trog
+        - vocab
+  - name: egma-math
+    filter: { task: egma-math }
+  - name: matrix-reasoning
+    filter: { task: matrix-reasoning }
+  - name: mental-rotation
+    filter: { task: mental-rotation }
+  - name: theory-of-mind
+    filter: { task: theory-of-mind }
+  - name: trog
+    filter: { task: trog }
+  - name: vocab
+    filter: { task: vocab }
+
+record_sets:
+  - id: trials
+    description: >
+      One record per benchmark trial/item keyed by item_uid from
+      data/assets/manifest.csv.
+    primary_key: item_uid
+    approx_counts:
+      egma-math: 255
+      matrix-reasoning: 80
+      mental-rotation: 83
+      theory-of-mind: 37
+      trog: 99
+      vocab: 170
+    fields:
+      - name: item_uid
+        type: string
+        description: Canonical item identifier.
+      - name: task
+        type: string
+        description: Internal task id.
+      - name: prompt
+        type: string
+        description: Item prompt text with optional placeholders.
+      - name: answer
+        type: string
+        description: Correct answer key/value before option relabeling.
+      - name: response_alternatives
+        type: string_list_csv
+        description: Comma-separated distractor options.
+      - name: prompt_image
+        type: string
+        required: false
+        description: Optional reference image key for image-context tasks.
+      - name: image_uri
+        type: uri
+        required: false
+        description: >
+          Resolved per-item context image URI (task-dependent; optional in
+          manifest, resolved by dataset loaders).
+      - name: choices
+        type: string_list
+        description: >
+          Shuffled option keys/labels shown to the model for a trial.
+      - name: label
+        type: string
+        description: Correct benchmark label (A/B/C/D) after option ordering.
+      - name: subject_id
+        type: string
+        required: false
+        description: Optional respondent identifier in response tables.
+      - name: trial_id
+        type: string
+        required: false
+        description: Trial-level id in responses/evaluation outputs.
+
+provenance:
+  source_papers:
+    - LEVANTE benchmark manuscript.
+    - DevBench (NeurIPS 2024).
+  preprocessing_scripts:
+    - scripts/data_prep/download_levante_assets.py
+    - scripts/data_prep/download_levante_data.R
+  loader_entrypoints:
+    - src/levante_bench/tasks/*.py
+    - src/levante_bench/evaluation/runner.py

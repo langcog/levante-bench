@@ -388,3 +388,14 @@ PYTHONPATH=src .venv/bin/python -m levante_bench.cli run-eval \
 ## Citing
 
 Cite the LEVANTE manuscript and the DevBench (NeurIPS 2024) paper when using this benchmark.
+
+## Dataset manifests (Croissant prep)
+
+Canonical benchmark manifests are available under `datasets/`:
+
+- `datasets/v1/dataset.yaml`
+- `datasets/vocab/dataset.yaml`
+
+These manifests provide stable dataset metadata, URI templates, split
+definitions, logical schema fields, and provenance references intended to
+support Croissant metadata generation.

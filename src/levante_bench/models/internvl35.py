@@ -4,21 +4,13 @@ from typing import Optional
 
 import torch
 
-from levante_bench.models.base import ParseResult, VLMModel
+from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
-    parse_answer_result_with_fallback,
-    parse_answer_with_fallback,
 )
-
-_SYSTEM_PROMPT = (
-    "You are a helpful assistant. "
-    "Answer with only a single letter: A, B, C, or D. Do not explain."
-)
-_USER_INSTRUCTION = "Reply with exactly one letter — A, B, C, or D — and nothing else."
 
 
 @register("internvl35")
@@ -28,9 +20,6 @@ class InternVL35Model(VLMModel):
     Uses AutoProcessor + AutoModelForImageTextToText with trust_remote_code=True.
     Images are loaded as PIL objects.  The Qwen-based chat template is applied by
     the processor, so the generate() pipeline mirrors Qwen35Model closely.
-
-    A per-message instruction is appended to the user turn because InternVL3.5
-    tends to ignore system-only instructions when images are present.
     """
 
     def __init__(
@@ -187,9 +176,8 @@ class InternVL35Model(VLMModel):
     ) -> list[dict]:
         """Build InternVL3.5 chat messages with system prompt and PIL images."""
         content = build_pil_content(prompt_text, pil_images)
-        content.append({"type": "text", "text": _USER_INSTRUCTION})
         return [
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
         ]
 
@@ -238,16 +226,6 @@ class InternVL35Model(VLMModel):
             "model_name": self.model_name,
             "num_tokens_generated": 0,
         }
-
-    def parse_answer(
-        self, text: str, option_labels: list[str]
-    ) -> tuple[Optional[str], str]:
-        """Base-class parser first; falls back to reverse-sentence scan."""
-        return parse_answer_with_fallback(self, text, option_labels)
-
-    def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
-        """Parser with provenance, including reverse-sentence fallback."""
-        return parse_answer_result_with_fallback(self, text, option_labels)
 
     def _pad_token_id(self) -> int | None:
         """Resolve a stable pad token id to avoid per-call generation warnings."""

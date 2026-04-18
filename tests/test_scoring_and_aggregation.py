@@ -69,8 +69,8 @@ def test_evaluate_trial_label_is_correct_true() -> None:
 
     result = model.evaluate_trial(trial)
     assert result["predicted_label"] == "B"
-    assert result["parse_method"] in {"strict_json", "embedded_json_answer"}
-    assert result["parse_confidence"] in {"high", "medium"}
+    assert result["parse_method"] == "json_repair"
+    assert result["parse_confidence"] == "high"
     assert result["is_correct"] is True
 
 
@@ -87,7 +87,7 @@ def test_evaluate_trial_numeric_is_correct_false() -> None:
 
     result = model.evaluate_trial(trial)
     assert result["predicted_value"] == pytest.approx(3.2)
-    assert result["parse_method"] in {"json", "strict_json", "embedded_json_answer"}
+    assert result["parse_method"] == "json_repair"
     assert result["is_correct"] is False
 
 

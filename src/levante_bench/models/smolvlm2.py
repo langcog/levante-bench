@@ -21,12 +21,10 @@ class SmolVLM2Model(VLMModel):
         device: str = "cpu",
         dtype: str = "bfloat16",
         attn_implementation: str = "eager",
-        prompt_profile: str = "baseline",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
-        self.prompt_profile = str(prompt_profile).strip().lower() or "baseline"
         self._batch_fallback_count = 0
 
     def load(self) -> None:
@@ -64,17 +62,6 @@ class SmolVLM2Model(VLMModel):
 
         return self.processor.batch_decode(output_ids, skip_special_tokens=True)[0]
 
-    def evaluate_trial(self, trial: dict) -> dict:
-        """Apply task-tuned prompt upgrades before base evaluation."""
-        if self.prompt_profile != "upgraded":
-            return super().evaluate_trial(trial)
-        trial_with_prompt = dict(trial)
-        prompt = str(trial.get("prompt", ""))
-        task_id = str(trial.get("task_id", "") or "").strip().lower()
-        if prompt:
-            trial_with_prompt["prompt"] = self._upgraded_prompt(prompt, task_id)
-        return super().evaluate_trial(trial_with_prompt)
-
     def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
         """Evaluate trials with batched tokenization/generation when possible."""
         if not trials:
@@ -82,17 +69,8 @@ class SmolVLM2Model(VLMModel):
         if len(trials) == 1:
             return [self.evaluate_trial(trials[0])]
 
-        prepared_trials: list[dict] = []
-        prepared_inputs: list[tuple[str, str, list[str], int]] = []
-        for trial in trials:
-            trial_for_eval = dict(trial)
-            if self.prompt_profile == "upgraded":
-                prompt = str(trial_for_eval.get("prompt", ""))
-                task_id = str(trial_for_eval.get("task_id", "") or "").strip().lower()
-                if prompt:
-                    trial_for_eval["prompt"] = self._upgraded_prompt(prompt, task_id)
-            prepared_trials.append(trial_for_eval)
-            prepared_inputs.append(self._prepare_trial_inputs(trial_for_eval))
+        prepared_trials: list[dict] = list(trials)
+        prepared_inputs = [self._prepare_trial_inputs(trial) for trial in prepared_trials]
 
         prompts = [item[0] for item in prepared_inputs]
         answer_formats = [item[1] for item in prepared_inputs]
@@ -155,45 +133,6 @@ class SmolVLM2Model(VLMModel):
             )
             return [self.evaluate_trial(trial) for trial in trials]
 
-    def _upgraded_prompt(self, prompt: str, task_id: str) -> str:
-        """Append concise, task-specific instructions from prompt optimization runs."""
-        base_instruction = (
-            "Final answer format: respond with exactly one option letter (A, B, C, or D)."
-        )
-        additions: list[str] = [base_instruction]
-
-        if task_id == "vocab":
-            additions.append(
-                "Only one image matches the target word. Compare all options and choose the single best match."
-            )
-        elif task_id == "trog":
-            additions.append(
-                "Ground the sentence meaning in the images: who is doing what to whom, and where."
-            )
-            additions.append(
-                "Use image details that distinguish grammar roles, then choose one letter."
-            )
-        elif task_id == "egma-math":
-            additions.append(
-                "Solve the math carefully before choosing. Double-check arithmetic and pick the best option."
-            )
-        elif task_id == "theory-of-mind":
-            additions.append(
-                "Use each character's perspective: they only know what they saw or were told."
-            )
-            additions.append(
-                "Ignore events that happened while a character was away unless they were informed later."
-            )
-        elif task_id == "matrix-reasoning":
-            additions.append(
-                "Identify the transformation rule across rows and columns, then apply the same rule to the missing cell."
-            )
-            additions.append(
-                "Prefer the option that best matches both row and column patterns."
-            )
-
-        return f"{prompt}\n\n" + "\n".join(additions)
-
     def _build_messages(
         self,
         prompt_text: str,
@@ -204,11 +143,15 @@ class SmolVLM2Model(VLMModel):
         if image_paths and re.search(r"<image\d+>", prompt_text):
             labels = ["A", "B", "C", "D", "E", "F", "G", "H"]
             parts = re.split(r"(<image\d+>)", prompt_text)
+            # If <image0> is present, treat numbers as direct indices (context=0);
+            # otherwise use 1-based (<image1> → image_paths[0]).
+            has_image0 = "<image0>" in prompt_text
             for part in parts:
                 m = re.match(r"<image(\d+)>", part)
                 if m:
-                    idx = int(m.group(1)) - 1
-                    if idx < len(image_paths):
+                    n = int(m.group(1))
+                    idx = n if has_image0 else n - 1
+                    if 0 <= idx < len(image_paths):
                         label = labels[idx] if idx < len(labels) else str(idx + 1)
                         content.append({"type": "text", "text": f"{label}:"})
                         content.append(
@@ -221,14 +164,6 @@ class SmolVLM2Model(VLMModel):
                 for path in image_paths:
                     content.append({"type": "image", "url": str(Path(path).resolve())})
             content.append({"type": "text", "text": prompt_text})
-        if self.prompt_profile == "upgraded":
-            return [
-                {
-                    "role": "system",
-                    "content": "You are a precise visual reasoning assistant.",
-                },
-                {"role": "user", "content": content},
-            ]
         return [{"role": "user", "content": content}]
 
     def parse_response(self, raw_output: str) -> str:

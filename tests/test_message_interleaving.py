@@ -4,12 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from levante_bench.models.vlm import (
-    GeminiProModel,
-    InternVL35Model,
-    Qwen35Model,
-    SmolVLM2Model,
-)
+from levante_bench.models.gemini import GeminiProModel
+from levante_bench.models.internvl35 import InternVL35Model
+from levante_bench.models.qwen35 import Qwen35Model
+from levante_bench.models.smolvlm2 import SmolVLM2Model
 
 
 def _content_images(content: list[dict], key: str) -> list[object]:

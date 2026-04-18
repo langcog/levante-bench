@@ -8,7 +8,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 
 from levante_bench.evaluation import runner
-from levante_bench.models.vlm import GPT53Model
+from levante_bench.models.gpt import GPT53Model
 
 
 def test_run_eval_uses_cache_on_second_pass(monkeypatch, tmp_path: Path) -> None:
@@ -121,7 +121,7 @@ class _FakeResponse:
 
 
 def test_gpt53_retries_on_5xx_then_succeeds(monkeypatch) -> None:
-    import levante_bench.models.vlm as vlm_module
+    import levante_bench.models.gpt as vlm_module
 
     model = GPT53Model(
         model_name="gpt-5.3",
@@ -150,7 +150,7 @@ def test_gpt53_retries_on_5xx_then_succeeds(monkeypatch) -> None:
 
 
 def test_gpt53_doubles_tokens_after_incomplete_response(monkeypatch) -> None:
-    import levante_bench.models.vlm as vlm_module
+    import levante_bench.models.gpt as vlm_module
 
     model = GPT53Model(
         model_name="gpt-5.3",

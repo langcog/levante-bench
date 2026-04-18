@@ -12,17 +12,8 @@ from pathlib import Path
 import requests
 from PIL import Image
 
-from levante_bench.models._common import (
-    parse_answer_result_with_fallback,
-    parse_answer_with_fallback,
-)
-from levante_bench.models.base import ParseResult, VLMModel
+from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
-
-_SYSTEM_PROMPT = (
-    "You are a helpful assistant. "
-    "Answer with only a single letter: A, B, C, or D. Do not explain."
-)
 
 
 @register("hf_hosted")
@@ -161,7 +152,7 @@ class HFHostedModel(VLMModel):
             if prompt_text.strip():
                 content.append({"type": "text", "text": prompt_text.strip()})
         return [
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
         ]
 
@@ -200,11 +191,3 @@ class HFHostedModel(VLMModel):
 
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()
-
-    def parse_answer(
-        self, text: str, option_labels: list[str]
-    ) -> tuple[str | None, str]:
-        return parse_answer_with_fallback(self, text, option_labels)
-
-    def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
-        return parse_answer_result_with_fallback(self, text, option_labels)

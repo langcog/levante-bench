@@ -7,7 +7,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from levante_bench.models.vlm import Qwen35Model
+from levante_bench.models.qwen35 import Qwen35Model
 from levante_bench.config import detect_data_version, get_task_def
 from levante_bench.tasks.vocab import VocabDataset
 

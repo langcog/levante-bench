@@ -17,6 +17,7 @@ dependencies = [
     "omegaconf>=2.3",
     "matplotlib>=3.10.8",
     "seaborn>=0.13.2",
+    "json-repair>=0.30",
 ]
 # Pinned versions for reproducible installs: see requirements.txt
 

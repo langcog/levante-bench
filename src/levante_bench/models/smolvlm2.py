@@ -49,13 +49,9 @@ class SmolVLM2Model(VLMModel):
     ) -> str:
         """Generate text using SmolVLM2."""
         messages = self._build_messages(prompt_text, image_paths)
-        inputs = self.processor.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
-        ).to(self.device, dtype=self.dtype)
+        inputs = self._apply_chat_template_inputs(messages).to(
+            self.device, dtype=self.dtype
+        )
 
         with torch.no_grad():
             output_ids = self.model.generate(
@@ -104,13 +100,8 @@ class SmolVLM2Model(VLMModel):
                 self._build_messages(prompt_text, image_paths)
                 for prompt_text, image_paths in zip(prompts, image_path_batches)
             ]
-            inputs = self.processor.apply_chat_template(
-                messages_batch,
-                add_generation_prompt=True,
-                tokenize=True,
-                return_dict=True,
-                return_tensors="pt",
-                padding=True,
+            inputs = self._apply_chat_template_inputs(
+                messages_batch, padding=True
             ).to(self.device, dtype=self.dtype)
 
             if "attention_mask" in inputs:
@@ -247,13 +238,9 @@ class SmolVLM2Model(VLMModel):
     ) -> dict:
         """Return next-token probabilities/logits for two one-token choices."""
         messages = self._build_messages(prompt_text, image_paths)
-        inputs = self.processor.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
-        ).to(self.device, dtype=self.dtype)
+        inputs = self._apply_chat_template_inputs(messages).to(
+            self.device, dtype=self.dtype
+        )
 
         choice_ids: list[int] = []
         for choice in choice_texts:
@@ -277,3 +264,37 @@ class SmolVLM2Model(VLMModel):
             "model_name": self.model_name,
             "num_tokens_generated": 0,
         }
+
+    def _apply_chat_template_inputs(
+        self,
+        messages: list[dict] | list[list[dict]],
+        *,
+        padding: bool = False,
+    ):
+        """Apply chat template and return processor-ready tensor inputs.
+
+        Newer Transformers versions require kwargs destined for `processor.__call__`
+        to be passed via `processor_kwargs` when `tokenize=True`.
+        """
+        processor_kwargs = {
+            "return_dict": True,
+            "return_tensors": "pt",
+        }
+        if padding:
+            processor_kwargs["padding"] = True
+        try:
+            return self.processor.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                processor_kwargs=processor_kwargs,
+            )
+        except TypeError:
+            # Backward compatibility for older transformers that do not support
+            # `processor_kwargs` yet.
+            return self.processor.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                **processor_kwargs,
+            )

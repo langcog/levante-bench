@@ -176,6 +176,23 @@ python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks
 python -m levante_bench.cli experiment=configs/experiments/experiment.yaml tasks=[theory-of-mind] max_items_tom=2 device=cpu
 ```
 
+For prompt experiments on mental rotation, you can override only that task's
+prompt text in experiment YAML:
+
+```yaml
+task_overrides:
+  mental-rotation:
+    mental_rotation_prompt_template: |
+      The first image is the reference shape.
+      The second image is option A. The third image is option B.
+
+      One option is the same shape rotated to a different angle.
+      The other is a MIRROR image (horizontally flipped).
+      Which option matches the reference - just rotated, NOT flipped?
+
+      Answer with one letter: A or B.
+```
+
 ## Recent updates (March 2026)
 
 - **Framework integration:** SmolVLM benchmark scripts are now integrated under the `levante-bench` CLI (`run-workflow` and `run-benchmark`), including first-class `v1` and `vocab` benchmark presets.

@@ -67,13 +67,9 @@ class SmolVLM2Model(VLMModel):
     ) -> str:
         """Generate text using SmolVLM2."""
         messages = self._build_messages(prompt_text, image_paths)
-        inputs = self.processor.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
-        ).to(self.device, dtype=self.dtype)
+        inputs = self._apply_chat_template_inputs(messages).to(
+            self.device, dtype=self.dtype
+        )
 
         with torch.no_grad():
             output_ids = self.model.generate(**inputs, do_sample=False, max_new_tokens=max_new_tokens)
@@ -83,6 +79,34 @@ class SmolVLM2Model(VLMModel):
             skip_special_tokens=True,
         )[0]
         return generated_text
+
+    def _apply_chat_template_inputs(
+        self,
+        messages: list[dict] | list[list[dict]],
+        *,
+        padding: bool = False,
+    ):
+        """Apply chat template and return processor-ready tensor inputs."""
+        processor_kwargs = {
+            "return_dict": True,
+            "return_tensors": "pt",
+        }
+        if padding:
+            processor_kwargs["padding"] = True
+        try:
+            return self.processor.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                processor_kwargs=processor_kwargs,
+            )
+        except TypeError:
+            return self.processor.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                **processor_kwargs,
+            )
 
     def _build_messages(
         self,

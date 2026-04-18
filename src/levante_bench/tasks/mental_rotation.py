@@ -63,10 +63,7 @@ class MentalRotationDataset(VLMDataset):
                 )
             option_image_paths.append(str(path))
 
-        prompt = self.build_localized_prompt(
-            prompt_template=row["full_prompt"],
-            prompt_phrase=row["prompt_phrase"],
-        )
+        prompt = self._build_prompt(row=row)
 
         context_image_paths = []
         if "<prompt_image>" in prompt:
@@ -94,3 +91,20 @@ class MentalRotationDataset(VLMDataset):
             "context_type": "image" if context_image_paths else "none",
             "option_type": "image",
         }
+
+    def _build_prompt(self, row: pd.Series) -> str:
+        """Build prompt from override template (if set) or manifest defaults."""
+        override_template = str(
+            getattr(self.task_def, "mental_rotation_prompt_template", "") or ""
+        ).strip()
+        if override_template:
+            prompt = self.translate_text(override_template)
+            if "<prompt_phrase>" in prompt:
+                prompt_phrase = self.translate_text(row.get("prompt_phrase", ""))
+                prompt = prompt.replace("<prompt_phrase>", prompt_phrase)
+            return prompt
+
+        return self.build_localized_prompt(
+            prompt_template=row["full_prompt"],
+            prompt_phrase=row["prompt_phrase"],
+        )

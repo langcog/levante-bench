@@ -106,6 +106,181 @@ croissant_phase2:
     Phase-2 Croissant preparation for v1: map each logical field in this
     manifest to concrete columns emitted in assets/responses CSV-Parquet data,
     and attach Croissant-oriented field metadata.
+  recordset_plan:
+    primary_recordset:
+      id: responses_trials
+      description: >
+        Trial-level responses from Redivis export and split manifests.
+      key:
+        name: trial_id
+        dataType: string
+        notes:
+          - item_uid is not unique at trial level and is therefore modeled as a foreign key.
+      data_sources:
+        - data/responses/v1/trials.csv
+        - data/responses/v1/manifests/trials_all.(csv|parquet)
+      candidate_fields:
+        - name: trial_id
+          dataType: string
+          role: key
+          source_columns: [trial_id]
+        - name: trial_number
+          dataType: integer
+          role: feature
+          source_columns: [trial_number]
+        - name: run_id
+          dataType: string
+          role: feature
+          source_columns: [run_id]
+        - name: user_id
+          dataType: string
+          role: feature
+          source_columns: [user_id]
+        - name: item_uid
+          dataType: string
+          role: feature
+          source_columns: [item_uid]
+        - name: task
+          dataType: string
+          role: feature
+          source_columns: [task_id, item_task]
+        - name: response
+          dataType: string
+          role: feature
+          source_columns: [response]
+        - name: correct
+          dataType: boolean
+          role: label
+          source_columns: [correct]
+        - name: original_correct
+          dataType: boolean
+          role: label
+          source_columns: [original_correct]
+        - name: rt
+          dataType: string
+          role: feature
+          source_columns: [rt]
+        - name: rt_numeric
+          dataType: number
+          role: feature
+          source_columns: [rt_numeric]
+        - name: timestamp
+          dataType: string
+          role: feature
+          source_columns: [timestamp]
+        - name: age
+          dataType: number
+          role: feature
+          source_columns: [age]
+        - name: site
+          dataType: string
+          role: feature
+          source_columns: [site]
+        - name: prompt_language
+          dataType: string
+          role: feature
+          source_columns: []
+          notes:
+            - Not present in current source exports; only include if emitted in future manifests.
+
+    secondary_recordsets:
+      - id: assets_items
+        description: Item-bank level assets and canonical item metadata.
+        key:
+          name: item_uid
+          dataType: string
+        data_sources:
+          - data/assets/manifest.csv
+          - data/assets/v1/manifests/v1_eval_all.(csv|parquet)
+        candidate_fields:
+          - name: item_uid
+            dataType: string
+            role: key
+            source_columns: [item_uid]
+          - name: task
+            dataType: string
+            role: feature
+            source_columns: [task]
+          - name: prompt
+            dataType: string
+            role: feature
+            source_columns: [prompt, full_prompt, prompt_phrase]
+          - name: answer
+            dataType: string
+            role: label
+            source_columns: [answer]
+          - name: response_alternatives
+            dataType: string
+            role: feature
+            source_columns: [response_alternatives]
+          - name: prompt_image
+            dataType: string
+            role: feature
+            source_columns: [prompt_image]
+
+      - id: responses_by_ability
+        optional: true
+        description: Aggregated response distributions per item and ability bin.
+        key:
+          name: item_uid
+          dataType: string
+        data_sources:
+          - data/responses/v1/responses_by_ability/*_proportions_by_ability.csv
+          - data/responses/v1/manifests/responses_by_ability_all.(csv|parquet)
+        candidate_fields:
+          - name: item_uid
+            dataType: string
+            role: key
+            source_columns: [item_uid]
+          - name: ability_bin
+            dataType: string
+            role: feature
+            source_columns: [ability_bin]
+          - name: image1
+            dataType: number
+            role: feature
+            source_columns: [image1]
+          - name: image2
+            dataType: number
+            role: feature
+            source_columns: [image2]
+          - name: image3
+            dataType: number
+            role: feature
+            source_columns: [image3]
+          - name: image4
+            dataType: number
+            role: feature
+            source_columns: [image4]
+          - name: child_accuracy
+            dataType: number
+            role: feature
+            source_columns: []
+            notes:
+              - Derived summary metric; not currently emitted as a raw column.
+
+      - id: irt_parameters
+        optional: true
+        description: IRT item parameters and respondent ability scores.
+        data_sources:
+          - data/responses/v1/irt_models/*_item_params.csv
+          - data/responses/v1/irt_models/*_ability_scores.csv
+
+    relationships:
+      - from_recordset: responses_trials
+        from_field: item_uid
+        to_recordset: assets_items
+        to_field: item_uid
+        relationship: many_to_one
+        notes:
+          - Many response trials can reference the same canonical item.
+      - from_recordset: responses_by_ability
+        from_field: item_uid
+        to_recordset: assets_items
+        to_field: item_uid
+        relationship: many_to_one
+        optional: true
+
   field_mappings:
     - logical_field: item_uid
       croissant:

@@ -3,8 +3,6 @@ models:
     size: 8B
     max_new_tokens: 128
     use_json_format: false
-    true-random-option-order: true
-    num_runs: 10
 
 tasks:
   - mental-rotation
@@ -14,3 +12,5 @@ output_dir: results
 version: v1
 device: cuda
 batch_size: 4
+true_random_option_order: true
+num_runs: 10

@@ -4,7 +4,6 @@
 models:
   - name: smolvlm2
     size: 256M
-    use_json_format: false
 
 tasks:
   - mental-rotation
@@ -13,17 +12,16 @@ data_root: data
 output_dir: results/mr_prompt_invert
 version: v1
 device: cuda
-batch_size: 1
+batch_size: 4
 
 task_overrides:
   mental-rotation:
     mental_rotation_prompt_template: |
-      The first image is the reference shape.
-      The second image is option A. The third image is option B.
+      You will be shown three images in sequence.
+      Image 1 is the original abstract 3D object.
+      Image 2 and Image 3 each show a transformed version of an object. One of these (Image 2 or Image 3) is the same object as Image 1, changed only by a 3D rotation. The other is a mirror-flipped version of the object in Image 1 (it may also be rotated).
+      Your task is to decide which image (Image 2 or Image 3) shows the same object as Image 1, related only by rotation and not by any mirror flip.
+      When you receive the three images inline with this text, carefully compare Image 1 with Image 2 and with Image 3, mentally rotating the shapes if needed, and determine which could be obtained from Image 1 by rotation alone.
+      Answer with exactly one letter: A if Image 2 is the rotated match, or B if Image 3 is the rotated match.
 
-      One option is the same shape rotated to a different angle.
-      The other is a MIRROR image (horizontally flipped).
-      You may need to invert the pixels on the A image and on the B image for the best match.
-      Which option matches the reference - just rotated, NOT flipped?
 
-      Answer with one letter: A or B.

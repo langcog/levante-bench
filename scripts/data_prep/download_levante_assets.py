@@ -374,9 +374,16 @@ def _write_split_manifests(
         )
 
     parquet_ok = 0
-    csv_fallback = 0
+    csv_written = 0
+    csv_only = 0
     for split_name, split_df in tables.items():
         out_parquet = manifests_dir / f"{split_name}.parquet"
+        out_csv = manifests_dir / f"{split_name}.csv"
+
+        # Always emit CSV for maximum interoperability.
+        split_df.to_csv(out_csv, index=False)
+        csv_written += 1
+
         if parquet_supported:
             try:
                 split_df.to_parquet(out_parquet, index=False)
@@ -387,13 +394,12 @@ def _write_split_manifests(
                     f"Warning: failed to write {out_parquet.name} "
                     f"({type(exc).__name__}: {exc}); writing CSV fallback."
                 )
-        # Default path (or parquet fallback): write CSV split.
-        out_csv = manifests_dir / f"{split_name}.csv"
-        split_df.to_csv(out_csv, index=False)
-        csv_fallback += 1
+                csv_only += 1
+        else:
+            csv_only += 1
     print(
         f"Wrote split manifests to {manifests_dir} "
-        f"({parquet_ok} parquet, {csv_fallback} csv fallback)."
+        f"({parquet_ok} parquet, {csv_written} csv; {csv_only} csv-only)."
     )
 
 

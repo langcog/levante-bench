@@ -53,6 +53,8 @@ write_split_manifest <- function(df, name) {
   if (!is.data.frame(df)) return(invisible(NULL))
   out_parquet <- file.path(manifests_dir, paste0(name, ".parquet"))
   out_csv <- file.path(manifests_dir, paste0(name, ".csv"))
+  # Always emit CSV for portability.
+  readr::write_csv(df, out_csv)
   if (parquet_available) {
     ok <- tryCatch({
       arrow::write_parquet(df, out_parquet)
@@ -61,13 +63,12 @@ write_split_manifest <- function(df, name) {
       message(
         "  manifest ", name, ": parquet write failed (",
         conditionMessage(e),
-        "); writing CSV fallback."
+        "); wrote CSV only for this split."
       )
       FALSE
     })
     if (ok) return(invisible(NULL))
   }
-  readr::write_csv(df, out_csv)
   invisible(NULL)
 }
 

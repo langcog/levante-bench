@@ -3,6 +3,7 @@ models:
     size: 8B
     max_new_tokens: 128
     use_json_format: false
+    true-random-option-order: true
     num_runs: 10
 
 tasks:

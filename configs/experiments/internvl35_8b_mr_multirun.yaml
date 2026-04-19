@@ -1,0 +1,15 @@
+models:
+  - name: internvl35
+    size: 8B
+    max_new_tokens: 128
+    use_json_format: false
+    num_runs: 10
+
+tasks:
+  - mental-rotation
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 4

@@ -24,8 +24,9 @@ DOWNLOAD_RETRIES = 4
 DOWNLOAD_RETRY_BACKOFF = 2.0  # seconds, doubled each retry
 VERSION_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
-# Resolve package from script: repo root is parent of scripts/
-_REPO_ROOT = Path(__file__).resolve().parent.parent
+# Resolve package from script path:
+# scripts/data_prep/download_levante_assets.py -> repo root is three levels up.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def _project_root() -> Path:

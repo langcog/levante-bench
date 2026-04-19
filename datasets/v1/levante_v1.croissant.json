@@ -1,0 +1,379 @@
+{
+  "@context": {
+    "@language": "en",
+    "sc": "https://schema.org/",
+    "cr": "http://mlcommons.org/croissant/",
+    "rai": "http://mlcommons.org/croissant/RAI/",
+    "dct": "http://purl.org/dc/terms/"
+  },
+  "@type": "sc:Dataset",
+  "@id": "https://github.com/langcog/levante-bench/blob/main/datasets/v1/levante_v1.croissant.json",
+  "name": "LEVANTE Benchmark v1",
+  "description": "Croissant metadata for LEVANTE v1 benchmark assets and response tables, covering multimodal forced-choice tasks used for model-human comparison.",
+  "version": "v1",
+  "license": "https://spdx.org/licenses/NOASSERTION.html",
+  "url": "https://github.com/langcog/levante-bench",
+  "keywords": [
+    "vision-language benchmark",
+    "children",
+    "multimodal reasoning",
+    "forced choice",
+    "IRT"
+  ],
+  "citation": [
+    "LEVANTE benchmark manuscript (project manuscript).",
+    "DevBench (NeurIPS 2024)."
+  ],
+  "dct:creator": [
+    {
+      "@type": "sc:Organization",
+      "name": "LEVANTE Project"
+    }
+  ],
+  "distribution": [
+    {
+      "@type": "cr:FileObject",
+      "@id": "assetsManifestCsv",
+      "name": "assets_manifest_csv",
+      "description": "Canonical assets manifest for benchmark items.",
+      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/assets/manifest.csv",
+      "encodingFormat": "text/csv"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "assetsManifestParquetV1",
+      "name": "assets_manifest_v1_eval_all_parquet",
+      "description": "v1 split assets manifest (Parquet).",
+      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/assets/v1/manifests/v1_eval_all.parquet",
+      "encodingFormat": "application/x-parquet"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "responsesTrialsCsv",
+      "name": "responses_trials_csv",
+      "description": "Trial-level responses export for v1.",
+      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/trials.csv",
+      "encodingFormat": "text/csv"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "responsesTrialsParquet",
+      "name": "responses_trials_parquet",
+      "description": "Trial-level responses split manifest (Parquet).",
+      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/manifests/trials_all.parquet",
+      "encodingFormat": "application/x-parquet"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "responsesByAbilityParquet",
+      "name": "responses_by_ability_parquet",
+      "description": "Ability-binned aggregate response distributions.",
+      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/manifests/responses_by_ability_all.parquet",
+      "encodingFormat": "application/x-parquet"
+    }
+  ],
+  "recordSet": [
+    {
+      "@type": "cr:RecordSet",
+      "@id": "assets_items",
+      "name": "assets_items",
+      "description": "Item-bank level assets and canonical metadata.",
+      "key": "item_uid",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "assets_items/item_uid",
+          "name": "item_uid",
+          "description": "Canonical item identifier.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "assetsManifestCsv"
+            },
+            "extract": {
+              "column": "item_uid"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "assets_items/task",
+          "name": "task",
+          "description": "Internal task identifier.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "assetsManifestCsv"
+            },
+            "extract": {
+              "column": "task"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "assets_items/prompt",
+          "name": "prompt",
+          "description": "Item prompt text.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "assetsManifestCsv"
+            },
+            "extract": {
+              "column": "prompt"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "assets_items/answer",
+          "name": "answer",
+          "description": "Canonical correct answer value.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "assetsManifestCsv"
+            },
+            "extract": {
+              "column": "answer"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "assets_items/response_alternatives",
+          "name": "response_alternatives",
+          "description": "Serialized distractor alternatives.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "assetsManifestCsv"
+            },
+            "extract": {
+              "column": "response_alternatives"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "assets_items/prompt_image",
+          "name": "prompt_image",
+          "description": "Optional image key used to resolve visual asset paths.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "assetsManifestCsv"
+            },
+            "extract": {
+              "column": "prompt_image"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "responses_trials",
+      "name": "responses_trials",
+      "description": "Trial-level responses from Redivis exports and split manifests.",
+      "key": "trial_id",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/trial_id",
+          "name": "trial_id",
+          "description": "Trial-level unique identifier.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "trial_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/item_uid",
+          "name": "item_uid",
+          "description": "Foreign key to canonical benchmark item.",
+          "dataType": "sc:Text",
+          "references": {
+            "@id": "assets_items/item_uid"
+          },
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "item_uid"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/task_id",
+          "name": "task_id",
+          "description": "Task identifier for trial record.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "task_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/response",
+          "name": "response",
+          "description": "Observed participant response.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "response"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/correct",
+          "name": "correct",
+          "description": "Whether response is correct under task scoring.",
+          "dataType": "sc:Boolean",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "correct"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/age",
+          "name": "age",
+          "description": "Participant age value (if available in source export).",
+          "dataType": "sc:Number",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "age"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/site",
+          "name": "site",
+          "description": "Data collection site label when present.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "site"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_trials/timestamp",
+          "name": "timestamp",
+          "description": "Response event timestamp as emitted in trial export.",
+          "dataType": "sc:DateTime",
+          "source": {
+            "fileObject": {
+              "@id": "responsesTrialsCsv"
+            },
+            "extract": {
+              "column": "timestamp"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "responses_by_ability",
+      "name": "responses_by_ability",
+      "description": "Optional aggregate response distributions by item_uid and ability_bin.",
+      "key": "item_uid",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "responses_by_ability/item_uid",
+          "name": "item_uid",
+          "description": "Item identifier linked to assets_items.",
+          "dataType": "sc:Text",
+          "references": {
+            "@id": "assets_items/item_uid"
+          },
+          "source": {
+            "fileObject": {
+              "@id": "responsesByAbilityParquet"
+            },
+            "extract": {
+              "column": "item_uid"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_by_ability/ability_bin",
+          "name": "ability_bin",
+          "description": "Ability bin label used for response distribution aggregation.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileObject": {
+              "@id": "responsesByAbilityParquet"
+            },
+            "extract": {
+              "column": "ability_bin"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "responses_by_ability/image1",
+          "name": "image1",
+          "description": "Aggregate response proportion for option slot image1.",
+          "dataType": "sc:Number",
+          "source": {
+            "fileObject": {
+              "@id": "responsesByAbilityParquet"
+            },
+            "extract": {
+              "column": "image1"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "rai:considerations": {
+    "populationType": "children",
+    "ageDescription": "Participants include children; age values are present in response exports when available.",
+    "geographicCoverage": "Multi-site LEVANTE collection context (site metadata present in response exports).",
+    "sensitiveAttributes": [
+      "age"
+    ],
+    "sensitiveHandling": "Demographic fields are documented for benchmarking analyses (for example age-binned comparisons) and should be processed under project governance and IRB/ethics constraints.",
+    "dataCollection": "Trials and participant responses are retrieved from Redivis datasets used by the LEVANTE project.",
+    "provenanceScripts": [
+      "scripts/data_prep/download_levante_assets.py",
+      "scripts/data_prep/download_levante_data.R"
+    ]
+  }
+}

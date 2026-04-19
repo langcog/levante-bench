@@ -97,7 +97,7 @@
       "@id": "responsesTrialsCsv",
       "name": "responses_trials_csv",
       "description": "Trial-level responses export for v1.",
-      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/trials.csv",
+      "contentUrl": "https://storage.googleapis.com/levante-bench/responses_manifests/v1/trials.csv",
       "encodingFormat": "text/csv",
       "sha256": "8feb944a25ad5fe77c9a7ffe5cb693d9e67207ff76425b37aa94aac5cb5808cd"
     },
@@ -106,7 +106,7 @@
       "@id": "responsesTrialsParquet",
       "name": "responses_trials_parquet",
       "description": "Trial-level responses split manifest (Parquet).",
-      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/manifests/trials_all.parquet",
+      "contentUrl": "https://storage.googleapis.com/levante-bench/responses_manifests/v1/manifests/trials_all.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "6c719b900975390c489664b2dc0120e6fa3875105b0b403b0a3ac5ce4e05d6a5"
     },
@@ -115,7 +115,7 @@
       "@id": "responsesByAbilityParquet",
       "name": "responses_by_ability_parquet",
       "description": "Ability-binned aggregate response distributions.",
-      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/manifests/responses_by_ability_all.parquet",
+      "contentUrl": "https://storage.googleapis.com/levante-bench/responses_manifests/v1/manifests/responses_by_ability_all.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "a6cf186d5b701a3ecb25a9f358fcc20c2bd9cbbb8595a7ccab53f562efb82d27"
     }

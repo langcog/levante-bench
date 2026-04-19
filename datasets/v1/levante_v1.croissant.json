@@ -1,18 +1,61 @@
 {
   "@context": {
     "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
     "sc": "https://schema.org/",
     "cr": "http://mlcommons.org/croissant/",
     "rai": "http://mlcommons.org/croissant/RAI/",
-    "dct": "http://purl.org/dc/terms/"
+    "dct": "http://purl.org/dc/terms/",
+    "data": {
+      "@id": "cr:data",
+      "@type": "@json"
+    },
+    "dataType": {
+      "@id": "cr:dataType",
+      "@type": "@vocab"
+    },
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "samplingRate": "cr:samplingRate",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform",
+    "fileProperty": "cr:fileProperty",
+    "includes": "cr:includes",
+    "equivalentProperty": "cr:equivalentProperty",
+    "examples": {
+      "@id": "cr:examples",
+      "@type": "@json"
+    }
   },
   "@type": "sc:Dataset",
   "@id": "https://github.com/langcog/levante-bench/blob/main/datasets/v1/levante_v1.croissant.json",
   "name": "LEVANTE Benchmark v1",
   "description": "Croissant metadata for LEVANTE v1 benchmark assets and response tables, covering multimodal forced-choice tasks used for model-human comparison.",
-  "version": "v1",
+  "version": "1.0.0",
+  "citeAs": "https://github.com/langcog/levante-bench/blob/main/datasets/v1/levante_v1.croissant.json",
+  "datePublished": "2026-04-19",
   "license": "https://spdx.org/licenses/NOASSERTION.html",
   "url": "https://github.com/langcog/levante-bench",
+  "conformsTo": "http://mlcommons.org/croissant/1.1",
   "keywords": [
     "vision-language benchmark",
     "children",
@@ -36,16 +79,18 @@
       "@id": "assetsManifestCsv",
       "name": "assets_manifest_csv",
       "description": "Canonical assets manifest for benchmark items.",
-      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/assets/manifest.csv",
-      "encodingFormat": "text/csv"
+      "contentUrl": "https://storage.googleapis.com/levante-bench/corpus_data/v1/manifest.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "TBD"
     },
     {
       "@type": "cr:FileObject",
       "@id": "assetsManifestParquetV1",
       "name": "assets_manifest_v1_eval_all_parquet",
       "description": "v1 split assets manifest (Parquet).",
-      "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/assets/v1/manifests/v1_eval_all.parquet",
-      "encodingFormat": "application/x-parquet"
+      "contentUrl": "https://storage.googleapis.com/levante-bench/corpus_data/v1/manifests/v1_eval_all.parquet",
+      "encodingFormat": "application/x-parquet",
+      "sha256": "TBD"
     },
     {
       "@type": "cr:FileObject",
@@ -53,7 +98,8 @@
       "name": "responses_trials_csv",
       "description": "Trial-level responses export for v1.",
       "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/trials.csv",
-      "encodingFormat": "text/csv"
+      "encodingFormat": "text/csv",
+      "sha256": "TBD"
     },
     {
       "@type": "cr:FileObject",
@@ -61,7 +107,8 @@
       "name": "responses_trials_parquet",
       "description": "Trial-level responses split manifest (Parquet).",
       "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/manifests/trials_all.parquet",
-      "encodingFormat": "application/x-parquet"
+      "encodingFormat": "application/x-parquet",
+      "sha256": "TBD"
     },
     {
       "@type": "cr:FileObject",
@@ -69,7 +116,8 @@
       "name": "responses_by_ability_parquet",
       "description": "Ability-binned aggregate response distributions.",
       "contentUrl": "https://raw.githubusercontent.com/langcog/levante-bench/main/data/responses/v1/manifests/responses_by_ability_all.parquet",
-      "encodingFormat": "application/x-parquet"
+      "encodingFormat": "application/x-parquet",
+      "sha256": "TBD"
     }
   ],
   "recordSet": [
@@ -78,7 +126,11 @@
       "@id": "assets_items",
       "name": "assets_items",
       "description": "Item-bank level assets and canonical metadata.",
-      "key": "item_uid",
+      "key": [
+        {
+          "@id": "assets_items/item_uid"
+        }
+      ],
       "field": [
         {
           "@type": "cr:Field",
@@ -177,7 +229,11 @@
       "@id": "responses_trials",
       "name": "responses_trials",
       "description": "Trial-level responses from Redivis exports and split manifests.",
-      "key": "trial_id",
+      "key": [
+        {
+          "@id": "responses_trials/trial_id"
+        }
+      ],
       "field": [
         {
           "@type": "cr:Field",
@@ -201,7 +257,9 @@
           "description": "Foreign key to canonical benchmark item.",
           "dataType": "sc:Text",
           "references": {
-            "@id": "assets_items/item_uid"
+            "field": {
+              "@id": "assets_items/item_uid"
+            }
           },
           "source": {
             "fileObject": {
@@ -262,7 +320,7 @@
           "@id": "responses_trials/age",
           "name": "age",
           "description": "Participant age value (if available in source export).",
-          "dataType": "sc:Number",
+          "dataType": "sc:Float",
           "source": {
             "fileObject": {
               "@id": "responsesTrialsCsv"
@@ -309,7 +367,11 @@
       "@id": "responses_by_ability",
       "name": "responses_by_ability",
       "description": "Optional aggregate response distributions by item_uid and ability_bin.",
-      "key": "item_uid",
+      "key": [
+        {
+          "@id": "responses_by_ability/item_uid"
+        }
+      ],
       "field": [
         {
           "@type": "cr:Field",
@@ -318,7 +380,9 @@
           "description": "Item identifier linked to assets_items.",
           "dataType": "sc:Text",
           "references": {
-            "@id": "assets_items/item_uid"
+            "field": {
+              "@id": "assets_items/item_uid"
+            }
           },
           "source": {
             "fileObject": {
@@ -349,7 +413,7 @@
           "@id": "responses_by_ability/image1",
           "name": "image1",
           "description": "Aggregate response proportion for option slot image1.",
-          "dataType": "sc:Number",
+          "dataType": "sc:Float",
           "source": {
             "fileObject": {
               "@id": "responsesByAbilityParquet"
@@ -362,18 +426,16 @@
       ]
     }
   ],
-  "rai:considerations": {
-    "populationType": "children",
-    "ageDescription": "Participants include children; age values are present in response exports when available.",
-    "geographicCoverage": "Multi-site LEVANTE collection context (site metadata present in response exports).",
-    "sensitiveAttributes": [
-      "age"
-    ],
-    "sensitiveHandling": "Demographic fields are documented for benchmarking analyses (for example age-binned comparisons) and should be processed under project governance and IRB/ethics constraints.",
-    "dataCollection": "Trials and participant responses are retrieved from Redivis datasets used by the LEVANTE project.",
-    "provenanceScripts": [
-      "scripts/data_prep/download_levante_assets.py",
-      "scripts/data_prep/download_levante_data.R"
-    ]
-  }
+  "rai:dataCollection": "Trials and participant responses are retrieved from Redivis datasets used by the LEVANTE project.",
+  "rai:dataUseCases": [
+    "Model-human benchmark comparison on forced-choice multimodal tasks.",
+    "Age-binned behavior alignment analyses."
+  ],
+  "rai:dataLimitations": [
+    "Participant-level demographics are limited in exported benchmark tables.",
+    "Some derived benchmark metrics are not raw columns in source manifests."
+  ],
+  "rai:personalSensitiveInformation": [
+    "age"
+  ]
 }

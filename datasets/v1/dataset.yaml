@@ -100,6 +100,167 @@ record_sets:
         required: false
         description: Trial-level id in responses/evaluation outputs.
 
+croissant_phase2:
+  benchmark: v1
+  description: >
+    Phase-2 Croissant preparation for v1: map each logical field in this
+    manifest to concrete columns emitted in assets/responses CSV-Parquet data,
+    and attach Croissant-oriented field metadata.
+  field_mappings:
+    - logical_field: item_uid
+      croissant:
+        name: item_uid
+        description: Canonical item identifier shared across assets and responses.
+        dataType: string
+        role: key
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [item_uid]
+        - table: data/responses/v1/trials.csv
+          columns: [item_uid]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [item_uid]
+
+    - logical_field: task
+      croissant:
+        name: task
+        description: Internal LEVANTE task identifier for each item.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [task]
+        - table: data/responses/v1/trials.csv
+          columns: [task_id, item_task]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [task_id, item_task]
+
+    - logical_field: prompt
+      croissant:
+        name: prompt
+        description: Item prompt text shown to model/human workflows.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [prompt, full_prompt, prompt_phrase]
+        - table: data/responses/v1/trials.csv
+          columns: [item, item_original]
+      notes:
+        - Response-side prompt text is represented by item/item_original; canonical prompt text lives in assets manifest.
+
+    - logical_field: answer
+      croissant:
+        name: answer
+        description: Canonical correct answer value before randomized option ordering.
+        dataType: string
+        role: label
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [answer]
+        - table: data/responses/v1/trials.csv
+          columns: [answer, correct, original_correct]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [answer, correct, original_correct]
+
+    - logical_field: response_alternatives
+      croissant:
+        name: response_alternatives
+        description: Distractor alternatives associated with the canonical answer.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [response_alternatives]
+        - table: data/responses/v1/trials.csv
+          columns: [distractors]
+      notes:
+        - Stored as serialized text (CSV string / Python-dict-like text), parsed by loaders.
+
+    - logical_field: prompt_image
+      croissant:
+        name: prompt_image
+        description: Optional image key for item context/reference image.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [prompt_image]
+      notes:
+        - Image files resolve under data/assets/v1/visual/<task>/ from this key.
+
+    - logical_field: image_uri
+      croissant:
+        name: image_uri
+        description: Resolved URI/path to context image asset for a trial item.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [task, prompt_image]
+        - table: data/assets/v1/item_uid_index.json
+          columns: [item_uid, task, prompt_image]
+      notes:
+        - Derived field; URI is constructed from task + prompt_image via distribution.uri_templates.
+
+    - logical_field: choices
+      croissant:
+        name: choices
+        description: Presented choice values after option construction/ordering.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [answer, response_alternatives]
+        - table: data/responses/v1/responses_by_ability/*_option_key.csv
+          columns: [image1, image2, image3, image4]
+        - table: data/responses/v1/manifests/option_key_all.(csv|parquet)
+          columns: [image1, image2, image3, image4]
+      notes:
+        - Choice arrays are materialized by loaders/eval runtime; option_key manifests provide canonical image1..image4 slots.
+
+    - logical_field: label
+      croissant:
+        name: label
+        description: Correct target label for supervised evaluation.
+        dataType: string
+        role: label
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [answer]
+        - table: data/responses/v1/trials.csv
+          columns: [correct, original_correct]
+      notes:
+        - Eval-time A/B/C/D labels are produced by task loaders; source tables store canonical correctness values.
+
+    - logical_field: subject_id
+      croissant:
+        name: subject_id
+        description: Optional participant identifier for human-response records.
+        dataType: string
+        role: key
+      source_columns:
+        - table: data/responses/v1/trials.csv
+          columns: [user_id, run_id]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [user_id, run_id]
+      notes:
+        - user_id is participant-like identity; run_id groups repeated trials/sessions.
+
+    - logical_field: trial_id
+      croissant:
+        name: trial_id
+        description: Trial-level record identifier for a response event.
+        dataType: string
+        role: key
+      source_columns:
+        - table: data/responses/v1/trials.csv
+          columns: [trial_id, trial_number, timestamp]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [trial_id, trial_number, timestamp]
+      notes:
+        - trial_id is the primary trial key; trial_number/timestamp provide ordering context.
+
 provenance:
   source_papers:
     - LEVANTE benchmark manuscript.

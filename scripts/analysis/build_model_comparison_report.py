@@ -14,6 +14,7 @@ from pathlib import Path
 
 
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+RUN_DIR_RE = re.compile(r"^(?:\d{4}|r\d+|job\d+(?:-proc\d+)?)$", re.IGNORECASE)
 MODEL_SIZE_RE = re.compile(r"^(?P<model>[A-Za-z0-9.-]+)_(?P<size>[0-9]+(?:\.[0-9]+)?[A-Za-z]+)$")
 MODEL_SIZE_DASH_RE = re.compile(
     r"^(?P<model>[A-Za-z0-9._-]+)-(?P<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$"
@@ -94,6 +95,9 @@ def _infer_model_tag(relative_summary_path: Path) -> str:
     parts = list(relative_summary_path.parts[:-1])  # drop summary.csv
     for part in reversed(parts):
         if DATE_RE.fullmatch(part):
+            continue
+        # Skip multirun/job folders so we keep the actual model tag.
+        if RUN_DIR_RE.fullmatch(part):
             continue
         return part
     return relative_summary_path.parent.name

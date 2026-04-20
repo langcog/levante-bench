@@ -2,6 +2,7 @@ const fs = require("fs/promises");
 const path = require("path");
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const RUN_DIR_RE = /^(?:\d{4}|r\d+|job\d+(?:-proc\d+)?)$/i;
 const MODEL_SIZE_UNDERSCORE_RE = /^(?<model>[A-Za-z0-9.-]+)_(?<size>[0-9]+(?:\.[0-9]+)?[A-Za-z]+)$/;
 const MODEL_SIZE_DASH_RE =
   /^(?<model>[A-Za-z0-9._-]+)-(?<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$/;
@@ -36,9 +37,13 @@ async function readText(url) {
 function inferModelTagFromPath(relativeSummaryPath) {
   const parts = relativeSummaryPath.split("/").slice(0, -1); // drop summary.csv
   for (let i = parts.length - 1; i >= 0; i -= 1) {
-    if (!DATE_RE.test(parts[i])) {
-      return parts[i];
+    if (DATE_RE.test(parts[i])) {
+      continue;
     }
+    if (RUN_DIR_RE.test(parts[i])) {
+      continue;
+    }
+    return parts[i];
   }
   return parts[parts.length - 1] || "unknown";
 }

@@ -25,4 +25,4 @@ CONDA_ENV_PATH="$PROJECT_ROOT/envs/levante-bench-py311"
 DEVICE="cuda"
 # EXTRA_OVERRIDES="batch_size=1"
 
-source "$(dirname "$0")/_levante_common.sh"
+source "$PROJECT_ROOT/code/levante-bench/scripts/slurm/_levante_common.sh"

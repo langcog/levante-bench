@@ -39,6 +39,13 @@
   let ageEqAccModelRecords = [];
   let ageEquivalencyIndex = new Map();
   let ageEquivalencyAccuracyIndex = new Map();
+  let childrenDataLoaded = false;
+  let childrenDataLoadingPromise = null;
+  let metaBase = null;
+  let childrenMeta = {
+    source: "not loaded (open Children tab)",
+    rows: 0,
+  };
   const preferredTaskOrder = [
     "egma-math",
     "matrix-reasoning",
@@ -1008,6 +1015,54 @@
     });
   }
 
+  function updateMetaText() {
+    if (!metaBase) {
+      return;
+    }
+    metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | Children source: ${
+      childrenMeta.source
+    } | Children rows: ${childrenMeta.rows} | KL source: ${metaBase.klSource} | KL rows: ${
+      metaBase.klRows
+    } | AgeEq source: ${metaBase.ageEqSource} | AgeEq rows: ${metaBase.ageEqRows} | AgeEqAcc source: ${
+      metaBase.ageEqAccSource
+    } | AgeEqAcc rows: ${metaBase.ageEqAccRows} | Note: Age Eq is task-specific and approximate.`;
+  }
+
+  async function ensureChildrenDataLoaded() {
+    if (childrenDataLoaded) {
+      return;
+    }
+    if (childrenDataLoadingPromise) {
+      await childrenDataLoadingPromise;
+      return;
+    }
+    childrenDataLoadingPromise = (async () => {
+      statusEl.textContent = "Loading children data...";
+      const childResponse = await fetch(`/api/human-age-accuracy?t=${Date.now()}`);
+      if (!childResponse.ok) {
+        throw new Error(`Children report HTTP ${childResponse.status}`);
+      }
+      const childPayload = await childResponse.json();
+      accuracyChildRecords = parseChildRecords(childPayload || {});
+      childrenDataLoaded = true;
+      childrenMeta = {
+        source: childPayload.source || "unknown",
+        rows: Array.isArray(childPayload.records) ? childPayload.records.length : 0,
+      };
+      updateMetaText();
+      renderSelectors({ preserveSelection: true });
+      if (!childrenEl.selectedOptions.length) {
+        setAllSelected(childrenEl);
+      }
+      rerender();
+    })();
+    try {
+      await childrenDataLoadingPromise;
+    } finally {
+      childrenDataLoadingPromise = null;
+    }
+  }
+
   async function loadReportData({ preserveSelection = false } = {}) {
     try {
       if (refreshDataBtn) {
@@ -1015,19 +1070,15 @@
         refreshDataBtn.textContent = "Refreshing...";
       }
       statusEl.textContent = "Loading report...";
-      const [modelResponse, childResponse, klResponse, ageEqResponse, ageEqAccResponse] =
+      const [modelResponse, klResponse, ageEqResponse, ageEqAccResponse] =
         await Promise.all([
         fetch(`/api/results-report?t=${Date.now()}`),
-        fetch(`/api/human-age-accuracy?t=${Date.now()}`),
         fetch(`/api/kl-report?t=${Date.now()}`),
         fetch(`/api/model-age-equivalency?t=${Date.now()}`),
         fetch(`/api/model-age-equivalency-accuracy?t=${Date.now()}`),
       ]);
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
-      }
-      if (!childResponse.ok) {
-        throw new Error(`Children report HTTP ${childResponse.status}`);
       }
       if (!klResponse.ok) {
         throw new Error(`KL report HTTP ${klResponse.status}`);
@@ -1039,12 +1090,17 @@
         throw new Error(`Age-equivalency-accuracy report HTTP ${ageEqAccResponse.status}`);
       }
       const payload = await modelResponse.json();
-      const childPayload = await childResponse.json();
       const klPayload = await klResponse.json();
       const ageEqPayload = await ageEqResponse.json();
       const ageEqAccPayload = await ageEqAccResponse.json();
       accuracyModelRecords = parseModelRecords(payload.report || {});
-      accuracyChildRecords = parseChildRecords(childPayload || {});
+      accuracyChildRecords = [];
+      childrenDataLoaded = false;
+      childrenDataLoadingPromise = null;
+      childrenMeta = {
+        source: "not loaded (open Children tab)",
+        rows: 0,
+      };
       ageEquivalencyIndex = parseAgeEquivalencyIndex(
         (ageEqPayload && ageEqPayload.records) || [],
       );
@@ -1058,19 +1114,24 @@
       ageEqAccModelRecords = parseAgeEquivalencyAccuracyModelRecords(
         (ageEqAccPayload && ageEqAccPayload.records) || [],
       );
-      metaEl.textContent = `Model source: ${payload.source || "unknown"} | Models generated: ${
-        (payload.report && payload.report.generated_at) || "n/a"
-      } | Children source: ${childPayload.source || "unknown"} | Children rows: ${
-        Array.isArray(childPayload.records) ? childPayload.records.length : 0
-      } | KL source: ${klPayload.source || "unknown"} | KL rows: ${
-        Array.isArray(klPayload.records) ? klPayload.records.length : 0
-      } | AgeEq source: ${ageEqPayload.source || "unknown"} | AgeEq rows: ${
-        Array.isArray(ageEqPayload.records) ? ageEqPayload.records.length : 0
-      } | AgeEqAcc source: ${ageEqAccPayload.source || "unknown"} | AgeEqAcc rows: ${
-        Array.isArray(ageEqAccPayload.records) ? ageEqAccPayload.records.length : 0
-      } | Note: Age Eq is task-specific and approximate.`;
+      metaBase = {
+        modelSource: payload.source || "unknown",
+        modelsGenerated: (payload.report && payload.report.generated_at) || "n/a",
+        klSource: klPayload.source || "unknown",
+        klRows: Array.isArray(klPayload.records) ? klPayload.records.length : 0,
+        ageEqSource: ageEqPayload.source || "unknown",
+        ageEqRows: Array.isArray(ageEqPayload.records) ? ageEqPayload.records.length : 0,
+        ageEqAccSource: ageEqAccPayload.source || "unknown",
+        ageEqAccRows: Array.isArray(ageEqAccPayload.records)
+          ? ageEqAccPayload.records.length
+          : 0,
+      };
+      updateMetaText();
       renderSelectors({ preserveSelection });
       rerender();
+      if (tabChildrenBtn.classList.contains("active")) {
+        await ensureChildrenDataLoaded();
+      }
     } catch (error) {
       statusEl.textContent = "Failed to load report data.";
       metaEl.textContent = String(error && error.message ? error.message : error);
@@ -1136,6 +1197,9 @@
     tabChildrenBtn.classList.toggle("active", !isModels);
     panelModels.classList.toggle("active", isModels);
     panelChildren.classList.toggle("active", !isModels);
+    if (!isModels) {
+      void ensureChildrenDataLoaded();
+    }
   }
 
   async function boot() {

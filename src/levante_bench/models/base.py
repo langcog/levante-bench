@@ -6,13 +6,97 @@ import re
 import time
 from typing import Any, Literal, Optional
 
+import json_repair
 
-ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<letter>", "reason": "<short reason>"}'
-NUMERIC_ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<number>", "reason": "<short reason>"}'
+
+SYSTEM_PROMPT = "You are a helpful assistant."
+
+# ── Format instructions (JSON path) ────────────────────────────────────────
+# Label instructions are templates: {labels} is substituted with a prose
+# enumeration of the trial's option_labels (e.g., "A, B, C, or D").
+ANSWER_FORMAT_INSTRUCTION = (
+    '\n\nRespond in JSON format: {{"answer": "<one of {labels}>", "reason": "<short reason>"}}'
+)
+NUMERIC_ANSWER_FORMAT_INSTRUCTION = (
+    '\n\nRespond in JSON format: {"answer": "<number>", "reason": "<short reason>"}'
+)
 SLIDER_POSITION_FORMAT_INSTRUCTION = (
     "\n\nOutput only one decimal number between 0 and 1 "
     "(the slider position from left to right). No JSON or extra text."
 )
+
+# Short reinforcement prepended to the user message so small models see the
+# output-format constraint before the task framing (they often drift into CoT
+# if it only appears as a trailing suffix).
+LABEL_FORMAT_PREFIX = (
+    'Respond only with the JSON object '
+    '{{"answer":"<one of {labels}>","reason":"<short reason>"}}. No preamble.\n\n'
+)
+NUMERIC_FORMAT_PREFIX = (
+    'Respond only with the JSON object '
+    '{"answer":"<number>","reason":"<short reason>"}. No preamble.\n\n'
+)
+SLIDER_FORMAT_PREFIX = "Respond only with a single decimal between 0 and 1. No preamble.\n\n"
+
+# ── Format instructions (simple / non-JSON path) ───────────────────────────
+# Used when the model's YAML sets `use_json_format: false`. Designed for
+# very small models (e.g., SmolVLM2-500M) that echo JSON template placeholders
+# like `<letter>` instead of filling them in. The letters list is substituted
+# from the trial's option_labels so 2-option tasks say "A or B" and 4-option
+# tasks say "A, B, C, or D".
+LABEL_SIMPLE_INSTRUCTION = "\n\nAnswer with only the letter {labels}."
+NUMERIC_SIMPLE_INSTRUCTION = "\n\nAnswer with only a number."
+
+# Default token budgets per answer format. Label/numeric allow a bit of CoT
+# before the JSON object; slider just needs a scalar.
+DEFAULT_MAX_NEW_TOKENS = {
+    "label": 128,
+    "numeric": 128,
+    "slider_position": 32,
+}
+
+
+def _try_json_repair(text: str) -> Any:
+    """Attempt to parse possibly-malformed JSON with json-repair.
+
+    Returns the parsed value (typically a dict) or ``None`` if repair failed
+    or produced an empty string (which json-repair uses to signal "no JSON").
+    """
+    if not text:
+        return None
+    try:
+        parsed = json_repair.loads(text)
+    except Exception:
+        return None
+    if parsed == "" or parsed == {} or parsed == []:
+        return None
+    return parsed
+
+
+def _format_labels_prose(option_labels: list[str]) -> str:
+    """Render option labels as a natural-language list for prompt templates.
+
+    ['A'] → 'A'; ['A', 'B'] → 'A or B'; ['A', 'B', 'C', 'D'] → 'A, B, C, or D'.
+    Falls back to 'A, B, C, or D' if no labels are supplied (defensive).
+    """
+    if not option_labels:
+        return "A, B, C, or D"
+    labels = [str(l) for l in option_labels]
+    if len(labels) == 1:
+        return labels[0]
+    if len(labels) == 2:
+        return f"{labels[0]} or {labels[1]}"
+    return ", ".join(labels[:-1]) + f", or {labels[-1]}"
+
+
+def _coerce_numeric(value: Any) -> Optional[float]:
+    """Coerce a repaired answer value to float, or return None."""
+    if value is None or isinstance(value, (dict, list, tuple)):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 @dataclass(frozen=True)
@@ -104,22 +188,44 @@ class VLMModel:
         )
 
     def _prepare_trial_inputs(self, trial: dict) -> tuple[str, str, list[str], int]:
-        """Build canonical prompt/input payload for a trial."""
+        """Build canonical prompt/input payload for a trial.
+
+        Prompt construction follows two axes:
+          - answer_format: label | numeric | slider_position
+          - self.use_json_format: True → JSON template; False → simple instruction
+            (terse, letter/number-only; used for tiny models that echo JSON
+            placeholders rather than filling them in).
+        Label instructions are option-aware: the trial's option_labels are
+        substituted into {labels} (e.g., "A or B" for mental-rotation,
+        "A, B, C, or D" for vocab).
+        """
         prompt = trial["prompt"]
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
-        if self.use_json_format:
-            prompt += self._answer_format_instruction(answer_format)
-        image_paths = trial.get("context_image_paths", []) + trial.get("option_image_paths", [])
-        max_new_tokens = int(trial.get("max_new_tokens", 64))
-        return prompt, answer_format, image_paths, max_new_tokens
+        labels_prose = _format_labels_prose(trial.get("option_labels", []))
 
-    def _answer_format_instruction(self, answer_format: str) -> str:
-        """Return answer-format instruction appended to trial prompts."""
-        if answer_format == "slider_position":
-            return SLIDER_POSITION_FORMAT_INSTRUCTION
-        if answer_format == "numeric":
-            return NUMERIC_ANSWER_FORMAT_INSTRUCTION
-        return ANSWER_FORMAT_INSTRUCTION
+        if self.use_json_format:
+            if answer_format == "slider_position":
+                prompt = SLIDER_FORMAT_PREFIX + prompt + SLIDER_POSITION_FORMAT_INSTRUCTION
+            elif answer_format == "numeric":
+                prompt = NUMERIC_FORMAT_PREFIX + prompt + NUMERIC_ANSWER_FORMAT_INSTRUCTION
+            else:
+                prompt = (
+                    LABEL_FORMAT_PREFIX.format(labels=labels_prose)
+                    + prompt
+                    + ANSWER_FORMAT_INSTRUCTION.format(labels=labels_prose)
+                )
+        else:
+            if answer_format == "slider_position":
+                prompt = prompt + SLIDER_POSITION_FORMAT_INSTRUCTION
+            elif answer_format == "numeric":
+                prompt = prompt + NUMERIC_SIMPLE_INSTRUCTION
+            else:
+                prompt = prompt + LABEL_SIMPLE_INSTRUCTION.format(labels=labels_prose)
+
+        image_paths = trial.get("context_image_paths", []) + trial.get("option_image_paths", [])
+        default_budget = DEFAULT_MAX_NEW_TOKENS.get(answer_format, 128)
+        max_new_tokens = int(trial.get("max_new_tokens", default_budget))
+        return prompt, answer_format, image_paths, max_new_tokens
 
     def _build_result_from_text(
         self,
@@ -250,32 +356,27 @@ class VLMModel:
             # Slider mode is "semi-strict": accept only explicit scalar forms,
             # never first-number fallback from arbitrary prose.
             if re.fullmatch(r"[-+]?\d*\.?\d+", text):
-                try:
-                    return ParseResult(
-                        value=float(text),
-                        reason=text,
-                        parse_method="slider_scalar",
-                        parse_confidence="high",
-                        raw_candidate=text,
-                    )
-                except ValueError:
-                    pass
+                return ParseResult(
+                    value=float(text),
+                    reason=text,
+                    parse_method="slider_scalar",
+                    parse_confidence="high",
+                    raw_candidate=text,
+                )
 
-            try:
-                parsed = json.loads(text)
-                answer = parsed.get("answer")
-                reason = str(parsed.get("reason", ""))
-                if answer is not None and not isinstance(answer, (dict, list, tuple)):
+            parsed = _try_json_repair(text)
+            if isinstance(parsed, dict) and "answer" in parsed:
+                numeric = _coerce_numeric(parsed.get("answer"))
+                if numeric is not None:
                     return ParseResult(
-                        value=float(answer),
-                        reason=reason,
+                        value=numeric,
+                        reason=str(parsed.get("reason", "")),
                         parse_method="slider_json",
                         parse_confidence="high",
-                        raw_candidate=str(answer),
+                        raw_candidate=str(parsed.get("answer")),
                     )
-            except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
-                pass
 
+            # Explicit "answer is X" prose (still semi-strict: must name "answer").
             for pattern in (
                 r'answer\s*(?:is|:)\s*"?(?P<num>[-+]?\d*\.?\d+)"?',
                 r'"answer"\s*:\s*"?(?P<num>[-+]?\d*\.?\d+)"?',
@@ -292,6 +393,7 @@ class VLMModel:
                         )
                     except ValueError:
                         pass
+
             return ParseResult(
                 value=None,
                 reason=text,
@@ -299,44 +401,27 @@ class VLMModel:
                 parse_confidence="none",
             )
 
-        # 1) Plain JSON
-        try:
-            parsed = json.loads(text)
+        parsed = _try_json_repair(text)
+        if isinstance(parsed, dict) and "answer" in parsed:
             answer = parsed.get("answer")
-            reason = str(parsed.get("reason", ""))
-            if answer is not None:
-                # In strict mode, accept only scalar numeric answers.
-                if strict_json and isinstance(answer, (dict, list, tuple)):
-                    return ParseResult(
-                        value=None,
-                        reason=text,
-                        parse_method="strict_json_rejected_nested",
-                        parse_confidence="none",
-                    )
+            if strict_json and isinstance(answer, (dict, list, tuple)):
                 return ParseResult(
-                    value=float(answer),
-                    reason=reason,
-                    parse_method="strict_json" if strict_json else "json",
+                    value=None,
+                    reason=text,
+                    parse_method="strict_json_rejected_nested",
+                    parse_confidence="none",
+                )
+            numeric = _coerce_numeric(answer)
+            if numeric is not None:
+                return ParseResult(
+                    value=numeric,
+                    reason=str(parsed.get("reason", "")),
+                    parse_method="strict_json" if strict_json else "json_repair",
                     parse_confidence="high",
                     raw_candidate=str(answer),
                 )
-        except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
-            pass
 
         if strict_json:
-            # Strict mode accepts only explicit scalar answer fields.
-            m = re.search(r'"answer"\s*:\s*"?(?P<num>[-+]?\d*\.?\d+)"?', text)
-            if m:
-                try:
-                    return ParseResult(
-                        value=float(m.group("num")),
-                        reason=text,
-                        parse_method="strict_json_embedded_answer",
-                        parse_confidence="medium",
-                        raw_candidate=m.group("num"),
-                    )
-                except ValueError:
-                    pass
             return ParseResult(
                 value=None,
                 reason=text,
@@ -344,21 +429,7 @@ class VLMModel:
                 parse_confidence="none",
             )
 
-        # 2) Embedded JSON answer
-        m = re.search(r'"answer"\s*:\s*"?(?P<num>[-+]?\d*\.?\d+)"?', text)
-        if m:
-            try:
-                return ParseResult(
-                    value=float(m.group("num")),
-                    reason=text,
-                    parse_method="embedded_json_answer",
-                    parse_confidence="medium",
-                    raw_candidate=m.group("num"),
-                )
-            except ValueError:
-                pass
-
-        # 3) First standalone number fallback
+        # Last-resort: first standalone number anywhere in the text.
         m = re.search(r"(?P<num>[-+]?\d*\.?\d+)", text)
         if m:
             try:
@@ -390,53 +461,51 @@ class VLMModel:
         return self.parse_answer_result(text, option_labels)
 
     def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
-        """Extract canonical answer label with parse provenance."""
+        """Extract canonical answer label with parse provenance.
+
+        Layers, first hit wins:
+          1. json-repair (handles strict JSON, markdown fences, trailing prose,
+             single quotes, unquoted keys, trailing commas, truncated JSON,
+             unescaped inner quotes).
+          2. Natural-language phrases (``The answer is B``, ``Final answer: C``).
+          3. Trailing sentence that is itself a lone label (``…reasoning. B.``).
+          4. Single label wrapped in noise (``; A :``).
+          5. Exact label (``A``).
+          6. Prefix label followed by delimiter (``B) because…``).
+        """
         text = text.strip()
         labels_upper = [l.upper() for l in option_labels]
 
-        # 1. Try JSON extraction
-        try:
-            parsed = json.loads(text)
-            answer = parsed.get("answer", "").strip().upper()
-            reason = parsed.get("reason", "")
-            if answer in labels_upper:
-                return ParseResult(
-                    value=answer,
-                    reason=reason,
-                    parse_method="strict_json",
-                    parse_confidence="high",
-                    raw_candidate=str(parsed.get("answer", "")),
-                )
-        except (json.JSONDecodeError, AttributeError):
-            pass
+        # 1. json-repair layer.
+        parsed = _try_json_repair(text)
+        if isinstance(parsed, dict) and "answer" in parsed:
+            raw_answer = parsed.get("answer", "")
+            if not isinstance(raw_answer, (dict, list, tuple)):
+                answer = str(raw_answer).strip().upper()
+                if answer in labels_upper:
+                    return ParseResult(
+                        value=answer,
+                        reason=str(parsed.get("reason", "")),
+                        parse_method="json_repair",
+                        parse_confidence="high",
+                        raw_candidate=str(raw_answer),
+                    )
 
-        # 2. Embedded/truncated JSON answer field (works on incomplete JSON too).
-        m = re.search(r'"answer"\s*:\s*"?(?P<label>[A-Z])\b', text, re.IGNORECASE)
-        if m:
-            answer = m.group("label").upper()
-            if answer in labels_upper:
-                r = re.search(r'"reason"\s*:\s*"(?P<reason>[^"]*)"', text, re.IGNORECASE)
-                reason = r.group("reason") if r else text
-                return ParseResult(
-                    value=answer,
-                    reason=reason,
-                    parse_method="embedded_json_answer",
-                    parse_confidence="medium",
-                    raw_candidate=m.group("label"),
-                )
-
-        # 3. Common natural-language patterns.
-        # Require punctuation/end-of-text after the label to avoid false
-        # positives like "The correct answer is A bird."
-        label_suffix = r"(?=\s*(?:[)\].,:;!?]|$))"
+        # 2. Natural-language phrases. The label terminator must be punctuation,
+        # end-of-text, or a connector word ("because", "since", "as", "so"),
+        # so we reject "The correct answer is A bird." but accept
+        # "The answer is B because …".
+        label_terminator = (
+            r"(?=\s*(?:[)\].,:;!?]|$|\b(?:because|since|as|so|and|therefore)\b))"
+        )
         phrase_patterns = (
-            rf"\b(?:the\s+)?(?:correct\s+)?answer\s+is\s+(?P<label>[A-Z]){label_suffix}",
-            rf"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z]){label_suffix}",
-            rf"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
-            rf"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z]){label_suffix}",
-            rf"\b(?:final\s+)?answer\s*(?:is|:|=|->|=>|-)\s*\(?\s*(?P<label>[A-Z])\s*\)?{label_suffix}",
-            rf"\b(?:choose|pick|select)\s+(?:option\s+)?(?P<label>[A-Z]){label_suffix}",
-            rf"\boption\s+(?P<label>[A-Z])(?:\s+is\s+correct)?{label_suffix}",
+            rf"\b(?:the\s+)?(?:correct\s+)?answer\s+is\s+(?P<label>[A-Z]){label_terminator}",
+            rf"\b(?:the\s+)?(?:correct\s+)?option\s+is\s+(?P<label>[A-Z]){label_terminator}",
+            rf"\b(?:my\s+)?answer\s*[:=]\s*(?P<label>[A-Z]){label_terminator}",
+            rf"\b(?:the\s+)?(?:correct\s+)?option\s*[:=]\s*(?P<label>[A-Z]){label_terminator}",
+            rf"\b(?:final\s+)?answer\s*(?:is|:|=|->|=>|-)\s*\(?\s*(?P<label>[A-Z])\s*\)?{label_terminator}",
+            rf"\b(?:choose|pick|select)\s+(?:option\s+)?(?P<label>[A-Z]){label_terminator}",
+            rf"\boption\s+(?P<label>[A-Z])(?:\s+is\s+correct)?{label_terminator}",
         )
         for pattern in phrase_patterns:
             m = re.search(pattern, text, re.IGNORECASE)
@@ -451,12 +520,29 @@ class VLMModel:
                         raw_candidate=m.group("label"),
                     )
 
-        # 4. Single label wrapped by punctuation/noise (e.g., "; A:")
-        m = re.search(
-            r'^[\s\W_]*(?P<label>[A-Z])[\s\W_]*$',
-            text,
-            re.IGNORECASE,
-        )
+        # 3. Trailing sentence is itself a lone label (with optional punctuation).
+        # Catches "…chain of thought. B." without scanning for arbitrary label
+        # mentions earlier in the text.
+        sentences = [s.strip() for s in re.split(r"[.!?\n]", text) if s.strip()]
+        if sentences:
+            m = re.match(
+                r"^[\s\W_]*(?P<label>[A-Z])[\s\W_]*$",
+                sentences[-1],
+                re.IGNORECASE,
+            )
+            if m:
+                answer = m.group("label").upper()
+                if answer in labels_upper and len(sentences) > 1:
+                    return ParseResult(
+                        value=answer,
+                        reason=text,
+                        parse_method="trailing_sentence_label",
+                        parse_confidence="medium",
+                        raw_candidate=m.group("label"),
+                    )
+
+        # 4. Single label wrapped by punctuation/noise (e.g., "; A:").
+        m = re.search(r"^[\s\W_]*(?P<label>[A-Z])[\s\W_]*$", text, re.IGNORECASE)
         if m:
             answer = m.group("label").upper()
             if answer in labels_upper:
@@ -468,7 +554,7 @@ class VLMModel:
                     raw_candidate=m.group("label"),
                 )
 
-        # 5. Exact match (entire text is just the label)
+        # 5. Exact match (entire text is just the label).
         if text.upper() in labels_upper:
             return ParseResult(
                 value=text.upper(),
@@ -478,7 +564,7 @@ class VLMModel:
                 raw_candidate=text,
             )
 
-        # 6. Text starts with label followed by delimiter
+        # 6. Text starts with label followed by delimiter.
         for label in option_labels:
             if text.upper().startswith(label.upper()):
                 rest = text[len(label):]
@@ -491,7 +577,6 @@ class VLMModel:
                         raw_candidate=label,
                     )
 
-        # No match — full output goes in reason
         return ParseResult(
             value=None,
             reason=text,

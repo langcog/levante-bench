@@ -4,6 +4,9 @@ params_b: 0.5
 family: smolvlm2
 max_new_tokens: 64
 dtype: bfloat16
+# 500M echoes JSON template placeholders like `<one of A, B, ...>` rather
+# than filling them in. Use the simple letter-only instruction instead.
+use_json_format: false
 capabilities:
   - text_only
   - single_image

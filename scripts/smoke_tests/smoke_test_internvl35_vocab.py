@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from levante_bench.models.vlm import InternVL35Model
+from levante_bench.models.internvl35 import InternVL35Model
 from levante_bench.config import detect_data_version, get_task_def
 from levante_bench.tasks.vocab import VocabDataset
 

@@ -5,8 +5,6 @@ from __future__ import annotations
 import pytest
 
 from levante_bench.models.base import VLMModel
-from levante_bench.models.internvl35 import InternVL35Model
-from levante_bench.models.qwen35 import Qwen35Model
 
 
 @pytest.mark.parametrize(
@@ -31,6 +29,42 @@ from levante_bench.models.qwen35 import Qwen35Model
         ("... ( d ) ;", ["A", "B", "C", "D"], "D"),
         ("None of the above", ["A", "B", "C", "D"], None),
         ("", ["A", "B", "C", "D"], None),
+        # json-repair salvage: markdown fence
+        (
+            '```json\n{"answer": "D", "reason": "matches"}\n```',
+            ["A", "B", "C", "D"],
+            "D",
+        ),
+        # json-repair salvage: prose wrapping a JSON object
+        (
+            'Sure, here is my response: {"answer": "B", "reason": "cat eats"}',
+            ["A", "B", "C", "D"],
+            "B",
+        ),
+        # json-repair salvage: single quotes
+        ("{'answer': 'B', 'reason': 'cat eats'}", ["A", "B", "C", "D"], "B"),
+        # json-repair salvage: unquoted keys
+        ('{answer: "B", reason: "cat eats"}', ["A", "B", "C", "D"], "B"),
+        # json-repair salvage: trailing comma
+        ('{"answer": "B", "reason": "cat eats",}', ["A", "B", "C", "D"], "B"),
+        # json-repair salvage: unescaped inner double quote
+        (
+            '{"answer": "A", "reason": "She said "yes" to it."}',
+            ["A", "B", "C", "D"],
+            "A",
+        ),
+        # label_terminator fix: "because" clause must not block phrase match
+        (
+            "The answer is B because the cat is the one eating.",
+            ["A", "B", "C", "D"],
+            "B",
+        ),
+        ("The answer is C since the shapes rotate.", ["A", "B", "C", "D"], "C"),
+        ("The answer is D so the pattern holds.", ["A", "B", "C", "D"], "D"),
+        # trailing sentence is a lone label after prose
+        ("The shape looks like a circle. B.", ["A", "B", "C", "D"], "B"),
+        # Conflict: "Option B is wrong. Therefore A" no longer matches — ambiguous.
+        ("Option B is wrong. Therefore A", ["A", "B", "C", "D"], None),
     ],
 )
 def test_parse_answer_branches(text: str, labels: list[str], expected: str | None) -> None:
@@ -76,7 +110,7 @@ def test_parse_answer_v2_includes_provenance() -> None:
     model = VLMModel(model_name="dummy")
     result = model.parse_answer_v2('{"answer":"b","reason":"because"}', ["A", "B", "C", "D"])
     assert result.value == "B"
-    assert result.parse_method == "strict_json"
+    assert result.parse_method == "json_repair"
     assert result.parse_confidence == "high"
 
 
@@ -86,24 +120,3 @@ def test_parse_numeric_v2_includes_provenance() -> None:
     assert result.value == pytest.approx(2.75)
     assert result.parse_method == "strict_json"
     assert result.parse_confidence == "high"
-
-
-@pytest.mark.parametrize("model_cls", [Qwen35Model, InternVL35Model])
-def test_model_specific_parse_answer_prefers_last_sentence(model_cls) -> None:
-    model = model_cls(model_name="dummy")
-    label, reason = model.parse_answer(
-        "The shape looks like a circle. B.",
-        ["A", "B", "C", "D"],
-    )
-    assert label == "B"
-    assert reason in {"", "B"}
-
-
-@pytest.mark.parametrize("model_cls", [Qwen35Model, InternVL35Model])
-def test_model_specific_parse_answer_reverse_scan_handles_conflict(model_cls) -> None:
-    model = model_cls(model_name="dummy")
-    label, _ = model.parse_answer(
-        "Option B is wrong. Therefore A",
-        ["A", "B", "C", "D"],
-    )
-    assert label == "A"

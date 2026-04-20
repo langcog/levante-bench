@@ -6,6 +6,7 @@ This directory contains user-facing and developer documentation for the LEVANTE 
 - **[releases.md](releases.md)** – How to obtain LEVANTE trials data (Redivis) and run the R download script; versioning.
 - **[adding_tasks.md](adding_tasks.md)** – How to add a LEVANTE task to the benchmark.
 - **[adding_models.md](adding_models.md)** – How to add a VLM to the benchmark.
+- **[prompting_and_parsing.md](prompting_and_parsing.md)** – Prompt templates, `use_json_format` paths, and how option letters flow from dataset trials into the instructions.
 - **[runtime_exports.md](runtime_exports.md)** – Public runtime API for external repos (`load_model`, `run_trials`, `run-trials-jsonl`).
 
 ## Quick start

@@ -8,18 +8,11 @@ from typing import Optional
 
 import torch
 
-from levante_bench.models.base import ParseResult, VLMModel
+from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
     load_pil_images,
-    parse_answer_result_with_fallback,
-    parse_answer_with_fallback,
-)
-
-_SYSTEM_PROMPT = (
-    "You are a helpful assistant. "
-    "Answer with only a single letter: A, B, C, or D. Do not explain."
 )
 
 
@@ -102,7 +95,7 @@ class AquilaVLModel(VLMModel):
 
         conv = copy.deepcopy(conv_templates[self.conv_template])
         # LLaVA-NeXT conversation templates expose a mutable `system` field.
-        conv.system = _SYSTEM_PROMPT
+        conv.system = SYSTEM_PROMPT
         conv.append_message(conv.roles[0], prompt_with_tokens)
         conv.append_message(conv.roles[1], None)
         prompt_question = conv.get_prompt()
@@ -135,16 +128,6 @@ class AquilaVLModel(VLMModel):
     def parse_response(self, raw_output: str) -> str:
         """Return generated text as-is (already decoded from generated tokens only)."""
         return raw_output.strip()
-
-    def parse_answer(
-        self, text: str, option_labels: list[str]
-    ) -> tuple[Optional[str], str]:
-        """Base-class parser first; falls back to reverse-sentence scan."""
-        return parse_answer_with_fallback(self, text, option_labels)
-
-    def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
-        """Parser with provenance, including reverse-sentence fallback."""
-        return parse_answer_result_with_fallback(self, text, option_labels)
 
     def _normalize_local_config(self, model_dir: Path) -> None:
         """Patch known non-portable checkpoints fields after download.

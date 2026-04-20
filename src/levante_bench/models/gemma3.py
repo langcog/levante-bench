@@ -2,19 +2,12 @@
 
 import torch
 
-from levante_bench.models.base import ParseResult, VLMModel
+from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
-    parse_answer_result_with_fallback,
-    parse_answer_with_fallback,
-)
-
-_SYSTEM_PROMPT = (
-    "You are a helpful assistant. "
-    "Answer with only a single letter: A, B, C, or D. Do not explain."
 )
 
 
@@ -166,19 +159,9 @@ class Gemma3Model(VLMModel):
         """Build Gemma 3 chat messages with optional interleaved images."""
         content = build_pil_content(prompt_text, pil_images)
         return [
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
         ]
 
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()
-
-    def parse_answer(
-        self, text: str, option_labels: list[str]
-    ) -> tuple[str | None, str]:
-        """Base-class parser first; falls back to reverse-sentence scan."""
-        return parse_answer_with_fallback(self, text, option_labels)
-
-    def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
-        """Parser with provenance, including reverse-sentence fallback."""
-        return parse_answer_result_with_fallback(self, text, option_labels)

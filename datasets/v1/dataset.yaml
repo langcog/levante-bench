@@ -1,0 +1,448 @@
+dataset:
+  id: levante-v1
+  name: LEVANTE Benchmark v1
+  version: v1
+  description: >
+    Canonical manifest for the LEVANTE v1 multimodal benchmark bundle used by
+    run-eval workflows. Includes six forced-choice tasks spanning text and
+    image reasoning.
+  license: unknown
+  citation:
+    - LEVANTE manuscript (cite project manuscript when available).
+    - DevBench (NeurIPS 2024).
+  task_type: forced-choice multimodal reasoning
+
+distribution:
+  local_root: data/assets/v1
+  bucket_prefix: gs://levante-bench/corpus_data/v1
+  uri_templates:
+    manifest_csv: data/assets/manifest.csv
+    corpus_task_csv: data/assets/v1/corpus/{task}/{corpus_file}
+    visual_assets_dir: data/assets/v1/visual/{task}/
+    translations_csv: data/assets/v1/translations/item-bank-translations.csv
+
+splits:
+  - name: v1_eval_all
+    description: Union of benchmark tasks used in v1 evaluation runs.
+    filter:
+      task_in:
+        - egma-math
+        - matrix-reasoning
+        - mental-rotation
+        - theory-of-mind
+        - trog
+        - vocab
+  - name: egma-math
+    filter: { task: egma-math }
+  - name: matrix-reasoning
+    filter: { task: matrix-reasoning }
+  - name: mental-rotation
+    filter: { task: mental-rotation }
+  - name: theory-of-mind
+    filter: { task: theory-of-mind }
+  - name: trog
+    filter: { task: trog }
+  - name: vocab
+    filter: { task: vocab }
+
+record_sets:
+  - id: trials
+    description: >
+      One record per benchmark trial/item keyed by item_uid from
+      data/assets/manifest.csv.
+    primary_key: item_uid
+    approx_counts:
+      egma-math: 255
+      matrix-reasoning: 80
+      mental-rotation: 83
+      theory-of-mind: 37
+      trog: 99
+      vocab: 170
+    fields:
+      - name: item_uid
+        type: string
+        description: Canonical item identifier.
+      - name: task
+        type: string
+        description: Internal task id.
+      - name: prompt
+        type: string
+        description: Item prompt text with optional placeholders.
+      - name: answer
+        type: string
+        description: Correct answer key/value before option relabeling.
+      - name: response_alternatives
+        type: string_list_csv
+        description: Comma-separated distractor options.
+      - name: prompt_image
+        type: string
+        required: false
+        description: Optional reference image key for image-context tasks.
+      - name: image_uri
+        type: uri
+        required: false
+        description: >
+          Resolved per-item context image URI (task-dependent; optional in
+          manifest, resolved by dataset loaders).
+      - name: choices
+        type: string_list
+        description: >
+          Shuffled option keys/labels shown to the model for a trial.
+      - name: label
+        type: string
+        description: Correct benchmark label (A/B/C/D) after option ordering.
+      - name: subject_id
+        type: string
+        required: false
+        description: Optional respondent identifier in response tables.
+      - name: trial_id
+        type: string
+        required: false
+        description: Trial-level id in responses/evaluation outputs.
+
+croissant_phase2:
+  benchmark: v1
+  description: >
+    Phase-2 Croissant preparation for v1: map each logical field in this
+    manifest to concrete columns emitted in assets/responses CSV-Parquet data,
+    and attach Croissant-oriented field metadata.
+  recordset_plan:
+    primary_recordset:
+      id: responses_trials
+      description: >
+        Trial-level responses from Redivis export and split manifests.
+      key:
+        name: trial_id
+        dataType: string
+        notes:
+          - item_uid is not unique at trial level and is therefore modeled as a foreign key.
+      data_sources:
+        - data/responses/v1/trials.csv
+        - data/responses/v1/manifests/trials_all.(csv|parquet)
+      candidate_fields:
+        - name: trial_id
+          dataType: string
+          role: key
+          source_columns: [trial_id]
+        - name: trial_number
+          dataType: integer
+          role: feature
+          source_columns: [trial_number]
+        - name: run_id
+          dataType: string
+          role: feature
+          source_columns: [run_id]
+        - name: user_id
+          dataType: string
+          role: feature
+          source_columns: [user_id]
+        - name: item_uid
+          dataType: string
+          role: feature
+          source_columns: [item_uid]
+        - name: task
+          dataType: string
+          role: feature
+          source_columns: [task_id, item_task]
+        - name: response
+          dataType: string
+          role: feature
+          source_columns: [response]
+        - name: correct
+          dataType: boolean
+          role: label
+          source_columns: [correct]
+        - name: original_correct
+          dataType: boolean
+          role: label
+          source_columns: [original_correct]
+        - name: rt
+          dataType: string
+          role: feature
+          source_columns: [rt]
+        - name: rt_numeric
+          dataType: number
+          role: feature
+          source_columns: [rt_numeric]
+        - name: timestamp
+          dataType: string
+          role: feature
+          source_columns: [timestamp]
+        - name: age
+          dataType: number
+          role: feature
+          source_columns: [age]
+        - name: site
+          dataType: string
+          role: feature
+          source_columns: [site]
+        - name: prompt_language
+          dataType: string
+          role: feature
+          source_columns: []
+          notes:
+            - Not present in current source exports; only include if emitted in future manifests.
+
+    secondary_recordsets:
+      - id: assets_items
+        description: Item-bank level assets and canonical item metadata.
+        key:
+          name: item_uid
+          dataType: string
+        data_sources:
+          - data/assets/manifest.csv
+          - data/assets/v1/manifests/v1_eval_all.(csv|parquet)
+        candidate_fields:
+          - name: item_uid
+            dataType: string
+            role: key
+            source_columns: [item_uid]
+          - name: task
+            dataType: string
+            role: feature
+            source_columns: [task]
+          - name: prompt
+            dataType: string
+            role: feature
+            source_columns: [prompt, full_prompt, prompt_phrase]
+          - name: answer
+            dataType: string
+            role: label
+            source_columns: [answer]
+          - name: response_alternatives
+            dataType: string
+            role: feature
+            source_columns: [response_alternatives]
+          - name: prompt_image
+            dataType: string
+            role: feature
+            source_columns: [prompt_image]
+
+      - id: responses_by_ability
+        optional: true
+        description: Aggregated response distributions per item and ability bin.
+        key:
+          name: item_uid
+          dataType: string
+        data_sources:
+          - data/responses/v1/responses_by_ability/*_proportions_by_ability.csv
+          - data/responses/v1/manifests/responses_by_ability_all.(csv|parquet)
+        candidate_fields:
+          - name: item_uid
+            dataType: string
+            role: key
+            source_columns: [item_uid]
+          - name: ability_bin
+            dataType: string
+            role: feature
+            source_columns: [ability_bin]
+          - name: image1
+            dataType: number
+            role: feature
+            source_columns: [image1]
+          - name: image2
+            dataType: number
+            role: feature
+            source_columns: [image2]
+          - name: image3
+            dataType: number
+            role: feature
+            source_columns: [image3]
+          - name: image4
+            dataType: number
+            role: feature
+            source_columns: [image4]
+          - name: child_accuracy
+            dataType: number
+            role: feature
+            source_columns: []
+            notes:
+              - Derived summary metric; not currently emitted as a raw column.
+
+      - id: irt_parameters
+        optional: true
+        description: IRT item parameters and respondent ability scores.
+        data_sources:
+          - data/responses/v1/irt_models/*_item_params.csv
+          - data/responses/v1/irt_models/*_ability_scores.csv
+
+    relationships:
+      - from_recordset: responses_trials
+        from_field: item_uid
+        to_recordset: assets_items
+        to_field: item_uid
+        relationship: many_to_one
+        notes:
+          - Many response trials can reference the same canonical item.
+      - from_recordset: responses_by_ability
+        from_field: item_uid
+        to_recordset: assets_items
+        to_field: item_uid
+        relationship: many_to_one
+        optional: true
+
+  field_mappings:
+    - logical_field: item_uid
+      croissant:
+        name: item_uid
+        description: Canonical item identifier shared across assets and responses.
+        dataType: string
+        role: key
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [item_uid]
+        - table: data/responses/v1/trials.csv
+          columns: [item_uid]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [item_uid]
+
+    - logical_field: task
+      croissant:
+        name: task
+        description: Internal LEVANTE task identifier for each item.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [task]
+        - table: data/responses/v1/trials.csv
+          columns: [task_id, item_task]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [task_id, item_task]
+
+    - logical_field: prompt
+      croissant:
+        name: prompt
+        description: Item prompt text shown to model/human workflows.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [prompt, full_prompt, prompt_phrase]
+        - table: data/responses/v1/trials.csv
+          columns: [item, item_original]
+      notes:
+        - Response-side prompt text is represented by item/item_original; canonical prompt text lives in assets manifest.
+
+    - logical_field: answer
+      croissant:
+        name: answer
+        description: Canonical correct answer value before randomized option ordering.
+        dataType: string
+        role: label
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [answer]
+        - table: data/responses/v1/trials.csv
+          columns: [answer, correct, original_correct]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [answer, correct, original_correct]
+
+    - logical_field: response_alternatives
+      croissant:
+        name: response_alternatives
+        description: Distractor alternatives associated with the canonical answer.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [response_alternatives]
+        - table: data/responses/v1/trials.csv
+          columns: [distractors]
+      notes:
+        - Stored as serialized text (CSV string / Python-dict-like text), parsed by loaders.
+
+    - logical_field: prompt_image
+      croissant:
+        name: prompt_image
+        description: Optional image key for item context/reference image.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [prompt_image]
+      notes:
+        - Image files resolve under data/assets/v1/visual/<task>/ from this key.
+
+    - logical_field: image_uri
+      croissant:
+        name: image_uri
+        description: Resolved URI/path to context image asset for a trial item.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [task, prompt_image]
+        - table: data/assets/v1/item_uid_index.json
+          columns: [item_uid, task, prompt_image]
+      notes:
+        - Derived field; URI is constructed from task + prompt_image via distribution.uri_templates.
+
+    - logical_field: choices
+      croissant:
+        name: choices
+        description: Presented choice values after option construction/ordering.
+        dataType: string
+        role: feature
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [answer, response_alternatives]
+        - table: data/responses/v1/responses_by_ability/*_option_key.csv
+          columns: [image1, image2, image3, image4]
+        - table: data/responses/v1/manifests/option_key_all.(csv|parquet)
+          columns: [image1, image2, image3, image4]
+      notes:
+        - Choice arrays are materialized by loaders/eval runtime; option_key manifests provide canonical image1..image4 slots.
+
+    - logical_field: label
+      croissant:
+        name: label
+        description: Correct target label for supervised evaluation.
+        dataType: string
+        role: label
+      source_columns:
+        - table: data/assets/manifest.csv
+          columns: [answer]
+        - table: data/responses/v1/trials.csv
+          columns: [correct, original_correct]
+      notes:
+        - Eval-time A/B/C/D labels are produced by task loaders; source tables store canonical correctness values.
+
+    - logical_field: subject_id
+      croissant:
+        name: subject_id
+        description: Optional participant identifier for human-response records.
+        dataType: string
+        role: key
+      source_columns:
+        - table: data/responses/v1/trials.csv
+          columns: [user_id, run_id]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [user_id, run_id]
+      notes:
+        - user_id is participant-like identity; run_id groups repeated trials/sessions.
+
+    - logical_field: trial_id
+      croissant:
+        name: trial_id
+        description: Trial-level record identifier for a response event.
+        dataType: string
+        role: key
+      source_columns:
+        - table: data/responses/v1/trials.csv
+          columns: [trial_id, trial_number, timestamp]
+        - table: data/responses/v1/manifests/trials_all.(csv|parquet)
+          columns: [trial_id, trial_number, timestamp]
+      notes:
+        - trial_id is the primary trial key; trial_number/timestamp provide ordering context.
+
+provenance:
+  source_papers:
+    - LEVANTE benchmark manuscript.
+    - DevBench (NeurIPS 2024).
+  preprocessing_scripts:
+    - scripts/data_prep/download_levante_assets.py
+    - scripts/data_prep/download_levante_data.R
+  loader_entrypoints:
+    - src/levante_bench/tasks/*.py
+    - src/levante_bench/evaluation/runner.py

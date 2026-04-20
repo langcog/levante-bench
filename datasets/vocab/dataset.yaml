@@ -1,0 +1,93 @@
+dataset:
+  id: levante-vocab
+  name: LEVANTE Vocabulary Benchmark
+  version: v1
+  description: >
+    Canonical manifest for the vocabulary-focused benchmark workflow
+    (run-benchmark --benchmark vocab), including item metadata, visual assets,
+    and vocab-specific split labels.
+  license: unknown
+  citation:
+    - LEVANTE manuscript (cite project manuscript when available).
+    - DevBench (NeurIPS 2024).
+  task_type: image selection / forced-choice vocabulary mapping
+
+distribution:
+  local_root: data/assets/v1
+  bucket_prefix: gs://levante-bench/corpus_data/v1
+  uri_templates:
+    manifest_csv: data/assets/manifest.csv
+    corpus_vocab_csv: data/assets/v1/corpus/vocab/vocab-item-bank.csv
+    visual_vocab_dir: data/assets/v1/visual/vocab/
+    benchmark_outputs: results/benchmark/vocab/{timestamp}/
+
+splits:
+  - name: vocab_all
+    description: All vocab records in manifest.csv.
+    filter: { task: vocab }
+  - name: vocab_test
+    filter:
+      task: vocab
+      trial_type: test
+  - name: vocab_practice
+    filter:
+      task: vocab
+      trial_type: practice
+  - name: vocab_catch
+    filter:
+      task: vocab
+      trial_type: catch
+
+record_sets:
+  - id: vocab_trials
+    description: Vocab trial records keyed by item_uid.
+    primary_key: item_uid
+    approx_counts:
+      total: 170
+      test: 159
+      practice: 8
+      catch: 3
+    fields:
+      - name: item_uid
+        type: string
+        description: Canonical vocab item id.
+      - name: task
+        type: string
+        description: Always vocab for this benchmark manifest.
+      - name: trial_type
+        type: string
+        description: test/practice/catch split label.
+      - name: prompt
+        type: string
+        description: Prompt with target word and optional placeholders.
+      - name: target_word
+        type: string
+        description: Canonical correct concept word.
+      - name: choices
+        type: string_list
+        description: Four candidate image concepts.
+      - name: image_uri
+        type: uri
+        description: URI template rooted at data/assets/v1/visual/vocab/.
+      - name: label
+        type: string
+        description: Correct benchmark label (A/B/C/D) after option ordering.
+      - name: subject_id
+        type: string
+        required: false
+        description: Optional respondent identifier in response tables.
+      - name: trial_id
+        type: string
+        required: false
+        description: Trial-level id in responses/evaluation outputs.
+
+provenance:
+  source_papers:
+    - LEVANTE benchmark manuscript.
+    - DevBench (NeurIPS 2024).
+  preprocessing_scripts:
+    - scripts/data_prep/download_levante_assets.py
+    - scripts/run_smolvlmv2_vocab_eval.py
+  loader_entrypoints:
+    - src/levante_bench/tasks/vocab.py
+    - src/levante_bench/cli_workflows.py

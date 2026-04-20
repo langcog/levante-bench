@@ -29,6 +29,7 @@ class TaskDef:
     option_type: str = "text"  # "text" | "image"
     include_numberline: bool = False  # egma-math manifest: include Number Line rows
     prompt_language: str = "en"  # language key in translations/item-bank-translations.csv
+    mental_rotation_prompt_template: Optional[str] = None  # optional prompt override
     true_random_option_order: bool = False  # randomize option order per run
     option_order_run_seed: Optional[int] = None  # run seed used to derive item seeds
 

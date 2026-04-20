@@ -1,0 +1,31 @@
+# Prompt experiment: GPT-5.3 on mental-rotation with invert hint.
+# Run: python -m levante_bench.cli experiment=configs/experiments/gpt53_invert.yaml device=auto
+
+models:
+  - name: gpt53
+    use_json_format: false
+
+tasks:
+  - mental-rotation
+
+data_root: data
+output_dir: results/mr_prompt_invert_gpt53
+version: v1
+device: cpu
+batch_size: 1
+
+task_overrides:
+  mental-rotation:
+    mental_rotation_prompt_template: |
+      We'll give you three images.
+      The first image is the reference shape.
+      The second image is  A. The third image is  B.
+
+      One of image A and image B includes a 
+      rotated version of the shape in the reference image.
+      The other is a flipped version of the shape in the reference image.
+      Which of image A or image B has the rotated version of the shape in the reference image?
+      You may need to invert the pixels on the reference image
+      to achieve the best match.
+      
+      Answer with one letter: A for image A or B for image B.

@@ -1,0 +1,21 @@
+models:
+  - name: internvl35
+    size: 8B
+    max_new_tokens: 128
+    use_json_format: false
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 4
+true_random_option_order: true
+num_runs: 10

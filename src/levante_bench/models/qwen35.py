@@ -16,6 +16,7 @@ from levante_bench.models._common import (
 @register("qwen35")
 @register("qwen25vl_qlora")
 @register("qwen25vl_32b")
+@register("qwen3vl_30b")
 class Qwen35Model(VLMModel):
     """Qwen3.5-VL via HuggingFace AutoProcessor + AutoModelForImageTextToText.
 

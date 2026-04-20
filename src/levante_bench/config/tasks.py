@@ -13,6 +13,11 @@ def _safe_task_id(task_id: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "_", task_id)
 
 
+def _optional_text(value: object) -> str | None:
+    text = str(value).strip() if value is not None else ""
+    return text or None
+
+
 def get_task_def(
     task_id: str,
     version: str,
@@ -56,6 +61,12 @@ def get_task_def(
         option_type=cfg.get("option_type", "text"),
         include_numberline=bool(overrides.get("include_numberline", cfg.get("include_numberline", False))),
         prompt_language=str(overrides.get("prompt_language", cfg.get("prompt_language", "en"))),
+        mental_rotation_prompt_template=_optional_text(
+            overrides.get(
+                "mental_rotation_prompt_template",
+                cfg.get("mental_rotation_prompt_template"),
+            )
+        ),
         true_random_option_order=bool(
             overrides.get("true_random_option_order", cfg.get("true_random_option_order", False))
         ),

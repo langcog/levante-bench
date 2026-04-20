@@ -6,14 +6,24 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
 
 - `download_levante_data.R`
   - **Purpose:** download Redivis trials + IRT assets; build response summaries
-  - **Inputs:** `--version`, `--irt-dataset`, `--irt-table`
-  - **Outputs:** `data/responses/<version>/...` (trials, IRT files, responses_by_ability)
+  - **Inputs:** `--version`, `--irt-dataset`, `--irt-table`, optional `--no-write-split-manifests`
+  - **Outputs:** `data/responses/<version>/...` (trials, IRT files, responses_by_ability) plus split manifests under `data/responses/<version>/manifests/` (Parquet primary with CSV fallback)
   - **Example:** `Rscript scripts/download_levante_data.R --version 2026-03-24`
 - `data_prep/download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
-  - **Inputs:** `--version` (or auto-detect latest bucket version prefix; prefers `v1` for non-date prefixes), `--workers`
-  - **Outputs:** `data/assets/<version>/...`
+  - **Inputs:** `--version` (or auto-detect latest bucket version prefix; prefers `v1` for non-date prefixes), `--workers`, optional `--no-write-split-manifests`
+  - **Outputs:** `data/assets/<version>/...`, `item_uid_index.json`, and split manifests under `data/assets/<version>/manifests/` (Parquet primary with CSV fallback)
   - **Example:** `python scripts/data_prep/download_levante_assets.py --version hackathon --workers 24`
+- `data_prep/update_croissant_checksums.py`
+  - **Purpose:** recompute and update `sha256` values for Croissant `distribution` entries
+  - **Inputs:** `--croissant-json`, optional `--check` (no write; exits non-zero if stale)
+  - **Outputs:** updated Croissant JSON-LD checksums (or check-only status)
+  - **Example:** `python scripts/data_prep/update_croissant_checksums.py --croissant-json datasets/v1/levante_v1.croissant.json`
+- `data_prep/publish_assets_manifests_to_bucket.py`
+  - **Purpose:** publish assets manifest + split manifests (+ checksum sidecar) to bucket paths referenced by Croissant
+  - **Inputs:** `--version`, `--bucket-url`, optional `--dry-run`
+  - **Outputs:** uploads to `gs://<bucket>/<root>/<version>/manifest.csv` and `.../manifests/`
+  - **Example:** `python scripts/data_prep/publish_assets_manifests_to_bucket.py --version v1 --bucket-url https://storage.googleapis.com/levante-bench/corpus_data`
 - `migrate_assets_to_versioned_bucket.py`
   - **Purpose:** copy corpus/visual/manifest from source bucket into versioned destination prefix
   - **Inputs:** `--version`, `--dest-bucket`, optional `--dest-root-prefix` (default `corpus_data`), optional `--task`, `--dry-run`

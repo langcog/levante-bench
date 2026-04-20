@@ -11,12 +11,49 @@ import json_repair
 
 SYSTEM_PROMPT = "You are a helpful assistant."
 
-ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<letter>", "reason": "<short reason>"}'
-NUMERIC_ANSWER_FORMAT_INSTRUCTION = '\n\nRespond in JSON format: {"answer": "<number>", "reason": "<short reason>"}'
+# ── Format instructions (JSON path) ────────────────────────────────────────
+# Label instructions are templates: {labels} is substituted with a prose
+# enumeration of the trial's option_labels (e.g., "A, B, C, or D").
+ANSWER_FORMAT_INSTRUCTION = (
+    '\n\nRespond in JSON format: {{"answer": "<one of {labels}>", "reason": "<short reason>"}}'
+)
+NUMERIC_ANSWER_FORMAT_INSTRUCTION = (
+    '\n\nRespond in JSON format: {"answer": "<number>", "reason": "<short reason>"}'
+)
 SLIDER_POSITION_FORMAT_INSTRUCTION = (
     "\n\nOutput only one decimal number between 0 and 1 "
     "(the slider position from left to right). No JSON or extra text."
 )
+
+# Short reinforcement prepended to the user message so small models see the
+# output-format constraint before the task framing (they often drift into CoT
+# if it only appears as a trailing suffix).
+LABEL_FORMAT_PREFIX = (
+    'Respond only with the JSON object '
+    '{{"answer":"<one of {labels}>","reason":"<short reason>"}}. No preamble.\n\n'
+)
+NUMERIC_FORMAT_PREFIX = (
+    'Respond only with the JSON object '
+    '{"answer":"<number>","reason":"<short reason>"}. No preamble.\n\n'
+)
+SLIDER_FORMAT_PREFIX = "Respond only with a single decimal between 0 and 1. No preamble.\n\n"
+
+# ── Format instructions (simple / non-JSON path) ───────────────────────────
+# Used when the model's YAML sets `use_json_format: false`. Designed for
+# very small models (e.g., SmolVLM2-500M) that echo JSON template placeholders
+# like `<letter>` instead of filling them in. The letters list is substituted
+# from the trial's option_labels so 2-option tasks say "A or B" and 4-option
+# tasks say "A, B, C, or D".
+LABEL_SIMPLE_INSTRUCTION = "\n\nAnswer with only the letter {labels}."
+NUMERIC_SIMPLE_INSTRUCTION = "\n\nAnswer with only a number."
+
+# Default token budgets per answer format. Label/numeric allow a bit of CoT
+# before the JSON object; slider just needs a scalar.
+DEFAULT_MAX_NEW_TOKENS = {
+    "label": 128,
+    "numeric": 128,
+    "slider_position": 32,
+}
 
 
 def _try_json_repair(text: str) -> Any:
@@ -34,6 +71,22 @@ def _try_json_repair(text: str) -> Any:
     if parsed == "" or parsed == {} or parsed == []:
         return None
     return parsed
+
+
+def _format_labels_prose(option_labels: list[str]) -> str:
+    """Render option labels as a natural-language list for prompt templates.
+
+    ['A'] → 'A'; ['A', 'B'] → 'A or B'; ['A', 'B', 'C', 'D'] → 'A, B, C, or D'.
+    Falls back to 'A, B, C, or D' if no labels are supplied (defensive).
+    """
+    if not option_labels:
+        return "A, B, C, or D"
+    labels = [str(l) for l in option_labels]
+    if len(labels) == 1:
+        return labels[0]
+    if len(labels) == 2:
+        return f"{labels[0]} or {labels[1]}"
+    return ", ".join(labels[:-1]) + f", or {labels[-1]}"
 
 
 def _coerce_numeric(value: Any) -> Optional[float]:
@@ -135,18 +188,43 @@ class VLMModel:
         )
 
     def _prepare_trial_inputs(self, trial: dict) -> tuple[str, str, list[str], int]:
-        """Build canonical prompt/input payload for a trial."""
+        """Build canonical prompt/input payload for a trial.
+
+        Prompt construction follows two axes:
+          - answer_format: label | numeric | slider_position
+          - self.use_json_format: True → JSON template; False → simple instruction
+            (terse, letter/number-only; used for tiny models that echo JSON
+            placeholders rather than filling them in).
+        Label instructions are option-aware: the trial's option_labels are
+        substituted into {labels} (e.g., "A or B" for mental-rotation,
+        "A, B, C, or D" for vocab).
+        """
         prompt = trial["prompt"]
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
+        labels_prose = _format_labels_prose(trial.get("option_labels", []))
+
         if self.use_json_format:
             if answer_format == "slider_position":
-                prompt += SLIDER_POSITION_FORMAT_INSTRUCTION
+                prompt = SLIDER_FORMAT_PREFIX + prompt + SLIDER_POSITION_FORMAT_INSTRUCTION
             elif answer_format == "numeric":
-                prompt += NUMERIC_ANSWER_FORMAT_INSTRUCTION
+                prompt = NUMERIC_FORMAT_PREFIX + prompt + NUMERIC_ANSWER_FORMAT_INSTRUCTION
             else:
-                prompt += ANSWER_FORMAT_INSTRUCTION
+                prompt = (
+                    LABEL_FORMAT_PREFIX.format(labels=labels_prose)
+                    + prompt
+                    + ANSWER_FORMAT_INSTRUCTION.format(labels=labels_prose)
+                )
+        else:
+            if answer_format == "slider_position":
+                prompt = prompt + SLIDER_POSITION_FORMAT_INSTRUCTION
+            elif answer_format == "numeric":
+                prompt = prompt + NUMERIC_SIMPLE_INSTRUCTION
+            else:
+                prompt = prompt + LABEL_SIMPLE_INSTRUCTION.format(labels=labels_prose)
+
         image_paths = trial.get("context_image_paths", []) + trial.get("option_image_paths", [])
-        max_new_tokens = int(trial.get("max_new_tokens", 64))
+        default_budget = DEFAULT_MAX_NEW_TOKENS.get(answer_format, 128)
+        max_new_tokens = int(trial.get("max_new_tokens", default_budget))
         return prompt, answer_format, image_paths, max_new_tokens
 
     def _build_result_from_text(

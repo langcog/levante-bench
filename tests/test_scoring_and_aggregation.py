@@ -123,9 +123,50 @@ def test_evaluate_trial_label_without_json_format_instruction() -> None:
     }
 
     result = model.evaluate_trial(trial)
-    assert model.last_prompt_text == "choose one"
+    # Non-JSON path still appends a terse letter-only instruction so tiny
+    # models don't drift into image captioning.
+    assert model.last_prompt_text == (
+        "choose one\n\nAnswer with only the letter A, B, C, or D."
+    )
     assert result["predicted_label"] == "B"
     assert result["is_correct"] is True
+
+
+def test_evaluate_trial_label_simple_instruction_is_option_aware() -> None:
+    """2-option tasks (e.g., mental-rotation) get "A or B", not "A, B, C, or D"."""
+    model = PromptCapturingModel("B")
+    model.use_json_format = False
+    trial = {
+        "trial_id": "t5",
+        "item_uid": "u5",
+        "prompt": "pick one",
+        "option_labels": ["A", "B"],
+        "correct_label": "B",
+        "answer_format": "label",
+    }
+
+    model.evaluate_trial(trial)
+    assert model.last_prompt_text == "pick one\n\nAnswer with only the letter A or B."
+
+
+def test_evaluate_trial_json_instruction_is_option_aware() -> None:
+    """JSON-mode instruction substitutes option letters into `<one of ...>`."""
+    model = PromptCapturingModel('{"answer":"B"}')
+    model.use_json_format = True
+    trial = {
+        "trial_id": "t6",
+        "item_uid": "u6",
+        "prompt": "pick",
+        "option_labels": ["A", "B"],
+        "correct_label": "B",
+        "answer_format": "label",
+    }
+
+    model.evaluate_trial(trial)
+    captured = model.last_prompt_text or ""
+    assert "<one of A or B>" in captured
+    # Prefix and suffix both enumerate the options.
+    assert captured.count("<one of A or B>") == 2
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:

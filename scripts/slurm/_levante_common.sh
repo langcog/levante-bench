@@ -57,9 +57,14 @@ fi
 echo "Starting levante-bench on $(hostname) at $(date)"
 echo "Job ID: ${SLURM_JOB_ID:-manual}"
 echo "Experiment: $EXPERIMENT_CONFIG"
+echo "Conda env: $CONDA_ENV_PATH"
+echo "Python after activate: $(command -v python)"
+echo "Python version: $(python -V 2>&1)"
 if [[ "$USE_JOB_OUTPUT_ROOT" == "1" ]]; then
   echo "Job output root: $JOB_OUTPUT_ROOT"
 fi
 echo "Command: ${CMD[*]}"
 
-"${CMD[@]}"
+# Use conda run to guarantee execution in the requested env even in
+# non-interactive Slurm shells where activation can be brittle.
+conda run -p "$CONDA_ENV_PATH" "${CMD[@]}"

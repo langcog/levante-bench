@@ -60,17 +60,9 @@ echo "Experiment: $EXPERIMENT_CONFIG"
 echo "Conda env: $CONDA_ENV_PATH"
 echo "Python after activate: $(command -v python)"
 echo "Python version: $(python -V 2>&1)"
-if [[ ! -x "$CONDA_ENV_PATH/bin/python" ]]; then
-  echo "ERROR: expected python not found at $CONDA_ENV_PATH/bin/python" >&2
-  exit 1
-fi
-export LEVANTE_PYTHON_BIN="$CONDA_ENV_PATH/bin/python"
-echo "LEVANTE_PYTHON_BIN: $LEVANTE_PYTHON_BIN"
 if [[ "$USE_JOB_OUTPUT_ROOT" == "1" ]]; then
   echo "Job output root: $JOB_OUTPUT_ROOT"
 fi
 echo "Command: ${CMD[*]}"
 
-# Use conda run to guarantee execution in the requested env even in
-# non-interactive Slurm shells where activation can be brittle.
-conda run -p "$CONDA_ENV_PATH" "${CMD[@]}"
+"${CMD[@]}"

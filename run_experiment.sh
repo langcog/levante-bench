@@ -18,9 +18,6 @@ fi
 # Allow callers (e.g., Slurm wrappers) to force interpreter selection.
 if [[ -n "${LEVANTE_PYTHON_BIN:-}" ]]; then
     PYTHON_BIN="$LEVANTE_PYTHON_BIN"
-elif [[ -n "${CONDA_PREFIX:-}" ]]; then
-    # Under conda/conda-run (e.g., Slurm on Marlowe), prefer env python.
-    PYTHON_BIN="python3"
 elif [[ -x ".venv/bin/python" ]]; then
     PYTHON_BIN=".venv/bin/python"
 else

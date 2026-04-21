@@ -22,6 +22,21 @@ Submit only selected models:
 bash scripts/slurm/submit_all_local_models.sh internvl35 qwen3vl_30b gemma4
 ```
 
+## Deterministic single-run launcher
+
+Use this to run each local model once (no randomized option order) and write
+to repo-local `results/<model_name>/...`:
+
+```bash
+bash scripts/slurm/submit_all_local_models_once.sh
+```
+
+Optional overrides:
+
+```bash
+VERSION=v1_new_parser bash scripts/slurm/submit_all_local_models_once.sh
+```
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:
@@ -40,6 +55,12 @@ Each model writes to a model-specific root, then job-specific folder:
 
 ```text
 /projects/m000102/outputs/results/<model_name>/job_<SLURM_JOB_ID>/v1/<model-size-or-name>/...
+```
+
+Deterministic single-run launcher writes to:
+
+```text
+/projects/m000102/code/levante-bench/results/<model_name>/v1/<model-size-or-name>/...
 ```
 
 Typical multirun path (true-random):

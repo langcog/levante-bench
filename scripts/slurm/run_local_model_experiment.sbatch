@@ -77,6 +77,6 @@ export CONDA_ENV_PATH
 export USE_JOB_OUTPUT_ROOT
 export EXPERIMENT_CONFIG
 # Include model name in output root when launching multiple model jobs.
-export RESULTS_ROOT="$PROJECT_ROOT/outputs/results/$MODEL_NAME"
+export RESULTS_ROOT="${RESULTS_ROOT:-$PROJECT_ROOT/outputs/results/$MODEL_NAME}"
 
 source "$CODE_DIR/scripts/slurm/_levante_common.sh"

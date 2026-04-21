@@ -8,7 +8,10 @@
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-if [[ -x ".venv/bin/python" ]]; then
+# Allow callers (e.g., Slurm wrappers) to force interpreter selection.
+if [[ -n "${LEVANTE_PYTHON_BIN:-}" ]]; then
+    PYTHON_BIN="$LEVANTE_PYTHON_BIN"
+elif [[ -x ".venv/bin/python" ]]; then
     PYTHON_BIN=".venv/bin/python"
 else
     PYTHON_BIN="python3"

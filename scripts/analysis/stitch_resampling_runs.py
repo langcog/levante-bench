@@ -46,9 +46,16 @@ def main() -> int:
         raise RuntimeError(f"No chunk_* directories found under: {source_root}")
 
     run_dirs: list[Path] = []
+    skipped_partial = 0
     for chunk in chunks:
         runs = sorted([p for p in chunk.glob("[0-9][0-9][0-9][0-9]") if p.is_dir()])
-        run_dirs.extend(runs)
+        for run_dir in runs:
+            # Only include completed runs. Preempted/interrupted runs may have
+            # partial task outputs but no summary.csv.
+            if (run_dir / "summary.csv").exists():
+                run_dirs.append(run_dir)
+            else:
+                skipped_partial += 1
 
     if not run_dirs:
         raise RuntimeError(f"No run directories found under chunks in: {source_root}")
@@ -65,6 +72,7 @@ def main() -> int:
             shutil.copytree(src, dst)
 
     print(f"stitched_runs={len(run_dirs)}")
+    print(f"skipped_partial_runs={skipped_partial}")
     print(f"source_root={source_root}")
     print(f"output_root={output_root}")
     return 0

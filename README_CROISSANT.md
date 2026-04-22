@@ -105,6 +105,8 @@ PYTHONPATH=src .venv/bin/python scripts/data_prep/publish_assets_manifests_to_bu
 ## Responses note
 
 Response source data is downloaded from Redivis (`download_levante_data.R`).
+Downloader output now defaults to `data/responses/v1/` and includes a local
+`SHA256SUMS.txt` sidecar for reproducibility checks.
 Croissant response distributions are currently bucket-hosted under:
 
 - `https://storage.googleapis.com/levante-bench/responses_manifests/v1/...`

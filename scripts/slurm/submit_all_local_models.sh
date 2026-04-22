@@ -8,6 +8,12 @@
 
 set -euo pipefail
 
+if ! command -v sbatch >/dev/null 2>&1; then
+  echo "ERROR: sbatch not found in PATH." >&2
+  echo "Run this script on a Marlowe login node (or any Slurm head node)." >&2
+  exit 127
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SBATCH_SCRIPT="$SCRIPT_DIR/run_local_model_experiment.sbatch"
 

@@ -37,6 +37,21 @@ Optional overrides:
 VERSION=v1_new_parser bash scripts/slurm/submit_all_local_models_once.sh
 ```
 
+## Deterministic hosted-model launcher
+
+Use this to run each hosted model once (no randomized option order) and write
+to repo-local `results/<model_name>/...`:
+
+```bash
+bash scripts/slurm/submit_all_hosted_models_once.sh
+```
+
+Optional overrides:
+
+```bash
+VERSION=v1_new_parser bash scripts/slurm/submit_all_hosted_models_once.sh
+```
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:

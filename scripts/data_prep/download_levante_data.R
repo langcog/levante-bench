@@ -27,10 +27,10 @@ table_name    <- get_arg("table", "trials:ztnm")
 scores_table  <- get_arg("scores-table", "scores:pgms")
 irt_dataset   <- get_arg("irt-dataset", "levante_metadata_scoring:e97h:v1_11")
 irt_table     <- get_arg("irt-table", "model_registry:rqwv")
-version       <- get_arg("version", NA_character_)
+version       <- get_arg("version", "v1")
 
 if (is.na(version) || nchar(version) == 0L) {
-  version <- format(Sys.Date(), "%Y-%m-%d")
+  version <- "v1"
 }
 write_split_manifests <- !has_flag("no-write-split-manifests")
 parquet_available <- write_split_manifests && requireNamespace("arrow", quietly = TRUE)
@@ -69,6 +69,39 @@ write_split_manifest <- function(df, name) {
     })
     if (ok) return(invisible(NULL))
   }
+  invisible(NULL)
+}
+
+write_sha256_manifest <- function(root_dir) {
+  root_dir <- normalizePath(root_dir, winslash = "/", mustWork = FALSE)
+  files <- list.files(root_dir, recursive = TRUE, full.names = TRUE, all.files = FALSE)
+  files <- files[file.info(files)$isdir == FALSE]
+  if (length(files) == 0L) return(invisible(NULL))
+
+  checksums_path <- file.path(root_dir, "SHA256SUMS.txt")
+  files <- files[normalizePath(files, winslash = "/", mustWork = FALSE) != checksums_path]
+  files <- sort(files)
+
+  if (length(files) == 0L) return(invisible(NULL))
+  if (Sys.which("sha256sum") == "") {
+    warning("sha256sum not found in PATH; skipping SHA256SUMS.txt generation.")
+    return(invisible(NULL))
+  }
+
+  rel <- substring(normalizePath(files, winslash = "/", mustWork = FALSE), nchar(root_dir) + 2L)
+  sha <- vapply(files, function(p) {
+    out <- tryCatch(
+      system2("sha256sum", p, stdout = TRUE, stderr = TRUE),
+      error = function(e) character(0)
+    )
+    if (length(out) == 0L) return(NA_character_)
+    strsplit(out[1], "\\s+")[[1]][1]
+  }, character(1))
+
+  ok <- !is.na(sha) & nzchar(sha)
+  lines <- paste0(sha[ok], "  ", rel[ok])
+  writeLines(lines, checksums_path, useBytes = TRUE)
+  message("Wrote ", checksums_path, " (", length(lines), " files)")
   invisible(NULL)
 }
 
@@ -376,4 +409,5 @@ if (write_split_manifests) {
   message("Wrote split manifests to ", manifests_dir)
 }
 
+write_sha256_manifest(data_raw)
 message("Data version: ", version, " at ", data_raw)

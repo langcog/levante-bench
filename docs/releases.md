@@ -15,7 +15,7 @@ table <- dataset$table("trials:ztnm")                       # table name may cha
 d <- table$to_tibble()
 ```
 
-The R script `scripts/download_levante_data.R` accepts **dataset** (e.g. `levante_data_pilots:68kn:v2_0`), **table** (e.g. `trials:ztnm`), and optional **version** (default derived from dataset or `"current"`). It writes trials (including key columns such as `task_id`, `trial_id`, `item_uid`, `response`, `correct`) to `data/responses/<version>/`.
+The R script `scripts/download_levante_data.R` accepts **dataset** (e.g. `levante_data_pilots:68kn:v2_0`), **table** (e.g. `trials:ztnm`), and optional **version** (default: `v1`). It writes trials (including key columns such as `task_id`, `trial_id`, `item_uid`, `response`, `correct`) to `data/responses/<version>/` and emits `data/responses/<version>/SHA256SUMS.txt` for reproducibility.
 
 ### New releases
 

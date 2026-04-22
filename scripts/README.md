@@ -69,6 +69,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** experiment YAML path + OmegaConf dotlist overrides
   - **Outputs:** task-dependent experiment artifacts under configured output dirs
   - **Example:** `bash run_experiment.sh configs/experiments/experiment.yaml tasks=[vocab] max_items_vocab=8`
+- `submit_all_hosted_models_once_local.sh`
+  - **Purpose:** run hosted models locally once each (deterministic option order) across all 6 tasks
+  - **Inputs:** optional model list args; env overrides like `VERSION`, `DEVICE`, `BATCH_SIZE`
+  - **Outputs:** `results/<model_name>/v1/<model_name>/...` with per-model summaries/caches
+  - **Example:** `bash scripts/submit_all_hosted_models_once_local.sh gpt53 qwen3vl_30b_hf`
 - `slurm/run_eval_multirun.sbatch`
   - **Purpose:** Slurm template for runner-based true-random multi-run evaluations
   - **Inputs:** sbatch exports (`MODEL`, `VERSION`, `NUM_RUNS`, `BATCH_SIZE`, optional `CONDA_ENV_NAME`/`CONDA_SH`, etc.)

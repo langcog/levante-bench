@@ -24,6 +24,9 @@ DEVICE="${DEVICE:-cuda}"
 BATCH_SIZE="${BATCH_SIZE:-1}"
 NUM_RUNS="${NUM_RUNS:-10}"
 TRUE_RANDOM_OPTION_ORDER="${TRUE_RANDOM_OPTION_ORDER:-true}"
+# Optional true-random grouping controls.
+RUN_LABEL="${RUN_LABEL:-}"
+SLURM_RUN_LABEL="${SLURM_RUN_LABEL:-true}"
 USE_JOB_OUTPUT_ROOT="${USE_JOB_OUTPUT_ROOT:-1}"
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
@@ -67,6 +70,10 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
   echo "batch_size: ${BATCH_SIZE}"
   echo "true_random_option_order: ${TRUE_RANDOM_OPTION_ORDER}"
   echo "num_runs: ${NUM_RUNS}"
+  if [[ -n "$RUN_LABEL" ]]; then
+    echo "run_label: ${RUN_LABEL}"
+  fi
+  echo "slurm_run_label: ${SLURM_RUN_LABEL}"
 } > "$EXPERIMENT_CONFIG"
 
 echo "Generated experiment config: $EXPERIMENT_CONFIG"

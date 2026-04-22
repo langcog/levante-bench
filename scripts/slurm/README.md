@@ -52,6 +52,35 @@ Optional overrides:
 VERSION=v1_new_parser bash scripts/slurm/submit_all_hosted_models_once.sh
 ```
 
+## 100-run resampling launcher (10 x 10)
+
+Use this to submit ten launches of ten true-random runs each, then stitch to a
+single `0001..0100` sequence.
+
+Default model is `qwen35-4B` (stronger than `smolvlm2-256M` while still
+reasonable for repeated runs).
+
+Submit:
+
+```bash
+bash scripts/slurm/submit_resampling_100.sh
+```
+
+Override model/version:
+
+```bash
+MODEL_NAME=internvl35 MODEL_SIZE=8B VERSION=v1_new_parser \
+bash scripts/slurm/submit_resampling_100.sh
+```
+
+After all jobs finish, stitch chunked runs:
+
+```bash
+python scripts/analysis/stitch_resampling_runs.py \
+  --source-root /projects/m000102/code/levante-bench/results/resampling/qwen35-4B/v1/qwen35-4B \
+  --output-root /projects/m000102/code/levante-bench/results/resampling/qwen35-4B/v1/qwen35-4B_r0100
+```
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:

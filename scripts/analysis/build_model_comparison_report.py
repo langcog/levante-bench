@@ -93,11 +93,17 @@ def _infer_model_tag(relative_summary_path: Path) -> str:
     # runner-math/<ts>/smolvlm2/2026-03-24/summary.csv. In that case, choose
     # the nearest non-date folder before summary.csv.
     parts = list(relative_summary_path.parts[:-1])  # drop summary.csv
+    if "baseline" in parts:
+        idx = len(parts) - 1 - parts[::-1].index("baseline")
+        if idx > 0:
+            return parts[idx - 1]
     for part in reversed(parts):
         if DATE_RE.fullmatch(part):
             continue
         # Skip multirun/job folders so we keep the actual model tag.
         if RUN_DIR_RE.fullmatch(part):
+            continue
+        if part == "baseline":
             continue
         return part
     return relative_summary_path.parent.name

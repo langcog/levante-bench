@@ -42,10 +42,6 @@
   let childrenDataLoaded = false;
   let childrenDataLoadingPromise = null;
   let metaBase = null;
-  let childrenMeta = {
-    source: "not loaded (open Children tab)",
-    rows: 0,
-  };
   const preferredTaskOrder = [
     "egma-math",
     "matrix-reasoning",
@@ -114,19 +110,14 @@
         </ul>
         <h3>What this dashboard does</h3>
         <p>
-          It lets researchers compare model runs against aggregated child performance
-          by age bin, with shared task and language filters.
+          It lets researchers compare model runs across tasks with shared model,
+          task, and language filters.
         </p>
         <ul>
           <li><strong>Models tab:</strong> select one or more model families/sizes.</li>
-          <li><strong>Children tab:</strong> select one or more child age bins.</li>
-          <li><strong>Languages filter:</strong> applies to both models and children.</li>
-          <li><strong>Tasks filter:</strong> applies to both models and children.</li>
+          <li><strong>Languages filter:</strong> applies to model series.</li>
+          <li><strong>Tasks filter:</strong> applies to model series.</li>
         </ul>
-        <p>
-          Child lines are computed from <code>trials.csv</code> and exposed through
-          <code>/api/human-age-accuracy</code>.
-        </p>
       `,
     },
     dataset: {
@@ -193,10 +184,10 @@
           Published results are synced to the levante-bench bucket and this dashboard
           computes cross-model comparison JSON from bucket summaries on refresh.
         </p>
-        <h3>Step 4: Compare with children</h3>
+        <h3>Step 4: Compare model series</h3>
         <p>
-          Human child accuracy lines are aggregated from Redivis trial data by
-          age bin, task, and language, then loaded by the dashboard alongside model runs.
+          Model comparison series are loaded for selected tasks and languages,
+          then plotted side-by-side in the dashboard.
         </p>
       `,
     },
@@ -271,9 +262,8 @@
         <h3>3) Analyze and review quality</h3>
         <ul>
           <li>Build comparison JSON with <code>scripts/analysis/build_model_comparison_report.py</code>.</li>
-          <li>Build child age/language comparison data with <code>scripts/analysis/plot_human_accuracy_by_age_lines.py</code>.</li>
           <li>Audit parsing behavior with <code>scripts/analysis/check_parser_glitches.py</code>.</li>
-          <li>Refresh this dashboard to pull latest bucket-backed model and child comparison data.</li>
+          <li>Refresh this dashboard to pull latest bucket-backed model comparison data.</li>
         </ul>
         <h3>4) Add your own model or runs</h3>
         <ul>
@@ -433,6 +423,12 @@
       });
     });
     return out;
+  }
+
+  function modelLanguageKey(row) {
+    const model = String((row && row.model) || "").trim();
+    const language = String((row && row.language) || "en").trim().toLowerCase() || "en";
+    return `${model}|${language}`;
   }
 
   function parseChildRecords(payload) {
@@ -692,6 +688,19 @@
       setSelectedFromSet(childrenEl, previousSelection.children);
       setSelectedFromSet(tasksEl, previousSelection.tasks);
       setSelectedFromSet(languagesEl, previousSelection.languages);
+      // Guard against stale selections after source/schema changes.
+      if (!modelsEl.selectedOptions.length) {
+        setAllSelected(modelsEl);
+      }
+      if (!tasksEl.selectedOptions.length) {
+        setAllSelected(tasksEl);
+      }
+      if (!languagesEl.selectedOptions.length) {
+        setAllSelected(languagesEl);
+      }
+      if (childrenEl && !childrenEl.selectedOptions.length) {
+        setAllSelected(childrenEl);
+      }
     } else {
       setAllSelected(modelsEl);
       setAllSelected(childrenEl);
@@ -1019,9 +1028,7 @@
     if (!metaBase) {
       return;
     }
-    metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | Children source: ${
-      childrenMeta.source
-    } | Children rows: ${childrenMeta.rows} | KL source: ${metaBase.klSource} | KL rows: ${
+    metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | KL source: ${metaBase.klSource} | KL rows: ${
       metaBase.klRows
     } | AgeEq source: ${metaBase.ageEqSource} | AgeEq rows: ${metaBase.ageEqRows} | AgeEqAcc source: ${
       metaBase.ageEqAccSource
@@ -1040,7 +1047,13 @@
       statusEl.textContent = "Loading children data...";
       const childResponse = await fetch(`/api/human-age-accuracy?t=${Date.now()}`);
       if (!childResponse.ok) {
-        throw new Error(`Children report HTTP ${childResponse.status}`);
+        childrenMeta = {
+          source: `unavailable (HTTP ${childResponse.status})`,
+          rows: 0,
+        };
+        updateMetaText();
+        statusEl.textContent = "Children data unavailable; showing model data only.";
+        return;
       }
       const childPayload = await childResponse.json();
       accuracyChildRecords = parseChildRecords(childPayload || {});
@@ -1097,10 +1110,6 @@
       accuracyChildRecords = [];
       childrenDataLoaded = false;
       childrenDataLoadingPromise = null;
-      childrenMeta = {
-        source: "not loaded (open Children tab)",
-        rows: 0,
-      };
       ageEquivalencyIndex = parseAgeEquivalencyIndex(
         (ageEqPayload && ageEqPayload.records) || [],
       );
@@ -1114,6 +1123,15 @@
       ageEqAccModelRecords = parseAgeEquivalencyAccuracyModelRecords(
         (ageEqAccPayload && ageEqAccPayload.records) || [],
       );
+
+      // Keep all metric tabs aligned to the canonical v1 model set loaded from
+      // /api/results-report (bucket baseline summaries under results/v1/...).
+      const allowedModelLanguage = new Set(accuracyModelRecords.map((r) => modelLanguageKey(r)));
+      const filterToAllowedModels = (rows) =>
+        (rows || []).filter((row) => allowedModelLanguage.has(modelLanguageKey(row)));
+      klModelRecords = filterToAllowedModels(klModelRecords);
+      ageEqModelRecords = filterToAllowedModels(ageEqModelRecords);
+      ageEqAccModelRecords = filterToAllowedModels(ageEqAccModelRecords);
       metaBase = {
         modelSource: payload.source || "unknown",
         modelsGenerated: (payload.report && payload.report.generated_at) || "n/a",
@@ -1129,12 +1147,17 @@
       updateMetaText();
       renderSelectors({ preserveSelection });
       rerender();
-      if (tabChildrenBtn.classList.contains("active")) {
-        await ensureChildrenDataLoaded();
-      }
     } catch (error) {
+      const message = String(error && error.message ? error.message : error);
+      if (message.includes("Children report HTTP")) {
+        // Defensive fallback for stale clients: child API failures should not
+        // block model-only dashboard rendering.
+        statusEl.textContent = "Children data unavailable; showing model data only.";
+        metaEl.textContent = message;
+        return;
+      }
       statusEl.textContent = "Failed to load report data.";
-      metaEl.textContent = String(error && error.message ? error.message : error);
+      metaEl.textContent = message;
     } finally {
       if (refreshDataBtn) {
         refreshDataBtn.disabled = false;
@@ -1192,17 +1215,25 @@
   }
 
   function activateSeriesTab(tabName) {
-    const isModels = tabName === "models";
+    const isModels = true;
     tabModelsBtn.classList.toggle("active", isModels);
-    tabChildrenBtn.classList.toggle("active", !isModels);
+    if (tabChildrenBtn) {
+      tabChildrenBtn.classList.toggle("active", !isModels);
+    }
     panelModels.classList.toggle("active", isModels);
-    panelChildren.classList.toggle("active", !isModels);
-    if (!isModels) {
-      void ensureChildrenDataLoaded();
+    if (panelChildren) {
+      panelChildren.classList.toggle("active", !isModels);
     }
   }
 
   async function boot() {
+    // Child-series comparison is temporarily disabled in the current dashboard.
+    if (tabChildrenBtn) {
+      tabChildrenBtn.style.display = "none";
+    }
+    if (panelChildren) {
+      panelChildren.style.display = "none";
+    }
     await loadReportData({ preserveSelection: false });
   }
 
@@ -1220,14 +1251,18 @@
     clearAllSelected(modelsEl);
     rerender();
   });
-  allChildrenBtn.addEventListener("click", () => {
-    setAllSelected(childrenEl);
-    rerender();
-  });
-  clearChildrenBtn.addEventListener("click", () => {
-    clearAllSelected(childrenEl);
-    rerender();
-  });
+  if (allChildrenBtn && childrenEl) {
+    allChildrenBtn.addEventListener("click", () => {
+      setAllSelected(childrenEl);
+      rerender();
+    });
+  }
+  if (clearChildrenBtn && childrenEl) {
+    clearChildrenBtn.addEventListener("click", () => {
+      clearAllSelected(childrenEl);
+      rerender();
+    });
+  }
   allTasksBtn.addEventListener("click", () => {
     setAllSelected(tasksEl);
     rerender();
@@ -1249,7 +1284,9 @@
     });
   }
   tabModelsBtn.addEventListener("click", () => activateSeriesTab("models"));
-  tabChildrenBtn.addEventListener("click", () => activateSeriesTab("children"));
+  if (tabChildrenBtn) {
+    tabChildrenBtn.addEventListener("click", () => activateSeriesTab("children"));
+  }
   helpMenuItems.forEach((btn) => {
     btn.addEventListener("click", () => {
       openHelpModal(btn.dataset.helpTopic || "");

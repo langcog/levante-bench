@@ -25,14 +25,13 @@
               <button class="help-menu-item" type="button" data-help-topic="dataset">Our Dataset...</button>
               <button class="help-menu-item" type="button" data-help-topic="models">Models...</button>
               <button class="help-menu-item" type="button" data-help-topic="benchmark">Benchmark...</button>
-              <button class="help-menu-item" type="button" data-help-topic="age-equivalency">Age Equivalency...</button>
               <button class="help-menu-item" type="button" data-help-topic="parser">Our Parser...</button>
               <button class="help-menu-item" type="button" data-help-topic="parser-issues">Current Parser/Prompt Issues...</button>
               <button class="help-menu-item" type="button" data-help-topic="getting-started">Getting Started...</button>
             </div>
           </div>
         </div>
-        <p>Filter models by task and language. Compare task-level accuracy, KL-D, and age-equivalency curves.</p>
+        <p>Filter models by task and language. Compare task-level benchmark performance.</p>
       </header>
 
       <section class="dashboard-grid">
@@ -41,7 +40,7 @@
             <label>Series</label>
             <div class="tab-row">
               <button id="tab-models" type="button" class="tab-button active">Models</button>
-              <button id="tab-children" type="button" class="tab-button">Children</button>
+              <button id="tab-runs" type="button" class="tab-button">Runs</button>
             </div>
             <div id="panel-models" class="tab-panel active">
               <select id="models" multiple size="8"></select>
@@ -50,11 +49,11 @@
                 <button id="clear-models" type="button" class="secondary">Clear All</button>
               </div>
             </div>
-            <div id="panel-children" class="tab-panel">
-              <select id="children" multiple size="8"></select>
+            <div id="panel-runs" class="tab-panel">
+              <select id="runs" multiple size="8"></select>
               <div class="button-row">
-                <button id="all-children" type="button">All</button>
-                <button id="clear-children" type="button" class="secondary">Clear All</button>
+                <button id="all-runs" type="button">All</button>
+                <button id="clear-runs" type="button" class="secondary">Clear All</button>
               </div>
             </div>
           </div>

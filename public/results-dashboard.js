@@ -1,6 +1,6 @@
 (function () {
   const modelsEl = document.getElementById("models");
-  const childrenEl = document.getElementById("children");
+  const runsEl = document.getElementById("runs");
   const metricEl = document.getElementById("metric");
   const tasksEl = document.getElementById("tasks");
   const languagesEl = document.getElementById("languages");
@@ -13,14 +13,14 @@
   const metaEl = document.getElementById("meta");
   const allModelsBtn = document.getElementById("all-models");
   const clearModelsBtn = document.getElementById("clear-models");
-  const allChildrenBtn = document.getElementById("all-children");
-  const clearChildrenBtn = document.getElementById("clear-children");
+  const allRunsBtn = document.getElementById("all-runs");
+  const clearRunsBtn = document.getElementById("clear-runs");
   const allTasksBtn = document.getElementById("all-tasks");
   const allLanguagesBtn = document.getElementById("all-languages");
   const tabModelsBtn = document.getElementById("tab-models");
-  const tabChildrenBtn = document.getElementById("tab-children");
+  const tabRunsBtn = document.getElementById("tab-runs");
   const panelModels = document.getElementById("panel-models");
-  const panelChildren = document.getElementById("panel-children");
+  const panelRuns = document.getElementById("panel-runs");
   const refreshDataBtn = document.getElementById("refresh-data");
   const helpMenuButton = document.getElementById("help-menu-button");
   const helpMenuDropdown = document.getElementById("help-menu-dropdown");
@@ -41,15 +41,14 @@
 
   let chart = null;
   let accuracyModelRecords = [];
-  let accuracyChildRecords = [];
+  let accuracyRunRecords = [];
   let klModelRecords = [];
   let ageEqModelRecords = [];
   let ageEqAccModelRecords = [];
   let ageEquivalencyIndex = new Map();
   let ageEquivalencyAccuracyIndex = new Map();
-  let childrenDataLoaded = false;
-  let childrenDataLoadingPromise = null;
   let metaBase = null;
+  let activeSeriesTab = "models";
   const preferredTaskOrder = [
     "egma-math",
     "matrix-reasoning",
@@ -197,29 +196,6 @@
           Model comparison series are loaded for selected tasks and languages,
           then plotted side-by-side in the dashboard.
         </p>
-      `,
-    },
-    "age-equivalency": {
-      title: "Age Equivalency (KL-D)",
-      html: `
-        <p>
-          <strong>Age Eq</strong> is a task-specific estimate derived from how closely
-          a model's response distribution matches child response distributions across
-          IRT ability bins.
-        </p>
-        <h3>How it's computed</h3>
-        <ul>
-          <li>Compute mean D_KL for each <code>ability_bin</code> within a task.</li>
-          <li>Convert KL values to soft weights (lower KL = higher weight).</li>
-          <li>Map each ability bin to child age stats from the same task.</li>
-          <li>Report weighted expected age as <code>soft_age_eq_mean</code>.</li>
-        </ul>
-        <h3>How to read it safely</h3>
-        <ul>
-          <li>It is <strong>not</strong> a literal developmental age.</li>
-          <li>Interpret within-task; do not over-compare raw values across tasks.</li>
-          <li>Treat low-confidence matches as weak evidence.</li>
-        </ul>
       `,
     },
     parser: {
@@ -397,8 +373,8 @@
     return accuracyModelRecords;
   }
 
-  function currentChildRecords() {
-    return isKlMetric() || isAgeEqMetric() || isAgeEqAccuracyMetric() ? [] : accuracyChildRecords;
+  function currentRunRecords() {
+    return accuracyRunRecords;
   }
 
   function sortTasks(taskIds) {
@@ -453,41 +429,30 @@
     return `${model}|${language}`;
   }
 
-  function parseChildRecords(payload) {
-    const rows = (payload && payload.records) || [];
-    const byAgeBinAndLanguage = new Map();
+  function parseRunRecords(report) {
+    const rows = (report && report.runs) || [];
+    const out = [];
     rows.forEach((row) => {
-      const ageBin = String(row.age_bin || "").trim();
-      const taskId = String(row.task_id || "").trim();
-      const language = String(row.language || "unknown").trim().toLowerCase() || "unknown";
-      const accuracy = Number(row.accuracy);
-      if (!ageBin || !taskId || !Number.isFinite(accuracy)) {
+      const runId = String(row.run_id || "").trim();
+      const taskMeans = row.task_metrics || {};
+      const model = row.size ? `${row.model}-${row.size}` : String(row.model || "unknown");
+      const language = row.language || "en";
+      const runLabel = runId.split("/").slice(-1)[0] || "";
+      // Only expose numbered runs in the Runs tab.
+      if (!/^\d+$/.test(runLabel)) {
         return;
       }
-      const key = `${ageBin}|${language}`;
-      if (!byAgeBinAndLanguage.has(key)) {
-        byAgeBinAndLanguage.set(key, { ageBin, language, taskMeans: {} });
-      }
-      byAgeBinAndLanguage.get(key).taskMeans[taskId] = accuracy;
-    });
-
-    return Array.from(byAgeBinAndLanguage.values())
-      .sort((a, b) => {
-        const ageCmp = a.ageBin.localeCompare(b.ageBin, undefined, { numeric: true });
-        if (ageCmp !== 0) {
-          return ageCmp;
-        }
-        return a.language.localeCompare(b.language);
-      })
-      .map(({ ageBin, language, taskMeans }) => ({
-        label: `Children ${ageBin} (${language})`,
-        kind: "child",
-        child: ageBin,
-        ageBin,
-        model: `Children (${ageBin})`,
+      out.push({
+        label: `${model} ${runLabel}`,
+        kind: "run",
+        model,
         language,
+        runId,
+        runLabel,
         taskMeans,
-      }));
+      });
+    });
+    return out.sort((a, b) => a.runLabel.localeCompare(b.runLabel, undefined, { numeric: true }));
   }
 
   function parseKlModelRecords(payload) {
@@ -678,7 +643,7 @@
   function renderSelectors({ preserveSelection = false } = {}) {
     const previousSelection = {
       models: selectedValues(modelsEl),
-      children: selectedValues(childrenEl),
+      runs: selectedValues(runsEl),
       tasks: selectedValues(tasksEl),
       languages: selectedValues(languagesEl),
     };
@@ -686,28 +651,42 @@
       .concat(klModelRecords)
       .concat(ageEqModelRecords)
       .concat(ageEqAccModelRecords);
-    const childrenSource = accuracyChildRecords;
+    const runsSource = accuracyRunRecords;
     const models = uniqueSorted(modelsSource.map((r) => r.model));
-    const children = sortAgeBins(childrenSource.map((r) => r.child));
+    const selectedModelValues = preserveSelection ? previousSelection.models : new Set(models);
+    const selectedModelList = Array.from(selectedModelValues);
+    const runOptions =
+      selectedModelList.length === 1
+        ? uniqueSorted(
+            runsSource
+              .filter((r) => r.model === selectedModelList[0])
+              .map((r) => r.runLabel),
+          )
+        : [];
     const tasks = sortTasks(
       uniqueSorted(
         modelsSource
-          .concat(childrenSource)
+          .concat(runsSource)
           .flatMap((r) => Object.keys(r.taskMeans)),
       ),
     );
     const languages = uniqueSorted(
-      modelsSource.concat(childrenSource).map((r) => r.language || "unknown"),
+      modelsSource.concat(runsSource).map((r) => r.language || "unknown"),
     );
 
     modelsEl.innerHTML = models.map((v) => `<option value="${v}">${v}</option>`).join("");
-    childrenEl.innerHTML = children.map((v) => `<option value="${v}">${v}</option>`).join("");
+    if (selectedModelList.length === 1) {
+      runsEl.innerHTML = runOptions.map((v) => `<option value="${v}">${v}</option>`).join("");
+    } else {
+      runsEl.innerHTML =
+        '<option value="" disabled>Select exactly one model to view runs</option>';
+    }
     tasksEl.innerHTML = tasks.map((v) => `<option value="${v}">${v}</option>`).join("");
     languagesEl.innerHTML = languages.map((v) => `<option value="${v}">${v}</option>`).join("");
 
     if (preserveSelection) {
       setSelectedFromSet(modelsEl, previousSelection.models);
-      setSelectedFromSet(childrenEl, previousSelection.children);
+      setSelectedFromSet(runsEl, previousSelection.runs);
       setSelectedFromSet(tasksEl, previousSelection.tasks);
       setSelectedFromSet(languagesEl, previousSelection.languages);
       // Guard against stale selections after source/schema changes.
@@ -720,13 +699,15 @@
       if (!languagesEl.selectedOptions.length) {
         setAllSelected(languagesEl);
       }
-      if (childrenEl && !childrenEl.selectedOptions.length) {
-        setAllSelected(childrenEl);
+      if (runsEl && runOptions.length && !runsEl.selectedOptions.length) {
+        setAllSelected(runsEl);
       }
     } else {
       setAllSelected(modelsEl);
-      setAllSelected(childrenEl);
       setAllSelected(tasksEl);
+      if (runOptions.length) {
+        setAllSelected(runsEl);
+      }
       const hasEnglish = Array.from(languagesEl.options).some((option) => option.value === "en");
       if (hasEnglish) {
         clearAllSelected(languagesEl);
@@ -739,7 +720,7 @@
 
   function filteredRecords() {
     const modelSet = selectedValues(modelsEl);
-    const childSet = selectedValues(childrenEl);
+    const runSet = selectedValues(runsEl);
     const taskSet = selectedValues(tasksEl);
     const langSet = selectedValues(languagesEl);
     const applyTaskFilter = (r) => {
@@ -770,7 +751,19 @@
       };
     };
 
-    const filteredModels = currentModelRecords()
+    if (activeSeriesTab === "runs") {
+      return currentRunRecords()
+        .map(applyTaskFilter)
+        .filter(
+          (r) =>
+            modelSet.has(r.model) &&
+            runSet.has(r.runLabel) &&
+            langSet.has(r.language || "en") &&
+            Object.keys(r.taskMeans).length > 0,
+        );
+    }
+
+    return currentModelRecords()
       .map(applyTaskFilter)
       .filter(
         (r) =>
@@ -778,17 +771,6 @@
           langSet.has(r.language || "en") &&
           Object.keys(r.taskMeans).length > 0,
       );
-
-    const filteredChildren = currentChildRecords()
-      .map(applyTaskFilter)
-      .filter(
-        (r) =>
-          childSet.has(r.child) &&
-          langSet.has(r.language || "unknown") &&
-          Object.keys(r.taskMeans).length > 0,
-      );
-
-    return filteredModels.concat(filteredChildren);
   }
 
   function renderTable(rows) {
@@ -829,7 +811,7 @@
           }
         }
         return `<tr>
-          <td>${row.kind === "child" ? `Children (${row.ageBin})` : row.model}</td>
+          <td>${row.kind === "run" ? `${row.model} / ${row.runLabel}` : row.model}</td>
           <td>${row.language}</td>
           <td>${taskCount}</td>
           <td>${closestBinText}</td>
@@ -1008,13 +990,16 @@
       gapColumnHeaderEl.textContent = ageEqAccMetric ? "Gap (lower better)" : "Gap";
     }
     const rows = filteredRecords();
-    statusEl.textContent = klMetric
-      ? `Showing ${rows.length} model series (D_KL)`
-      : ageEqMetric
-        ? `Showing ${rows.length} model series (Age Equivalency)`
-        : ageEqAccMetric
-          ? `Showing ${rows.length} model series (Age Eq from Accuracy)`
-        : `Showing ${rows.length} series entries`;
+    statusEl.textContent =
+      activeSeriesTab === "runs"
+        ? `Showing ${rows.length} selected run series (accuracy)`
+        : klMetric
+          ? `Showing ${rows.length} model series (D_KL)`
+          : ageEqMetric
+            ? `Showing ${rows.length} model series (Age Equivalency)`
+            : ageEqAccMetric
+              ? `Showing ${rows.length} model series (Age Eq from Accuracy)`
+              : `Showing ${rows.length} series entries`;
     renderSummary(rows);
     renderTable(rows);
     renderChart(rows);
@@ -1034,47 +1019,6 @@
       ? `AgeEq source: ${metaBase.ageEqSource} | AgeEq rows: ${metaBase.ageEqRows} | AgeEqAcc source: ${metaBase.ageEqAccSource} | AgeEqAcc rows: ${metaBase.ageEqAccRows}`
       : "AgeEq metrics: disabled (enable with ?enable_age_eq=1)";
     metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | KL source: ${metaBase.klSource} | KL rows: ${metaBase.klRows} | ${ageEqMeta} | Note: Age Eq is task-specific and approximate.`;
-  }
-
-  async function ensureChildrenDataLoaded() {
-    if (childrenDataLoaded) {
-      return;
-    }
-    if (childrenDataLoadingPromise) {
-      await childrenDataLoadingPromise;
-      return;
-    }
-    childrenDataLoadingPromise = (async () => {
-      statusEl.textContent = "Loading children data...";
-      const childResponse = await fetch(`/api/human-age-accuracy?t=${Date.now()}`);
-      if (!childResponse.ok) {
-        childrenMeta = {
-          source: `unavailable (HTTP ${childResponse.status})`,
-          rows: 0,
-        };
-        updateMetaText();
-        statusEl.textContent = "Children data unavailable; showing model data only.";
-        return;
-      }
-      const childPayload = await childResponse.json();
-      accuracyChildRecords = parseChildRecords(childPayload || {});
-      childrenDataLoaded = true;
-      childrenMeta = {
-        source: childPayload.source || "unknown",
-        rows: Array.isArray(childPayload.records) ? childPayload.records.length : 0,
-      };
-      updateMetaText();
-      renderSelectors({ preserveSelection: true });
-      if (!childrenEl.selectedOptions.length) {
-        setAllSelected(childrenEl);
-      }
-      rerender();
-    })();
-    try {
-      await childrenDataLoadingPromise;
-    } finally {
-      childrenDataLoadingPromise = null;
-    }
   }
 
   async function loadReportData({ preserveSelection = false } = {}) {
@@ -1117,9 +1061,7 @@
       const ageEqAccPayload =
         ageEqFeatureEnabled && ageEqAccResponse ? await ageEqAccResponse.json() : null;
       accuracyModelRecords = parseModelRecords(payload.report || {});
-      accuracyChildRecords = [];
-      childrenDataLoaded = false;
-      childrenDataLoadingPromise = null;
+      accuracyRunRecords = parseRunRecords(payload.report || {});
       ageEquivalencyIndex = ageEqFeatureEnabled
         ? parseAgeEquivalencyIndex((ageEqPayload && ageEqPayload.records) || [])
         : new Map();
@@ -1235,30 +1177,39 @@
   }
 
   function activateSeriesTab(tabName) {
-    const isModels = true;
+    activeSeriesTab = tabName === "runs" ? "runs" : "models";
+    const isModels = activeSeriesTab === "models";
+    if (!isModels && metricEl) {
+      metricEl.value = "accuracy";
+      metricEl.disabled = true;
+    } else if (metricEl) {
+      metricEl.disabled = false;
+    }
     tabModelsBtn.classList.toggle("active", isModels);
-    if (tabChildrenBtn) {
-      tabChildrenBtn.classList.toggle("active", !isModels);
+    if (tabRunsBtn) {
+      tabRunsBtn.classList.toggle("active", !isModels);
     }
     panelModels.classList.toggle("active", isModels);
-    if (panelChildren) {
-      panelChildren.classList.toggle("active", !isModels);
+    if (panelRuns) {
+      panelRuns.classList.toggle("active", !isModels);
     }
+    renderSelectors({ preserveSelection: true });
+    rerender();
   }
 
   async function boot() {
     configureMetricOptions();
-    // Child-series comparison is temporarily disabled in the current dashboard.
-    if (tabChildrenBtn) {
-      tabChildrenBtn.style.display = "none";
-    }
-    if (panelChildren) {
-      panelChildren.style.display = "none";
-    }
+    activateSeriesTab("models");
     await loadReportData({ preserveSelection: false });
   }
 
-  [modelsEl, childrenEl, tasksEl, languagesEl].forEach((el) => {
+  if (modelsEl) {
+    modelsEl.addEventListener("change", () => {
+      renderSelectors({ preserveSelection: true });
+      rerender();
+    });
+  }
+  [runsEl, tasksEl, languagesEl].forEach((el) => {
     el.addEventListener("change", rerender);
   });
   if (metricEl) {
@@ -1272,15 +1223,15 @@
     clearAllSelected(modelsEl);
     rerender();
   });
-  if (allChildrenBtn && childrenEl) {
-    allChildrenBtn.addEventListener("click", () => {
-      setAllSelected(childrenEl);
+  if (allRunsBtn && runsEl) {
+    allRunsBtn.addEventListener("click", () => {
+      setAllSelected(runsEl);
       rerender();
     });
   }
-  if (clearChildrenBtn && childrenEl) {
-    clearChildrenBtn.addEventListener("click", () => {
-      clearAllSelected(childrenEl);
+  if (clearRunsBtn && runsEl) {
+    clearRunsBtn.addEventListener("click", () => {
+      clearAllSelected(runsEl);
       rerender();
     });
   }
@@ -1305,8 +1256,8 @@
     });
   }
   tabModelsBtn.addEventListener("click", () => activateSeriesTab("models"));
-  if (tabChildrenBtn) {
-    tabChildrenBtn.addEventListener("click", () => activateSeriesTab("children"));
+  if (tabRunsBtn) {
+    tabRunsBtn.addEventListener("click", () => activateSeriesTab("runs"));
   }
   helpMenuItems.forEach((btn) => {
     btn.addEventListener("click", () => {

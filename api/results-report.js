@@ -147,10 +147,11 @@ async function listBucketObjects(bucketName, prefix) {
 
 async function buildReportFromBucket(bucketName, prefix) {
   const allObjects = await listBucketObjects(bucketName, prefix);
-  // New bucket layout: results/<version>/<model>/baseline/summary.csv
-  const summaryObjects = allObjects.filter(
-    (obj) => obj.name.endsWith("/baseline/summary.csv"),
-  );
+  // New bucket layout:
+  // - baseline: results/<version>/<model>/baseline/summary.csv
+  // - multirun: results/<version>/<model>/<run_id>/summary.csv
+  const summaryObjects = allObjects.filter((obj) => obj.name.endsWith("/summary.csv"));
+  const baselineObjects = summaryObjects.filter((obj) => obj.name.endsWith("/baseline/summary.csv"));
 
   const runs = [];
   for (const obj of summaryObjects) {
@@ -178,7 +179,7 @@ async function buildReportFromBucket(bucketName, prefix) {
   }
 
   const grouped = new Map();
-  for (const run of runs) {
+  for (const run of runs.filter((r) => r.run_id.endsWith("/baseline"))) {
     const key = `${run.model}|${run.size || ""}|${run.language || ""}`;
     if (!grouped.has(key)) {
       grouped.set(key, []);
@@ -225,7 +226,8 @@ async function buildReportFromBucket(bucketName, prefix) {
   return {
     generated_at: new Date().toISOString(),
     results_root: `gs://${bucketName}/${prefix}`,
-    summary_file_count: runs.length,
+    summary_file_count: baselineObjects.length,
+    run_summary_file_count: runs.length,
     runs,
     by_model: byModel,
   };

@@ -7,7 +7,6 @@
   const tableBody = document.querySelector("#results-table tbody");
   const metricColumnHeaderEl = document.getElementById("metric-column-header");
   const closestBinColumnHeaderEl = document.getElementById("closest-bin-column-header");
-  const ageEqColumnHeaderEl = document.getElementById("age-eq-column-header");
   const gapColumnHeaderEl = document.getElementById("gap-column-header");
   const summaryStatsEl = document.getElementById("summary-stats");
   const statusEl = document.getElementById("status");
@@ -30,6 +29,15 @@
   const helpModalClose = document.getElementById("help-modal-close");
   const helpModalTitle = document.getElementById("help-modal-title");
   const helpModalContent = document.getElementById("help-modal-content");
+  const ageEqFeatureEnabled = (() => {
+    const query = new URLSearchParams(window.location.search);
+    const raw =
+      query.get("enable_age_eq") ||
+      query.get("enableAgeEq") ||
+      String(window.LEVANTE_ENABLE_AGE_EQ || "");
+    const normalized = String(raw).trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "on";
+  })();
 
   let chart = null;
   let accuracyModelRecords = [];
@@ -348,6 +356,20 @@
 
   function currentMetric() {
     return metricEl ? metricEl.value : "accuracy";
+  }
+
+  function configureMetricOptions() {
+    if (!metricEl || ageEqFeatureEnabled) {
+      return;
+    }
+    Array.from(metricEl.options).forEach((option) => {
+      if (option.value === "age_eq" || option.value === "age_eq_acc") {
+        option.remove();
+      }
+    });
+    if (metricEl.value === "age_eq" || metricEl.value === "age_eq_acc") {
+      metricEl.value = "accuracy";
+    }
   }
 
   function isKlMetric() {
@@ -772,7 +794,7 @@
   function renderTable(rows) {
     if (!rows.length) {
       tableBody.innerHTML =
-        '<tr><td colspan="7">No rows for current filter selection.</td></tr>';
+        '<tr><td colspan="6">No rows for current filter selection.</td></tr>';
       return;
     }
     const html = rows
@@ -781,34 +803,19 @@
         const avg = mean(Object.values(row.taskMeans));
         const selectedTasks = Object.keys(row.taskMeans);
         let closestBinText = "n/a";
-        let ageEqText = "n/a";
         let gapText = "n/a";
         if ((isKlMetric() || isAgeEqMetric() || isAgeEqAccuracyMetric()) && row.kind === "model") {
           if (selectedTasks.length === 1) {
             const onlyTask = selectedTasks[0];
             closestBinText = (row.closestBins && row.closestBins[onlyTask]) || "n/a";
-            const ageEq = row.ageEqByTask && row.ageEqByTask[onlyTask];
             if (isAgeEqAccuracyMetric()) {
               const meta = row.ageEqMetaByTask && row.ageEqMetaByTask[onlyTask];
               if (meta && Number.isFinite(meta.accuracy_gap)) {
                 gapText = meta.accuracy_gap.toFixed(3);
               }
-              if (
-                meta &&
-                (meta.age_eq_status === "below_youngest_bin" ||
-                  meta.age_eq_status === "above_oldest_bin") &&
-                Number.isFinite(meta.extrapolated_age_eq_accuracy)
-              ) {
-                ageEqText = `${ageEq.toFixed(2)}* (${meta.extrapolated_age_eq_accuracy.toFixed(2)})`;
-              } else {
-                ageEqText = Number.isFinite(ageEq) ? ageEq.toFixed(2) : "n/a";
-              }
-            } else {
-              ageEqText = Number.isFinite(ageEq) ? ageEq.toFixed(2) : "n/a";
             }
           } else if (selectedTasks.length > 1) {
             closestBinText = "select 1 task";
-            ageEqText = "select 1 task";
             if (isAgeEqAccuracyMetric()) {
               const gaps = selectedTasks
                 .map((taskId) =>
@@ -826,7 +833,6 @@
           <td>${row.language}</td>
           <td>${taskCount}</td>
           <td>${closestBinText}</td>
-          <td>${ageEqText}</td>
           <td>${gapText}</td>
           <td>${Number.isNaN(avg) ? "n/a" : avg.toFixed(4)}</td>
         </tr>`;
@@ -998,10 +1004,6 @@
           : "Closest IRT Bin"
         : "Closest IRT Bin (KL only)";
     }
-    if (ageEqColumnHeaderEl) {
-      ageEqColumnHeaderEl.textContent =
-        klMetric || ageEqMetric || ageEqAccMetric ? "Age Eq (years)" : "Age Eq (KL only)";
-    }
     if (gapColumnHeaderEl) {
       gapColumnHeaderEl.textContent = ageEqAccMetric ? "Gap (lower better)" : "Gap";
     }
@@ -1028,11 +1030,10 @@
     if (!metaBase) {
       return;
     }
-    metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | KL source: ${metaBase.klSource} | KL rows: ${
-      metaBase.klRows
-    } | AgeEq source: ${metaBase.ageEqSource} | AgeEq rows: ${metaBase.ageEqRows} | AgeEqAcc source: ${
-      metaBase.ageEqAccSource
-    } | AgeEqAcc rows: ${metaBase.ageEqAccRows} | Note: Age Eq is task-specific and approximate.`;
+    const ageEqMeta = ageEqFeatureEnabled
+      ? `AgeEq source: ${metaBase.ageEqSource} | AgeEq rows: ${metaBase.ageEqRows} | AgeEqAcc source: ${metaBase.ageEqAccSource} | AgeEqAcc rows: ${metaBase.ageEqAccRows}`
+      : "AgeEq metrics: disabled (enable with ?enable_age_eq=1)";
+    metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | KL source: ${metaBase.klSource} | KL rows: ${metaBase.klRows} | ${ageEqMeta} | Note: Age Eq is task-specific and approximate.`;
   }
 
   async function ensureChildrenDataLoaded() {
@@ -1083,46 +1084,55 @@
         refreshDataBtn.textContent = "Refreshing...";
       }
       statusEl.textContent = "Loading report...";
-      const [modelResponse, klResponse, ageEqResponse, ageEqAccResponse] =
-        await Promise.all([
+      const baseRequests = [
         fetch(`/api/results-report?t=${Date.now()}`),
         fetch(`/api/kl-report?t=${Date.now()}`),
-        fetch(`/api/model-age-equivalency?t=${Date.now()}`),
-        fetch(`/api/model-age-equivalency-accuracy?t=${Date.now()}`),
-      ]);
+      ];
+      const ageEqRequests = ageEqFeatureEnabled
+        ? [
+            fetch(`/api/model-age-equivalency?t=${Date.now()}`),
+            fetch(`/api/model-age-equivalency-accuracy?t=${Date.now()}`),
+          ]
+        : [];
+      const responses = await Promise.all(baseRequests.concat(ageEqRequests));
+      const modelResponse = responses[0];
+      const klResponse = responses[1];
+      const ageEqResponse = ageEqFeatureEnabled ? responses[2] : null;
+      const ageEqAccResponse = ageEqFeatureEnabled ? responses[3] : null;
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
       }
       if (!klResponse.ok) {
         throw new Error(`KL report HTTP ${klResponse.status}`);
       }
-      if (!ageEqResponse.ok) {
+      if (ageEqFeatureEnabled && ageEqResponse && !ageEqResponse.ok) {
         throw new Error(`Age-equivalency report HTTP ${ageEqResponse.status}`);
       }
-      if (!ageEqAccResponse.ok) {
+      if (ageEqFeatureEnabled && ageEqAccResponse && !ageEqAccResponse.ok) {
         throw new Error(`Age-equivalency-accuracy report HTTP ${ageEqAccResponse.status}`);
       }
       const payload = await modelResponse.json();
       const klPayload = await klResponse.json();
-      const ageEqPayload = await ageEqResponse.json();
-      const ageEqAccPayload = await ageEqAccResponse.json();
+      const ageEqPayload = ageEqFeatureEnabled && ageEqResponse ? await ageEqResponse.json() : null;
+      const ageEqAccPayload =
+        ageEqFeatureEnabled && ageEqAccResponse ? await ageEqAccResponse.json() : null;
       accuracyModelRecords = parseModelRecords(payload.report || {});
       accuracyChildRecords = [];
       childrenDataLoaded = false;
       childrenDataLoadingPromise = null;
-      ageEquivalencyIndex = parseAgeEquivalencyIndex(
-        (ageEqPayload && ageEqPayload.records) || [],
-      );
+      ageEquivalencyIndex = ageEqFeatureEnabled
+        ? parseAgeEquivalencyIndex((ageEqPayload && ageEqPayload.records) || [])
+        : new Map();
       klModelRecords = attachAgeEquivalency(parseKlModelRecords(klPayload || {}), ageEquivalencyIndex);
-      ageEqModelRecords = parseAgeEquivalencyModelRecords(
-        (ageEqPayload && ageEqPayload.records) || [],
-      );
-      ageEquivalencyAccuracyIndex = parseAgeEquivalencyAccuracyIndex(
-        (ageEqAccPayload && ageEqAccPayload.records) || [],
-      );
-      ageEqAccModelRecords = parseAgeEquivalencyAccuracyModelRecords(
-        (ageEqAccPayload && ageEqAccPayload.records) || [],
-      );
+      ageEqModelRecords = ageEqFeatureEnabled
+        ? parseAgeEquivalencyModelRecords((ageEqPayload && ageEqPayload.records) || [])
+        : [];
+      ageEquivalencyAccuracyIndex = ageEqFeatureEnabled
+        ? parseAgeEquivalencyAccuracyIndex((ageEqAccPayload && ageEqAccPayload.records) || [])
+        : new Map();
+      ageEqAccModelRecords = ageEqFeatureEnabled
+        ? parseAgeEquivalencyAccuracyModelRecords((ageEqAccPayload && ageEqAccPayload.records) || [])
+        : [];
 
       // Keep all metric tabs aligned to the canonical v1 model set loaded from
       // /api/results-report (bucket baseline summaries under results/v1/...).
@@ -1137,11 +1147,21 @@
         modelsGenerated: (payload.report && payload.report.generated_at) || "n/a",
         klSource: klPayload.source || "unknown",
         klRows: Array.isArray(klPayload.records) ? klPayload.records.length : 0,
-        ageEqSource: ageEqPayload.source || "unknown",
-        ageEqRows: Array.isArray(ageEqPayload.records) ? ageEqPayload.records.length : 0,
-        ageEqAccSource: ageEqAccPayload.source || "unknown",
-        ageEqAccRows: Array.isArray(ageEqAccPayload.records)
-          ? ageEqAccPayload.records.length
+        ageEqSource: ageEqFeatureEnabled
+          ? (ageEqPayload && ageEqPayload.source) || "unknown"
+          : "disabled",
+        ageEqRows: ageEqFeatureEnabled
+          ? Array.isArray(ageEqPayload && ageEqPayload.records)
+            ? ageEqPayload.records.length
+            : 0
+          : 0,
+        ageEqAccSource: ageEqFeatureEnabled
+          ? (ageEqAccPayload && ageEqAccPayload.source) || "unknown"
+          : "disabled",
+        ageEqAccRows: ageEqFeatureEnabled
+          ? Array.isArray(ageEqAccPayload && ageEqAccPayload.records)
+            ? ageEqAccPayload.records.length
+            : 0
           : 0,
       };
       updateMetaText();
@@ -1227,6 +1247,7 @@
   }
 
   async function boot() {
+    configureMetricOptions();
     // Child-series comparison is temporarily disabled in the current dashboard.
     if (tabChildrenBtn) {
       tabChildrenBtn.style.display = "none";

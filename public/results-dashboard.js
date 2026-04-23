@@ -84,7 +84,7 @@
           if (!mask[i]) {
             return;
           }
-          ctx.fillStyle = dataset.borderColor || "#f8fafc";
+          ctx.fillStyle = dataset.borderColor || "#0f172a";
           ctx.fillText("?", pt.x, pt.y);
         });
       });
@@ -899,7 +899,7 @@
         borderColor: color,
         backgroundColor: `${color}55`,
         pointBackgroundColor: color,
-        pointBorderColor: "#f8fafc",
+        pointBorderColor: "#ffffff",
         pointRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 4),
         pointHoverRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 5),
         borderWidth: 2.4,
@@ -929,7 +929,7 @@
             display: true,
             position: "bottom",
             labels: {
-              color: "#e2e8f0",
+              color: "#334155",
               boxWidth: 16,
               boxHeight: 2,
             },
@@ -946,10 +946,10 @@
         scales: {
           x: {
             ticks: {
-              color: "#cbd5e1",
+              color: "#475569",
             },
             grid: {
-              color: "rgba(148, 163, 184, 0.15)",
+              color: "rgba(148, 163, 184, 0.24)",
             },
           },
           y: {
@@ -964,13 +964,13 @@
                   : ageEqAccMetric
                     ? "Age equivalency from accuracy (years)"
                   : "Accuracy",
-              color: "#cbd5e1",
+              color: "#334155",
             },
             ticks: {
-              color: "#cbd5e1",
+              color: "#475569",
             },
             grid: {
-              color: "rgba(148, 163, 184, 0.25)",
+              color: "rgba(148, 163, 184, 0.28)",
             },
           },
         },

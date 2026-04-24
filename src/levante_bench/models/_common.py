@@ -1,6 +1,7 @@
 """Shared utilities for VLM model implementations."""
 
 import re
+import sys
 from typing import Optional
 
 import torch
@@ -69,5 +70,36 @@ def build_pil_content(
                 content.append({"type": "image", "image": img})
         content.append({"type": "text", "text": prompt_text})
     return content
+
+
+def should_fallback_to_sdpa(attn_implementation: str, exc: Exception) -> bool:
+    """Return True when flash-attention failure should retry with SDPA."""
+    requested = str(attn_implementation or "").strip().lower()
+    if not requested or requested == "sdpa":
+        return False
+    if "flash" not in requested:
+        return False
+    message = str(exc).lower()
+    flash_markers = (
+        "flash",
+        "flash_attn",
+        "flash-attn",
+        "triton",
+        "sdpa",
+        "attention implementation",
+        "attn_implementation",
+    )
+    return any(marker in message for marker in flash_markers)
+
+
+def warn_attn_fallback(model_name: str, requested: str, exc: Exception) -> None:
+    """Emit a one-line warning when falling back from flash to SDPA."""
+    print(
+        (
+            f"[{model_name}] attn_implementation={requested!r} unavailable; "
+            f"falling back to 'sdpa' ({type(exc).__name__}: {exc})"
+        ),
+        file=sys.stderr,
+    )
 
 

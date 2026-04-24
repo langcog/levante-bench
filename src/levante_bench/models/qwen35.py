@@ -11,6 +11,8 @@ from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
 )
 
 
@@ -32,7 +34,7 @@ class Qwen35Model(VLMModel):
         model_name: str = "Qwen/Qwen3.5-0.8B",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "sdpa",
+        attn_implementation: str = "flash_attention_2",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
@@ -45,11 +47,23 @@ class Qwen35Model(VLMModel):
         self.processor = AutoProcessor.from_pretrained(
             self.model_name, padding_side="left"
         )
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            self.model_name,
-            dtype=self.dtype,
-            attn_implementation=self.attn_implementation,
-        ).to(self.device)
+        requested_attn = self.attn_implementation
+        try:
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation=requested_attn,
+            ).to(self.device)
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation="sdpa",
+            ).to(self.device)
         self.model.eval()
 
     # Token IDs for thinking budget control (Qwen3 family)

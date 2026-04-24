@@ -8,7 +8,11 @@ import torch
 
 from levante_bench.models.base import VLMModel
 from levante_bench.models.registry import register
-from levante_bench.models._common import DTYPE_MAP
+from levante_bench.models._common import (
+    DTYPE_MAP,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
+)
 
 
 @register("smolvlm2")
@@ -20,7 +24,7 @@ class SmolVLM2Model(VLMModel):
         model_name: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "sdpa",
+        attn_implementation: str = "flash_attention_2",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
@@ -38,19 +42,31 @@ class SmolVLM2Model(VLMModel):
             tokenizer.padding_side = "left"
             if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
                 tokenizer.pad_token = tokenizer.eos_token
+        requested_attn = self.attn_implementation
+
+        def _load_for_attn(attn_impl: str):
+            try:
+                return AutoModelForImageTextToText.from_pretrained(
+                    self.model_name,
+                    dtype=self.dtype,
+                    attn_implementation=attn_impl,
+                )
+            except TypeError:
+                # Backward compatibility: older Transformers use `torch_dtype`.
+                return AutoModelForImageTextToText.from_pretrained(
+                    self.model_name,
+                    torch_dtype=self.dtype,
+                    attn_implementation=attn_impl,
+                )
+
         try:
-            self.model = AutoModelForImageTextToText.from_pretrained(
-                self.model_name,
-                dtype=self.dtype,
-                attn_implementation=self.attn_implementation,
-            )
-        except TypeError:
-            # Backward compatibility: older Transformers use `torch_dtype`.
-            self.model = AutoModelForImageTextToText.from_pretrained(
-                self.model_name,
-                torch_dtype=self.dtype,
-                attn_implementation=self.attn_implementation,
-            )
+            self.model = _load_for_attn(requested_attn)
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            self.model = _load_for_attn("sdpa")
         self.model = self.model.to(self.device)
         self.model.eval()
 

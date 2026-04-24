@@ -81,6 +81,7 @@ def build_model(
 
     model = model_cls(model_name=str(hf_name), device=device, **ctor_cfg)
     model.use_json_format = bool(model_cfg.get("use_json_format", True))
+    model.thinking_budget = int(model_cfg.get("thinking_budget", 0))
     if auto_load:
         model.load()
     return model

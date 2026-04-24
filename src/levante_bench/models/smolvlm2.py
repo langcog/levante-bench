@@ -20,7 +20,7 @@ class SmolVLM2Model(VLMModel):
         model_name: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "eager",
+        attn_implementation: str = "sdpa",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)

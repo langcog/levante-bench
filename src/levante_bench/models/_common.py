@@ -6,6 +6,8 @@ from typing import Optional
 import torch
 from PIL import Image
 
+from levante_bench.config.loader import load_model_defaults
+
 
 DTYPE_MAP = {
     "float32": torch.float32,
@@ -13,7 +15,10 @@ DTYPE_MAP = {
     "bfloat16": torch.bfloat16,
 }
 
-_MAX_IMAGE_EDGE = 1024
+# Default cap on the longest image edge. Sourced from configs/models/_defaults.yaml
+# so that the YAML default is the single source of truth; per-model configs can
+# still override `max_image_edge` for model classes that accept it as a kwarg.
+_MAX_IMAGE_EDGE = int(load_model_defaults().get("max_image_edge", 1024))
 
 
 def load_pil_images(

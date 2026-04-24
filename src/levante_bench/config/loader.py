@@ -32,15 +32,29 @@ def load_experiment(
     return cfg
 
 
+_DEFAULTS_FILENAME = "_defaults.yaml"
+
+
+def load_model_defaults(
+    configs_root: str | Path | None = None,
+) -> DictConfig:
+    """Load shared defaults from configs/models/_defaults.yaml (empty if missing)."""
+    path = get_configs_root(configs_root=configs_root) / "models" / _DEFAULTS_FILENAME
+    if not path.exists():
+        return OmegaConf.create({})
+    return OmegaConf.load(path)
+
+
 def load_model_config(
     model_name: str,
     configs_root: str | Path | None = None,
 ) -> Optional[DictConfig]:
-    """Load a single model config from configs/models/<model_name>.yaml."""
+    """Load a model config from configs/models/<model_name>.yaml, merged onto _defaults.yaml."""
     path = get_configs_root(configs_root=configs_root) / "models" / f"{model_name}.yaml"
     if not path.exists():
         return None
-    return OmegaConf.load(path)
+    defaults = load_model_defaults(configs_root=configs_root)
+    return OmegaConf.merge(defaults, OmegaConf.load(path))
 
 
 def load_task_config(

@@ -42,6 +42,8 @@ wheels/
 # Virtual environments
 .venv/
 .venv-aquila/
+.venv-bench/
+.venv-*/
 venv/
 ENV/
 

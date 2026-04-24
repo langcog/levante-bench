@@ -6,6 +6,7 @@ hf_name: HuggingFaceTB/SmolVLM2-${size}-Instruct
 size: 256M  # 256M | 500M | 2.2B
 max_new_tokens: 64
 dtype: bfloat16
+attn_implementation: sdpa
 use_json_format: false
 
 capabilities:

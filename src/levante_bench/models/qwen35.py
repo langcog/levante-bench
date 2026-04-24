@@ -1,10 +1,11 @@
 """Qwen3.5-VL model implementation."""
 
+import re
 from typing import Optional
 
 import torch
 
-from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
+from levante_bench.models.base import ParseResult, SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
@@ -169,6 +170,78 @@ class Qwen35Model(VLMModel):
     def parse_response(self, raw_output: str) -> str:
         """Return generated text as-is (already decoded from generated tokens only)."""
         return raw_output.strip()
+
+    def parse_answer_result(self, text: str, option_labels: list[str]) -> ParseResult:
+        """Parse label answers with Qwen-specific fallback for truncated analyses.
+
+        Qwen3.5 outputs sometimes enumerate "Analyze Image A/B/C/D" and get cut off
+        before an explicit final answer token, which leaves the base parser with
+        `unparseable`. Recover from that pattern when the evidence is clear.
+        """
+        result = super().parse_answer_result(text, option_labels)
+        if result.value is not None:
+            return result
+
+        labels_upper = [str(label).upper() for label in option_labels]
+        if not labels_upper:
+            return result
+
+        marker_re = re.compile(r"Analyze\s+Image\s+([A-Z])\s*:", re.IGNORECASE)
+        markers = list(marker_re.finditer(text))
+        if not markers:
+            return result
+
+        scores: dict[str, tuple[int, int]] = {}
+        for idx, match in enumerate(markers):
+            label = match.group(1).upper()
+            if label not in labels_upper:
+                continue
+            seg_start = match.end()
+            seg_end = markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
+            segment = text[seg_start:seg_end]
+
+            neg_hits = len(re.findall(r"\bnot\b|\bisn't\b|\baren't\b|\bno\b", segment, re.IGNORECASE))
+            pos_hits = len(
+                re.findall(
+                    r"\bclearly\b|\bcorrect\b|\bfits\b|\bdepicts?\b|\bindicates?\b|\bmatches?\b",
+                    segment,
+                    re.IGNORECASE,
+                )
+            )
+            scores[label] = (neg_hits, pos_hits)
+
+        if not scores:
+            return result
+
+        # Primary rule: if exactly one analyzed label has zero negatives while
+        # at least one alternative has explicit negatives, select it.
+        zero_neg = [label for label, (neg, _) in scores.items() if neg == 0]
+        any_neg = any(neg > 0 for neg, _ in scores.values())
+        if len(zero_neg) == 1 and any_neg:
+            return ParseResult(
+                value=zero_neg[0],
+                reason=text,
+                parse_method="qwen_analyze_image_heuristic",
+                parse_confidence="low",
+                raw_candidate=zero_neg[0],
+            )
+
+        # Secondary rule: choose the best (positive - negative) score if unique.
+        weighted = sorted(
+            ((label, pos - neg) for label, (neg, pos) in scores.items()),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        if len(weighted) >= 2 and weighted[0][1] > weighted[1][1] and weighted[0][1] > 0:
+            return ParseResult(
+                value=weighted[0][0],
+                reason=text,
+                parse_method="qwen_analyze_image_weighted",
+                parse_confidence="low",
+                raw_candidate=weighted[0][0],
+            )
+
+        return result
 
     def score_choices(
         self,

@@ -127,6 +127,22 @@ def _resolve_run_label(
     return None
 
 
+def _next_run_index(run_parent: Path) -> int:
+    """Return next available numeric run directory index (1-based)."""
+    if not run_parent.exists():
+        return 1
+
+    max_index = 0
+    for child in run_parent.iterdir():
+        if not child.is_dir():
+            continue
+        name = child.name.strip()
+        if not (len(name) == 4 and name.isdigit()):
+            continue
+        max_index = max(max_index, int(name))
+    return max_index + 1
+
+
 def run_eval(cfg: DictConfig) -> dict[str, Path]:
     """Evaluate each model across all tasks using experiment config."""
     data_root = Path(cfg.data_root)
@@ -201,15 +217,19 @@ def run_eval(cfg: DictConfig) -> dict[str, Path]:
 
         model_base_dir = output_base / version / model_label
 
-        for run_index in range(1, num_runs + 1):
+        run_group = _resolve_run_label(
+            cfg=cfg,
+            true_random_option_order=true_random_option_order,
+        )
+        run_parent_dir = model_base_dir / run_group if (true_random_option_order and run_group) else model_base_dir
+        start_run_index = _next_run_index(run_parent_dir) if true_random_option_order else 1
+        end_run_index = start_run_index + num_runs - 1
+
+        for run_index in range(start_run_index, end_run_index + 1):
             run_seed = (
                 random.SystemRandom().getrandbits(63)
                 if true_random_option_order
                 else None
-            )
-            run_group = _resolve_run_label(
-                cfg=cfg,
-                true_random_option_order=true_random_option_order,
             )
             run_subdir = f"{run_index:04d}"
             model_dir = (

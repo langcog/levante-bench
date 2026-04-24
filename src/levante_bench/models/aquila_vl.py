@@ -13,6 +13,8 @@ from levante_bench.models.registry import register
 from levante_bench.models._common import (
     DTYPE_MAP,
     load_pil_images,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
 )
 
 
@@ -26,7 +28,7 @@ class AquilaVLModel(VLMModel):
         model_name: str = "BAAI/Aquila-VL-2B-Intermediate",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "sdpa",
+        attn_implementation: str = "flash_attention_2",
         conv_template: str = "qwen_1_5",
         checkpoint_subdir: str | None = None,
         revision: str | None = None,
@@ -62,14 +64,29 @@ class AquilaVLModel(VLMModel):
             model_path = str(Path(local_repo) / self.checkpoint_subdir)
             self._normalize_local_config(Path(model_path))
 
-        tokenizer, model, image_processor, _ = load_pretrained_model(
-            model_path,
-            None,
-            "llava_qwen",
-            device_map=self.device,
-            attn_implementation=self.attn_implementation,
-            revision=self.revision,
-        )
+        requested_attn = self.attn_implementation
+        try:
+            tokenizer, model, image_processor, _ = load_pretrained_model(
+                model_path,
+                None,
+                "llava_qwen",
+                device_map=self.device,
+                attn_implementation=requested_attn,
+                revision=self.revision,
+            )
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            tokenizer, model, image_processor, _ = load_pretrained_model(
+                model_path,
+                None,
+                "llava_qwen",
+                device_map=self.device,
+                attn_implementation="sdpa",
+                revision=self.revision,
+            )
         self.tokenizer = tokenizer
         self.model = model
         self.image_processor = image_processor

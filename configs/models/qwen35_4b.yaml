@@ -2,7 +2,8 @@ name: qwen35_4b
 hf_name: Qwen/Qwen3.5-4B
 params_b: 4.0
 family: qwen35
-max_new_tokens: 128
+max_new_tokens: 1024
+thinking_budget: 512
 dtype: bfloat16
 capabilities:
   - text_only

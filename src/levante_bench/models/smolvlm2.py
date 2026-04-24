@@ -8,7 +8,11 @@ import torch
 
 from levante_bench.models.base import VLMModel
 from levante_bench.models.registry import register
-from levante_bench.models._common import DTYPE_MAP
+from levante_bench.models._common import (
+    DTYPE_MAP,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
+)
 
 
 @register("smolvlm2")
@@ -20,7 +24,7 @@ class SmolVLM2Model(VLMModel):
         model_name: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "eager",
+        attn_implementation: str = "flash_attention_2",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
@@ -32,11 +36,38 @@ class SmolVLM2Model(VLMModel):
         from transformers import AutoProcessor, AutoModelForImageTextToText
 
         self.processor = AutoProcessor.from_pretrained(self.model_name)
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            self.model_name,
-            dtype=self.dtype,
-            attn_implementation=self.attn_implementation,
-        ).to(self.device)
+        tokenizer = getattr(self.processor, "tokenizer", None)
+        if tokenizer is not None:
+            # Decoder-only generation should use left padding for stable batched outputs.
+            tokenizer.padding_side = "left"
+            if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
+                tokenizer.pad_token = tokenizer.eos_token
+        requested_attn = self.attn_implementation
+
+        def _load_for_attn(attn_impl: str):
+            try:
+                return AutoModelForImageTextToText.from_pretrained(
+                    self.model_name,
+                    dtype=self.dtype,
+                    attn_implementation=attn_impl,
+                )
+            except TypeError:
+                # Backward compatibility: older Transformers use `torch_dtype`.
+                return AutoModelForImageTextToText.from_pretrained(
+                    self.model_name,
+                    torch_dtype=self.dtype,
+                    attn_implementation=attn_impl,
+                )
+
+        try:
+            self.model = _load_for_attn(requested_attn)
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            self.model = _load_for_attn("sdpa")
+        self.model = self.model.to(self.device)
         self.model.eval()
 
     def generate(
@@ -218,19 +249,24 @@ class SmolVLM2Model(VLMModel):
         if padding:
             processor_kwargs["padding"] = True
         try:
-            return self.processor.apply_chat_template(
+            out = self.processor.apply_chat_template(
                 messages,
                 add_generation_prompt=True,
                 tokenize=True,
                 return_dict=True,
                 processor_kwargs=processor_kwargs,
             )
+            input_ids = out.get("input_ids") if isinstance(out, dict) else None
+            if hasattr(input_ids, "shape"):
+                return out
         except TypeError:
-            # Backward compatibility for older transformers that do not support
-            # `processor_kwargs` yet.
-            return self.processor.apply_chat_template(
-                messages,
-                add_generation_prompt=True,
-                tokenize=True,
-                **processor_kwargs,
-            )
+            pass
+
+        # Backward compatibility for transformers versions where kwargs for
+        # processor.__call__ are passed directly instead of via processor_kwargs.
+        return self.processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            **processor_kwargs,
+        )

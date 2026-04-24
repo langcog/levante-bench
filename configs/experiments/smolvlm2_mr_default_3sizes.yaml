@@ -1,0 +1,18 @@
+# Runner experiment: SmolVLM2 mental-rotation with default task prompt.
+
+models:
+  - name: smolvlm2
+    size: 256M
+  - name: smolvlm2
+    size: 500M
+  - name: smolvlm2
+    size: 2.2B
+
+tasks:
+  - mental-rotation
+
+data_root: data
+output_dir: results/mr_prompt_default
+version: v1
+device: cuda
+batch_size: 4

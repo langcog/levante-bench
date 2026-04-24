@@ -36,11 +36,18 @@ async function readText(url) {
 
 function inferModelTagFromPath(relativeSummaryPath) {
   const parts = relativeSummaryPath.split("/").slice(0, -1); // drop summary.csv
+  const baselineIdx = parts.lastIndexOf("baseline");
+  if (baselineIdx > 0) {
+    return parts[baselineIdx - 1];
+  }
   for (let i = parts.length - 1; i >= 0; i -= 1) {
     if (DATE_RE.test(parts[i])) {
       continue;
     }
     if (RUN_DIR_RE.test(parts[i])) {
+      continue;
+    }
+    if (parts[i] === "baseline") {
       continue;
     }
     return parts[i];
@@ -140,7 +147,11 @@ async function listBucketObjects(bucketName, prefix) {
 
 async function buildReportFromBucket(bucketName, prefix) {
   const allObjects = await listBucketObjects(bucketName, prefix);
+  // New bucket layout:
+  // - baseline: results/<version>/<model>/baseline/summary.csv
+  // - multirun: results/<version>/<model>/<run_id>/summary.csv
   const summaryObjects = allObjects.filter((obj) => obj.name.endsWith("/summary.csv"));
+  const baselineObjects = summaryObjects.filter((obj) => obj.name.endsWith("/baseline/summary.csv"));
 
   const runs = [];
   for (const obj of summaryObjects) {
@@ -168,7 +179,7 @@ async function buildReportFromBucket(bucketName, prefix) {
   }
 
   const grouped = new Map();
-  for (const run of runs) {
+  for (const run of runs.filter((r) => r.run_id.endsWith("/baseline"))) {
     const key = `${run.model}|${run.size || ""}|${run.language || ""}`;
     if (!grouped.has(key)) {
       grouped.set(key, []);
@@ -215,7 +226,8 @@ async function buildReportFromBucket(bucketName, prefix) {
   return {
     generated_at: new Date().toISOString(),
     results_root: `gs://${bucketName}/${prefix}`,
-    summary_file_count: runs.length,
+    summary_file_count: baselineObjects.length,
+    run_summary_file_count: runs.length,
     runs,
     by_model: byModel,
   };
@@ -228,7 +240,11 @@ module.exports = async function handler(req, res) {
   const sourceMode = process.env.RESULTS_SOURCE_MODE || "bucket_compute";
   const reportUrl = process.env.RESULTS_REPORT_URL;
   const bucketName = process.env.RESULTS_BUCKET_NAME || "levante-bench";
-  const bucketPrefix = (process.env.RESULTS_BUCKET_PREFIX || "results").replace(/^\/+|\/+$/g, "");
+  // Default to v1-only results to avoid mixing legacy bucket layouts.
+  const bucketPrefix = (process.env.RESULTS_BUCKET_PREFIX || "results/v1").replace(
+    /^\/+|\/+$/g,
+    "",
+  );
 
   try {
     let payload = null;

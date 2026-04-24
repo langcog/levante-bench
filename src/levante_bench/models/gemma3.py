@@ -8,6 +8,8 @@ from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
 )
 
 
@@ -20,7 +22,7 @@ class Gemma3Model(VLMModel):
         model_name: str = "google/gemma-3-4b-it",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "sdpa",
+        attn_implementation: str = "flash_attention_2",
         max_image_edge: int = 1024,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
@@ -33,11 +35,23 @@ class Gemma3Model(VLMModel):
         from transformers import AutoModelForImageTextToText, AutoProcessor
 
         self.processor = AutoProcessor.from_pretrained(self.model_name)
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            self.model_name,
-            dtype=self.dtype,
-            attn_implementation=self.attn_implementation,
-        ).to(self.device)
+        requested_attn = self.attn_implementation
+        try:
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation=requested_attn,
+            ).to(self.device)
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation="sdpa",
+            ).to(self.device)
         self.model.eval()
 
     def generate(

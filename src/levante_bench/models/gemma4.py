@@ -6,6 +6,8 @@ from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
 )
 from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
@@ -20,7 +22,7 @@ class Gemma4Model(VLMModel):
         model_name: str = "google/gemma-4-E4B-it",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "sdpa",
+        attn_implementation: str = "flash_attention_2",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
@@ -34,12 +36,25 @@ class Gemma4Model(VLMModel):
             self.model_name,
             trust_remote_code=True,
         )
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            self.model_name,
-            dtype=self.dtype,
-            attn_implementation=self.attn_implementation,
-            trust_remote_code=True,
-        ).to(self.device)
+        requested_attn = self.attn_implementation
+        try:
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation=requested_attn,
+                trust_remote_code=True,
+            ).to(self.device)
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation="sdpa",
+                trust_remote_code=True,
+            ).to(self.device)
         self.model.eval()
 
     def generate(

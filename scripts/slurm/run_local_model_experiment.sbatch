@@ -19,6 +19,7 @@ MODEL_NAME="${MODEL_NAME:?MODEL_NAME is required (e.g., internvl35)}"
 # Optional runtime knobs (override via sbatch --export=ALL,...)
 MODEL_SIZE="${MODEL_SIZE:-}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-}"
+USE_JSON_FORMAT="${USE_JSON_FORMAT:-}"
 VERSION="${VERSION:-v1}"
 DEVICE="${DEVICE:-cuda}"
 BATCH_SIZE="${BATCH_SIZE:-1}"
@@ -52,6 +53,9 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
   fi
   if [[ -n "$MAX_NEW_TOKENS" ]]; then
     echo "    max_new_tokens: ${MAX_NEW_TOKENS}"
+  fi
+  if [[ -n "$USE_JSON_FORMAT" ]]; then
+    echo "    use_json_format: ${USE_JSON_FORMAT}"
   fi
   echo ""
   echo "tasks:"

@@ -52,13 +52,29 @@ class Qwen35Model(VLMModel):
         ).to(self.device)
         self.model.eval()
 
+    # Token IDs for thinking budget control (Qwen3 family)
+    THINK_END_TOKEN_ID = 151668   # </think>
+    IM_END_TOKEN_ID = 151645      # <|im_end|>
+    EARLY_STOP_SUFFIX = (
+        "\n\nConsidering the limited time by the user, "
+        "I have to give the solution based on the thinking directly now."
+        "\n</think>\n\n"
+    )
+
     def generate(
         self,
         prompt_text: str,
         image_paths: list[str] | None = None,
         max_new_tokens: int = 64,
     ) -> str:
-        """Generate text using Qwen3.5-VL."""
+        """Generate text using Qwen3.5-VL with optional thinking budget.
+
+        When ``thinking_budget`` is set (via YAML config), the generation is
+        split into two passes: the first produces up to *thinking_budget*
+        tokens of reasoning; if the model hasn't closed its ``</think>`` block
+        by then, an early-stop prompt is appended and a second pass generates
+        the final answer with the remaining token budget.
+        """
         pil_images = load_pil_images(image_paths)
         messages = self._build_messages(prompt_text, pil_images)
 
@@ -73,6 +89,13 @@ class Qwen35Model(VLMModel):
         ).to(self.device)
 
         input_len = inputs["input_ids"].shape[1]
+        thinking_budget = getattr(self, "thinking_budget", 0)
+
+        if thinking_budget > 0 and max_new_tokens > thinking_budget:
+            return self._generate_with_budget(
+                inputs, input_len, thinking_budget, max_new_tokens
+            )
+
         with torch.no_grad():
             output_ids = self.model.generate(
                 **inputs, do_sample=False, max_new_tokens=max_new_tokens
@@ -80,6 +103,58 @@ class Qwen35Model(VLMModel):
 
         generated_ids = output_ids[:, input_len:]
         return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+    def _generate_with_budget(
+        self,
+        inputs: dict,
+        input_len: int,
+        thinking_budget: int,
+        max_new_tokens: int,
+    ) -> str:
+        """Two-pass generation: capped thinking + answer."""
+        with torch.no_grad():
+            output_ids = self.model.generate(
+                **inputs, do_sample=False, max_new_tokens=thinking_budget
+            )
+
+        new_ids = output_ids[0, input_len:].tolist()
+
+        # If thinking already finished or generation completed, return as-is
+        if (self.THINK_END_TOKEN_ID in new_ids
+                or self.IM_END_TOKEN_ID in new_ids):
+            return self.processor.decode(
+                output_ids[0, input_len:], skip_special_tokens=True
+            )
+
+        # Thinking didn't finish — append early-stop suffix and generate again
+        suffix_ids = self.processor.tokenizer.encode(
+            self.EARLY_STOP_SUFFIX, add_special_tokens=False,
+            return_tensors="pt",
+        ).to(output_ids.device)
+        extended = torch.cat([output_ids, suffix_ids], dim=-1)
+        attn_mask = torch.ones_like(extended, dtype=torch.long)
+
+        remaining = max_new_tokens - len(new_ids) - suffix_ids.shape[-1]
+        if remaining <= 0:
+            remaining = 64
+
+        with torch.no_grad():
+            final_ids = self.model.generate(
+                input_ids=extended,
+                attention_mask=attn_mask,
+                do_sample=False,
+                max_new_tokens=remaining,
+            )
+
+        all_new = final_ids[0, input_len:].tolist()
+        # Find </think> and return only the content after it
+        try:
+            idx = len(all_new) - all_new[::-1].index(self.THINK_END_TOKEN_ID)
+        except ValueError:
+            idx = 0
+        return self.processor.decode(
+            all_new[idx:], skip_special_tokens=True
+        ).strip()
 
     def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
         """Evaluate trials with batched tokenization/generation when possible.

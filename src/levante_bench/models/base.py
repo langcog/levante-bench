@@ -520,6 +520,29 @@ class VLMModel:
                         raw_candidate=m.group("label"),
                     )
 
+        # 2.5: Last affirmative option mention (for verbose reasoning models).
+        # Catches "Option C matches the pattern" or "Option A is correct" buried
+        # in extended CoT.  We take the *last* match to favour the model's final
+        # conclusion over earlier speculative mentions.
+        affirmative_pattern = re.compile(
+            r'\boption\s+(?P<label>[A-Z])\b\s+(?:matches|fits|shows|is\s+(?:the\s+)?'
+            r'correct|is\s+the\s+answer|corresponds|completes|seems?\s+correct|'
+            r'looks?\s+correct|appears?\s+correct|works)',
+            re.IGNORECASE,
+        )
+        aff_matches = list(affirmative_pattern.finditer(text))
+        if aff_matches:
+            last = aff_matches[-1]
+            answer = last.group("label").upper()
+            if answer in labels_upper:
+                return ParseResult(
+                    value=answer,
+                    reason=text,
+                    parse_method="affirmative_option_mention",
+                    parse_confidence="low",
+                    raw_candidate=last.group("label"),
+                )
+
         # 3. Trailing sentence is itself a lone label (with optional punctuation).
         # Catches "…chain of thought. B." without scanning for arbitrary label
         # mentions earlier in the text.

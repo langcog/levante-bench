@@ -10,6 +10,8 @@ from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
+    should_fallback_to_sdpa,
+    warn_attn_fallback,
 )
 
 
@@ -27,7 +29,7 @@ class InternVL35Model(VLMModel):
         model_name: str = "OpenGVLab/InternVL3_5-1B-HF",
         device: str = "cpu",
         dtype: str = "bfloat16",
-        attn_implementation: str = "sdpa",
+        attn_implementation: str = "flash_attention_2",
         max_patches: int | None = None,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
@@ -48,13 +50,27 @@ class InternVL35Model(VLMModel):
             image_processor = getattr(self.processor, "image_processor", None)
             if image_processor is not None and hasattr(image_processor, "max_patches"):
                 image_processor.max_patches = int(self.max_patches)
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            self.model_name,
-            dtype=self.dtype,
-            attn_implementation=self.attn_implementation,
-            low_cpu_mem_usage=True,
-            trust_remote_code=True,
-        ).to(self.device)
+        requested_attn = self.attn_implementation
+        try:
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation=requested_attn,
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+            ).to(self.device)
+        except Exception as exc:
+            if not should_fallback_to_sdpa(requested_attn, exc):
+                raise
+            warn_attn_fallback(self.model_name, requested_attn, exc)
+            self.attn_implementation = "sdpa"
+            self.model = AutoModelForImageTextToText.from_pretrained(
+                self.model_name,
+                dtype=self.dtype,
+                attn_implementation="sdpa",
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+            ).to(self.device)
         self.model.eval()
 
     def generate(

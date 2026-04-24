@@ -11,6 +11,8 @@ library(dplyr)
 library(purrr)
 library(tidyr)
 library(readr)
+library(tibble)
+library(stringr)
 ```
 
 
@@ -22,11 +24,46 @@ library(readr)
 ## maps predicted label back to the image number and update the df
 
 
-library(jsonlite)
-library(dplyr)
-library(purrr)
-library(tibble)
-library(readr)
+normalize_option <- function(x) {
+  x %>%
+    as.character() %>%
+    str_remove_all("-") %>%
+    str_to_lower()
+}
+
+# helper function for general cleaning
+clean_item_uid <- function(df) {
+  df %>%
+    mutate(
+      item_uid = as.character(item_uid),
+      task_id = str_remove(item_uid, "_.*"),
+
+      # vocab
+      item_uid = str_replace(item_uid, "_word_", "__"),
+
+      # theory of mind
+      item_uid = if_else(
+        task_id == "tom",
+        str_remove(item_uid, "story[0-9]_"),
+        item_uid
+      ),
+      item_uid = if_else(
+        task_id == "tom",
+        str_replace(item_uid, "-2", "_"),
+        item_uid
+      )
+    ) %>%
+    select(-task_id)
+}
+
+# helper for mental rotation lookup only
+make_join_uid <- function(x, task_name) {
+  if (task_name == "mental-rotation") {
+    str_remove(x, "_[^_]+-[^_]+$")
+  } else {
+    x
+  }
+}
 
 process_task_predictions <- function(task_name) {
   allowed_tasks <- c(
@@ -37,32 +74,32 @@ process_task_predictions <- function(task_name) {
     "trog",
     "vocab"
   )
-  
+
   if (!task_name %in% allowed_tasks) {
     stop("task_name must be one of: ", paste(allowed_tasks, collapse = ", "))
   }
-  
+
   task_prefix <- gsub("-", "_", task_name)
   simulated_df_name <- paste0(task_prefix, "_simulated")
   option_key_df_name <- paste0(task_prefix, "_option_key")
-  
+
   if (!exists(simulated_df_name, envir = .GlobalEnv)) {
     stop("Object not found: ", simulated_df_name)
   }
   if (!exists(option_key_df_name, envir = .GlobalEnv)) {
     stop("Object not found: ", option_key_df_name)
   }
-  
+
   simulated_df <- get(simulated_df_name, envir = .GlobalEnv)
   option_key_df <- get(option_key_df_name, envir = .GlobalEnv)
-  
+
   option_orders <- fromJSON(
     "/Users/sunnyyu/Desktop/research/levante/data/option_orders_default.json",
     simplifyVector = FALSE
   )
-  
+
   task_trials <- option_orders$tasks[[task_name]]$trials
-  
+
   option_lookup <- map_dfr(task_trials, function(trial) {
     tibble(
       item_uid = trial$item_uid,
@@ -70,79 +107,104 @@ process_task_predictions <- function(task_name) {
       option = map_chr(trial$option_order, "option")
     )
   })
-  
+
   # special case: vocab item_uid mismatch between JSON and option key
-if (task_name == "vocab") {
+  if (task_name == "vocab") {
+    simulated_df <- simulated_df %>%
+      mutate(item_uid = sub("^vocab__", "vocab_word_", item_uid))
+
+    option_lookup <- option_lookup %>%
+      mutate(item_uid = sub("^vocab__", "vocab_word_", item_uid))
+  }
+
   simulated_df <- simulated_df %>%
-    mutate(item_uid = sub("^vocab__", "vocab_word_", item_uid))
-  
+    clean_item_uid() %>%
+    mutate(
+      predicted_label = as.character(predicted_label),
+      join_uid = make_join_uid(item_uid, task_name)
+    )
+
   option_lookup <- option_lookup %>%
-    mutate(item_uid = sub("^vocab__", "vocab_word_", item_uid))
-}
-  
-  simulated_df <- simulated_df %>%
+    clean_item_uid() %>%
     mutate(
-      item_uid = as.character(item_uid),
-      predicted_label = as.character(predicted_label)
+      label = as.character(label),
+      option = as.character(option),
+      join_uid = make_join_uid(item_uid, task_name)
     )
-  
+
   option_key_df <- option_key_df %>%
+    clean_item_uid() %>%
     mutate(
-      item_uid = as.character(item_uid),
-      across(starts_with("image"), as.character)
+      across(starts_with("image"), as.character),
+      join_uid = make_join_uid(item_uid, task_name)
     )
-  
+
   processed_df <- simulated_df %>%
     left_join(
-      option_lookup,
-      by = c("item_uid", "predicted_label" = "label")
+      option_lookup %>%
+        select(join_uid, label, option),
+      by = c("join_uid", "predicted_label" = "label")
     ) %>%
     rename(predicted_option = option) %>%
-    left_join(option_key_df, by = "item_uid")
-  
-  # special case: mental-rotation has only image1-image3
-  if (task_name == "mental-rotation") {
-    processed_df <- processed_df %>%
-      mutate(
-        matched_image = case_when(
-          predicted_option == image1 ~ "image1",
-          predicted_option == image2 ~ "image2",
-          predicted_option == image3 ~ "image3",
-          TRUE ~ NA_character_
-        )
+    left_join(
+      option_key_df %>%
+        select(join_uid, starts_with("image")),
+      by = "join_uid"
+    ) %>%
+    select(-join_uid)
+
+processed_df <- processed_df %>%
+  mutate(
+    predicted_option_match = normalize_option(predicted_option),
+    image1_match = normalize_option(image1),
+    image2_match = normalize_option(image2),
+    image3_match = normalize_option(image3),
+    image4_match = if ("image4" %in% names(.)) normalize_option(image4) else NA_character_
+  )
+
+if (task_name == "mental-rotation") {
+  processed_df <- processed_df %>%
+    mutate(
+      matched_image = case_when(
+        predicted_option_match == image1_match ~ "image1",
+        predicted_option_match == image2_match ~ "image2",
+        predicted_option_match == image3_match ~ "image3",
+        TRUE ~ NA_character_
       )
-  } else {
-    processed_df <- processed_df %>%
-      mutate(
-        matched_image = case_when(
-          predicted_option == image1 ~ "image1",
-          predicted_option == image2 ~ "image2",
-          predicted_option == image3 ~ "image3",
-          predicted_option == image4 ~ "image4",
-          TRUE ~ NA_character_
-        )
+    )
+} else {
+  processed_df <- processed_df %>%
+    mutate(
+      matched_image = case_when(
+        predicted_option_match == image1_match ~ "image1",
+        predicted_option_match == image2_match ~ "image2",
+        predicted_option_match == image3_match ~ "image3",
+        predicted_option_match == image4_match ~ "image4",
+        TRUE ~ NA_character_
       )
-  }
-  
+    )
+}
+
+
   processed_df %>%
     select(any_of(c(
       "item_uid", "predicted_label", "predicted_option",
       "image1", "image2", "image3", "image4", "matched_image"
     ))) %>%
     print(n = 20)
-  
+
   output_file <- paste0(task_name, "_processed.csv")
   write_csv(processed_df, output_file)
-  
+
   message("Saved processed file to: ", output_file)
-  
+
   processed_df
 }
 
 ```
 
 ```{r}
-process_task_predictions("vocab")
+process_task_predictions("egma-math")
 ```
 
 
@@ -180,22 +242,16 @@ make_item_distribution <- function(processed_df, output_file = "distribution.csv
   
   # normalize rows to sum to 1
   distribution_df <- distribution_df %>%
-    mutate(
-      image1 = coalesce(image1, 0),
-      image2 = coalesce(image2, 0),
-      image3 = coalesce(image3, 0),
-      image4 = coalesce(image4, 0)
-    ) %>%
-    rowwise() %>%
-    mutate(
-      total = sum(c_across(image1:image4)),
-      image1 = ifelse(total > 0, image1 / total, 0),
-      image2 = ifelse(total > 0, image2 / total, 0),
-      image3 = ifelse(total > 0, image3 / total, 0),
-      image4 = ifelse(total > 0, image4 / total, 0)
-    ) %>%
-    ungroup() %>%
-    select(item_uid, image1, image2, image3, image4)
+  mutate(across(all_of(possible_images), ~coalesce(.x, 0))) %>%
+  rowwise() %>%
+  mutate(
+    total = sum(c_across(all_of(possible_images)))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    across(all_of(possible_images), ~ ifelse(total > 0, .x / total, 0))
+  ) %>%
+  select(item_uid, all_of(possible_images))
   
   # save
   write_csv(distribution_df, output_file)
@@ -214,29 +270,48 @@ egma_math_distribution <- make_item_distribution(
   output_file = "egma-math_distribution.csv"
 )
 
+
+```
+
+```{r}
 matrix_reasoning_distribution <- make_item_distribution(
   matrix_reasoning_processed,
   output_file = "matrix-reasoning_distribution.csv"
 )
 
+```
+```{r}
+trog_distribution <- make_item_distribution(
+  trog_processed,
+  output_file = "trog_distribution.csv"
+)
+```
+
+
+```{r}
+vocab_distribution <- make_item_distribution(
+  vocab_processed,
+  output_file = "vocab_distribution.csv"
+)
+```
+
+
+```{r}
 
 tom_distribution <- make_item_distribution(
   theory_of_mind_processed,
   output_file = "theory-of-mind_distribution.csv"
 )
 
-trog_distribution <- make_item_distribution(
-  trog_processed,
-  output_file = "trog_distribution.csv"
+```
+```{r}
+mental_rotation_distribution <- make_item_distribution(
+  mental_rotation_processed,
+  output_file = "mental_rotation_distribution.csv"
 )
-
-vocab_distribution <- make_item_distribution(
-  vocab_processed,
-  output_file = "vocab_distribution.csv"
-)
-
 
 ```
+
 
 ### distribution analysis 
 ## get KL divergence
@@ -297,9 +372,170 @@ get_kl_by_item <- function(human_df, model_df, epsilon = 1e-12) {
 
 ```{r}
 kl_results <- get_kl_by_item(
-  human_df = egma_math_proportions_by_ability,
-  model_df = egma_math_distribution
+  human_df = mental_rotation_proportions,
+  model_df = mental_rotation_distribution
 )
 kl_results
+write_csv(kl_results, 'mental_rotation_kl.csv')
 ```
+## plotting code
+# for each task, most similar to least similar task type 
+```{r}
+library(dplyr)
+library(stringr)
+library(ggplot2)
+
+plot_df <- kl_results %>%
+  mutate(
+    item_type = str_extract(item_uid, "^[^_]+_[^_]+") # use this for egma-math, trog
+    #item_type = str_extract(item_uid, "^[^_]+_[^_]+_[^_]+") # matrix-reasoning, vocab
+  ) %>%
+  group_by(item_type) %>%
+  summarise(
+    mean_kl = mean(kl_divergence, na.rm = TRUE),
+    n = sum(!is.na(kl_divergence)),
+    .groups = "drop"
+  ) %>%
+  arrange(mean_kl) %>%  # lowest KL = most similar
+  mutate(
+    item_type = factor(item_type, levels = item_type)
+  )
+
+ggplot(plot_df, aes(x = item_type, y = mean_kl)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Item type",
+    y = "Average KL divergence",
+    title = "Average KL divergence by item type (vocab)",
+    subtitle = "Ranked from most similar to least similar"
+  ) +
+  theme_classic(base_size = 14)
+```
+
+
+
+# average kl_divergence for each ability bin (averaged across task)
+```{r}
+
+# average KL per ability bin (across all items/tasks)
+plot_df <- kl_results %>%
+  group_by(ability_bin) %>%
+  summarise(
+    mean_kl = mean(kl_divergence, na.rm = TRUE),
+    n = sum(!is.na(kl_divergence)),
+    .groups = "drop"
+  ) %>%
+  arrange(mean_kl) %>%  # most similar (low KL) → least similar
+  mutate(
+    ability_bin = factor(ability_bin, levels = ability_bin)
+  )
+
+plot_df <- plot_df %>%
+  mutate(
+    bin_start = as.numeric(sub("_.*", "", ability_bin))
+  ) %>%
+  arrange(bin_start) %>%
+  mutate(ability_bin = factor(ability_bin, levels = ability_bin))
+
+# plot
+ggplot(plot_df, aes(x = ability_bin, y = mean_kl)) +
+  geom_col() +
+  labs(
+    x = "Ability bin",
+    y = "Average KL divergence",
+    title = "Average KL divergence by ability bin (vocab, overall)",
+    subtitle = "Averaged across all tasks (ranked)"
+  ) +
+  theme_classic(base_size = 14)
+```
+# average KL per bin per task
+
+```{r}
+
+# extract task type + compute mean KL per (task_type, ability_bin)
+plot_df <- kl_results %>%
+  mutate(
+    task_type = str_extract(item_uid, "^[^_]+_[^_]+")  #math_add
+  ) %>%
+  filter(task_type %in% c(
+   # "math_multiply", "math_identify", "math_add",
+  #  "math_missing", "math_subtract", "math_compare"
+    "trog_2combo", "trog_3combo"
+  )) %>%
+  group_by(task_type, ability_bin) %>%
+  summarise(
+    mean_kl = mean(kl_divergence, na.rm = TRUE),
+    n = sum(!is.na(kl_divergence)),
+    .groups = "drop"
+  )
+
+# optional: order ability bins numerically (e.g., -1_0, 0_1, ...)
+plot_df <- plot_df %>%
+  mutate(
+    bin_start = as.numeric(sub("_.*", "", ability_bin))
+  ) %>%
+  arrange(task_type, bin_start) %>%
+  group_by(task_type) %>%
+  mutate(
+    ability_bin = factor(ability_bin, levels = unique(ability_bin))
+  ) %>%
+  ungroup()
+
+# facet plot (one panel per task type)
+ggplot(plot_df, aes(x = ability_bin, y = mean_kl)) +
+  geom_col() +
+  facet_wrap(~ task_type, scales = "free_y") +
+  labs(
+    x = "Ability bin",
+    y = "Average KL divergence",
+    title = "Average KL divergence by ability bin and task type (trog)"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+# extract task type + compute mean KL per (task_type, ability_bin)
+plot_df <- kl_results %>%
+  mutate(
+    task_type = str_extract(item_uid, "^[^_]+_[^_]+_[^_]+")  #math_add
+  ) %>%
+  filter(task_type %in% c(
+    "matrix_set3_md", "matrix_set3_pd"
+  )) %>%
+  group_by(task_type, ability_bin) %>%
+  summarise(
+    mean_kl = mean(kl_divergence, na.rm = TRUE),
+    n = sum(!is.na(kl_divergence)),
+    .groups = "drop"
+  )
+
+# optional: order ability bins numerically (e.g., -1_0, 0_1, ...)
+plot_df <- plot_df %>%
+  mutate(
+    bin_start = as.numeric(sub("_.*", "", ability_bin))
+  ) %>%
+  arrange(task_type, bin_start) %>%
+  group_by(task_type) %>%
+  mutate(
+    ability_bin = factor(ability_bin, levels = unique(ability_bin))
+  ) %>%
+  ungroup()
+
+# facet plot (one panel per task type)
+ggplot(plot_df, aes(x = ability_bin, y = mean_kl)) +
+  geom_col() +
+  facet_wrap(~ task_type, scales = "free_y") +
+  labs(
+    x = "Ability bin",
+    y = "Average KL divergence",
+    title = "Average KL divergence by ability bin and task type (matrix reasoning)"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
 

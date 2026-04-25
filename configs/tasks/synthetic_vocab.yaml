@@ -3,7 +3,7 @@
 task_id: synthetic-vocab
 benchmark_name: Synthetic Vocabulary
 internal_name: synthetic_vocab
-corpus_file: new-vocab-photo-2026-04-25/manifest.csv
+corpus_file: new-vocab-photo-pilot-100-v1/manifest.csv
 context_type: none
 option_type: image
 n_options: 4

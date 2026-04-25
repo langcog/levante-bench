@@ -8,9 +8,9 @@ Build a 170-item, 4-choice vocabulary task for children aged 3-11. Each item has
 
 ## Current Version
 
-The active generated-photo asset version is:
+The active generated-photo pilot asset version is:
 
-`assets/new-vocab-photo-2026-04-25`
+`assets/new-vocab-photo-pilot-100-v1`
 
 Important files:
 
@@ -25,7 +25,7 @@ Important files:
 
 The previous synthetic asset set used simple PIL-drawn icons with visible text labels. That made many images visually near-identical and leaked the answer through OCR. This rebuild requests realistic photographs and explicitly prohibits text or label-like content in each image prompt.
 
-The task uses 170 target vocabulary terms and 680 unique option images. A 170-item, 4-choice task has 680 option placements, so distractors are drawn from the broader filtered THINGS/AoA pool rather than only from the target list. This costs more to generate and review, but gives each item a carefully selected distractor set without reusing target images as distractors.
+The intended full task uses 170 target vocabulary terms and 680 unique option images. A 170-item, 4-choice task has 680 option placements, so distractors are drawn from the broader filtered THINGS/AoA pool rather than only from the target list. This costs more to generate and review, but gives each item a carefully selected distractor set without reusing target images as distractors. The current local pilot has 100 target vocabulary terms and 400 unique option images.
 
 Each item receives a unique 3-distractor set. Distractor terms are not reused across items and do not overlap the 170 target answers. Following the Long et al. style, distractors are selected from candidates near the target AoA when possible: one high-similarity distractor, one medium-similarity distractor, and one low-similarity distractor. Similarity uses OpenAI CLIP text embeddings when available, with a category/tag/age heuristic fallback.
 
@@ -59,7 +59,9 @@ Dry run, which writes the manifest, prompt log, distractor plan, translations, a
 
 ```bash
 python scripts/experimental/generate_photo_vocab_task.py \
-  --version new-vocab-photo-2026-04-25 \
+  --version new-vocab-photo-pilot-100-v1 \
+  --n-items 100 \
+  --seed-items-manifest scripts/new_vocab_assets/assets/new-vocab-photo-pilot-50-v1/manifest.csv \
   --provider gemini
 ```
 
@@ -67,7 +69,9 @@ Generate images with Gemini/Imagen:
 
 ```bash
 python scripts/experimental/generate_photo_vocab_task.py \
-  --version new-vocab-photo-2026-04-25 \
+  --version new-vocab-photo-pilot-100-v1 \
+  --n-items 100 \
+  --seed-items-manifest scripts/new_vocab_assets/assets/new-vocab-photo-pilot-50-v1/manifest.csv \
   --provider gemini \
   --generate-images \
   --validate
@@ -82,7 +86,7 @@ The built-in validation checks:
 - all manifest rows use task ID `synthetic-vocab`
 - each item has exactly three distractors
 - no item includes its answer as a distractor
-- all 170 distractor sets are unique
+- all distractor sets are unique
 - every option term has a prompt record
 - every generated image file exists
 - generated images are readable and at least 512 px on each side
@@ -94,12 +98,13 @@ Manual review is still required before scoring. Reviewers should inspect `metada
 
 As of the latest dry run:
 
-- 170 manifest items were generated.
-- 680 unique image prompts were generated.
-- 170 unique distractor sets were generated.
-- 510 unique non-target distractor terms were generated.
+- 100 manifest items were generated for `new-vocab-photo-pilot-100-v1`.
+- The first 50 rows from `new-vocab-photo-pilot-50-v1` are preserved exactly.
+- 400 unique image prompts were generated.
+- 100 unique distractor sets were generated.
+- 300 unique non-target distractor terms were generated.
 - The manifest was generated from the THINGS/AoA/Long input CSVs, not the legacy embedded lexicon.
 - Target terms are balanced across low/mid/high AoA terciles rather than selecting only the earliest-acquired terms.
 - Age bands are clamped to 3-11.
-- `configs/tasks/synthetic_vocab.yaml` points to `new-vocab-photo-2026-04-25/manifest.csv`.
-- Full image generation has not been run in this workspace yet.
+- `configs/tasks/synthetic_vocab.yaml` points to `new-vocab-photo-pilot-100-v1/manifest.csv`.
+- Full image generation has passed validation for the 100-item pilot in this workspace.

@@ -4,10 +4,3 @@ name: qwen3vl_30b
 hf_name: Qwen/Qwen3-VL-30B-A3B-Instruct
 params_b: 30.0
 family: qwen3vl
-max_new_tokens: 128
-dtype: bfloat16
-
-capabilities:
-  - text_only
-  - single_image
-  - multi_image

@@ -7,10 +7,4 @@ api_base: https://router.huggingface.co/v1
 timeout_s: 300
 retry_attempts: 4
 max_output_tokens_cap: 1024
-max_new_tokens: 128
 use_json_format: true
-
-capabilities:
-  - text_only
-  - single_image
-  - multi_image

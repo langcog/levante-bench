@@ -8,13 +8,7 @@
 
 name: aquila_vl
 hf_name: BAAI/Aquila-VL-2B-Intermediate
-max_new_tokens: 128
 dtype: float16
 conv_template: qwen_1_5
 checkpoint_subdir: stage3-llava-qwen
 revision: null
-
-capabilities:
-  - text_only
-  - single_image
-  - multi_image

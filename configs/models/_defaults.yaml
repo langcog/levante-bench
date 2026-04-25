@@ -1,0 +1,12 @@
+# Defaults shared by all model configs in this directory.
+# Per-model files in configs/models/*.yaml override these on a per-key basis.
+
+max_new_tokens: 1024
+thinking_budget: 512
+dtype: bfloat16
+attn_implementation: flash_attention_2
+max_image_edge: 512
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

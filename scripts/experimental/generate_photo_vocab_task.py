@@ -67,25 +67,36 @@ GENERATED_IMAGE_EXCLUDED_TERMS = {
     "man",
     "person",
     "woman",
+    "ankle",
     "arm",
+    "antelope",
     "chin",
     "ear",
     "elbow",
     "eye",
     "face",
+    "figurine",
     "finger",
     "foot",
     "hair",
     "hand",
+    "handcuff",
     "head",
     "knee",
     "leg",
+    "mannequin",
     "mouth",
+    "mustache",
     "nose",
+    "nutcracker",
     "pantyhose",
+    "pocketknife",
     "seahorse",
     "skin",
     "shuffleboard",
+    "scarecrow",
+    "statue",
+    "stomach",
     "taffy",
     "tattoo",
     "toe",
@@ -96,12 +107,15 @@ GENERATED_IMAGE_EXCLUDED_TERMS = {
     "bazooka",
     "bullet",
     "cannon",
+    "cannonball",
     "dagger",
+    "firecracker",
     "gun",
     "knife",
     "missile",
     "rifle",
     "shotgun",
+    "slingshot",
     "sword",
 }
 
@@ -148,6 +162,16 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Optional existing manifest whose answer labels should be preserved as "
             "targets before adding more stratified THINGS/AoA targets."
+        ),
+    )
+    parser.add_argument(
+        "--seed-items-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional existing manifest whose complete rows should be preserved "
+            "before adding more generated items. Existing option terms are reserved "
+            "so newly generated items use new images."
         ),
     )
     parser.add_argument(
@@ -315,6 +339,49 @@ def load_seed_target_labels(path: Path | None) -> list[str]:
         ]
 
 
+def load_seed_item_rows(path: Path | None) -> list[dict[str, str]]:
+    if path is None:
+        return []
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = [dict(row) for row in csv.DictReader(handle)]
+    for row in rows:
+        answer = str(row.get("answer", "")).strip()
+        alternatives = [
+            part.strip()
+            for part in str(row.get("response_alternatives", "")).split(",")
+            if part.strip()
+        ]
+        if not answer or len(alternatives) != 3:
+            raise SystemExit(
+                f"Seed item manifest row for '{answer or '<missing answer>'}' must have exactly 3 alternatives."
+            )
+        row["task"] = TASK_ID
+        row["item_uid"] = row.get("item_uid") or f"synthetic_vocab__{slugify(answer)}"
+        row["answer"] = answer
+        row["response_alternatives"] = ",".join(alternatives)
+        row["prompt_phrase"] = row.get("prompt_phrase") or answer
+        row["full_prompt"] = row.get("full_prompt") or FULL_PROMPT_TEMPLATE.format(word=answer)
+        row["trial_type"] = row.get("trial_type") or "test"
+        row["age_band"] = str(row.get("age_band") or "11")
+        row["category"] = row.get("category") or "object"
+        row["hardness"] = row.get("hardness") or ""
+        row["high_similarity_distractor"] = row.get("high_similarity_distractor") or alternatives[0]
+        row["medium_similarity_distractor"] = row.get("medium_similarity_distractor") or alternatives[1]
+        row["low_similarity_distractor"] = row.get("low_similarity_distractor") or alternatives[2]
+        row["similar_distractor"] = row.get("similar_distractor") or alternatives[0]
+    return rows
+
+
+def row_option_terms(row: dict[str, str]) -> list[str]:
+    terms = [str(row.get("answer", "")).strip()]
+    terms.extend(
+        part.strip()
+        for part in str(row.get("response_alternatives", "")).split(",")
+        if part.strip()
+    )
+    return [term for term in terms if term]
+
+
 def split_band_counts(n_items: int, n_bands: int) -> list[int]:
     base = n_items // n_bands
     remainder = n_items % n_bands
@@ -416,16 +483,20 @@ def read_things_lexicon(
     n_items: int,
     seed: int,
     seed_targets_manifest: Path | None,
+    excluded_labels: set[str] | None = None,
 ) -> list[dict[str, str]]:
     aoa_by_word = load_aoa(aoa_csv)
     original_targets = load_original_targets(original_targets_csv)
     seed_labels = load_seed_target_labels(seed_targets_manifest)
+    excluded_labels = {label.lower() for label in excluded_labels or set()}
     candidates = []
 
     with things_meta_csv.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
             label = str(row.get("label", "")).strip().lower()
             if not label or label in original_targets:
+                continue
+            if label in excluded_labels:
                 continue
             if label in GENERATED_IMAGE_EXCLUDED_TERMS:
                 continue
@@ -672,33 +743,68 @@ def normalize_rows(
     seed: int,
     use_clip_similarity: bool,
     clip_device: str,
+    seed_item_rows: list[dict[str, str]] | None = None,
 ) -> list[dict[str, str]]:
     normalized_pool = [normalize_source_row(row, index, n_items) for index, row in enumerate(rows)]
-    selected = normalized_pool[:n_items]
+    seed_item_rows = seed_item_rows or []
+    seed_answers = {row["answer"].strip().lower() for row in seed_item_rows}
+    reserved_option_answers = {
+        term.strip().lower()
+        for row in seed_item_rows
+        for term in row_option_terms(row)
+    }
+    if len(seed_item_rows) > n_items:
+        raise SystemExit(
+            f"Seed item manifest has {len(seed_item_rows)} rows; requested only {n_items}."
+        )
+    if seed_item_rows:
+        additional_needed = n_items - len(seed_item_rows)
+        additional = [
+            row
+            for row in normalized_pool
+            if row["answer"].strip().lower() not in reserved_option_answers
+            and row["answer"].strip().lower() not in seed_answers
+        ][:additional_needed]
+        selected = seed_item_rows + additional
+    else:
+        selected = normalized_pool[:n_items]
     if len(selected) != n_items:
         raise SystemExit(f"Requested {n_items} rows but only found {len(selected)}")
 
     rng = random.Random(seed)
     selected_answers = {row["answer"] for row in selected}
-    distractor_pool = [row for row in normalized_pool if row["answer"] not in selected_answers]
+    selected_answers_lc = {answer.strip().lower() for answer in selected_answers}
+    distractor_pool = [
+        row
+        for row in normalized_pool
+        if row["answer"].strip().lower() not in selected_answers_lc
+        and row["answer"].strip().lower() not in reserved_option_answers
+    ]
     if len(distractor_pool) < n_items * 3:
         raise SystemExit(
             f"Only {len(distractor_pool)} non-target distractor candidates available; "
             f"need {n_items * 3} for unique distractor images."
         )
+    rows_needing_distractors = [
+        row for row in selected if row["answer"].strip().lower() not in seed_answers
+    ]
     clip_similarity = build_clip_similarity(
-        target_rows=selected,
+        target_rows=rows_needing_distractors,
         candidate_rows=distractor_pool,
         enabled=use_clip_similarity,
         device=clip_device,
     )
     used_distractor_sets: set[tuple[str, str, str]] = set()
-    used_distractor_answers: set[str] = set()
-    for row in selected:
+    used_distractor_answers: set[str] = set(reserved_option_answers)
+    for row in seed_item_rows:
+        used_distractor_sets.add(
+            tuple(sorted(part.strip() for part in row["response_alternatives"].split(",")))
+        )
+    for row in rows_needing_distractors:
         candidates = [
             candidate
             for candidate in distractor_pool
-            if candidate["answer"] not in used_distractor_answers
+            if candidate["answer"].strip().lower() not in used_distractor_answers
         ]
         high, medium, low = pick_similarity_tiered_distractors(row, candidates, rng, clip_similarity)
         distractors = [high, medium, low]
@@ -708,7 +814,7 @@ def normalize_rows(
         if tuple(sorted(d["answer"] for d in distractors)) in used_distractor_sets:
             raise SystemExit(f"Repeated distractor set for {row['answer']}")
         used_distractor_sets.add(tuple(sorted(d["answer"] for d in distractors)))
-        used_distractor_answers.update(d["answer"] for d in distractors)
+        used_distractor_answers.update(d["answer"].strip().lower() for d in distractors)
         row["high_similarity_distractor"] = high["answer"]
         row["medium_similarity_distractor"] = medium["answer"]
         row["low_similarity_distractor"] = low["answer"]
@@ -1106,6 +1212,15 @@ def main() -> int:
     )
     version_root = assets_root / args.version
     visual_dir = version_root / "visual" / "vocab"
+    seed_item_rows = load_seed_item_rows(
+        args.seed_items_manifest.resolve() if args.seed_items_manifest is not None else None
+    )
+    reserved_seed_terms = {
+        term.strip().lower()
+        for row in seed_item_rows
+        for term in row_option_terms(row)
+    }
+    seed_item_answers = {row["answer"].strip().lower() for row in seed_item_rows}
 
     input_csvs = [
         args.things_meta_csv.resolve(),
@@ -1123,8 +1238,11 @@ def main() -> int:
             seed_targets_manifest=(
                 args.seed_targets_manifest.resolve()
                 if args.seed_targets_manifest is not None
+                else args.seed_items_manifest.resolve()
+                if args.seed_items_manifest is not None
                 else None
             ),
+            excluded_labels=reserved_seed_terms - seed_item_answers,
         )
     elif args.source_manifest is None and legacy_lexicon_script.exists():
         source_rows = read_legacy_lexicon(legacy_lexicon_script, n_items=args.n_items)
@@ -1136,6 +1254,7 @@ def main() -> int:
         seed=args.seed,
         use_clip_similarity=args.use_clip_similarity and all(path.exists() for path in input_csvs),
         clip_device=args.clip_device,
+        seed_item_rows=seed_item_rows,
     )
     records = build_prompt_records(rows, visual_dir=visual_dir)
 

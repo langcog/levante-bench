@@ -47,15 +47,15 @@ declare -A MODEL_SIZE_MAP=(
 )
 
 declare -A BATCH_SIZE_MAP=(
-  ["smolvlm2"]="1"
-  ["internvl35"]="1"
-  ["qwen35"]="1"
+  ["smolvlm2"]="4"
+  ["internvl35"]="2"
+  ["qwen35"]="2"
   ["qwen3vl_30b"]="1"
   ["qwen25vl_32b"]="1"
-  ["tinyllava"]="1"
-  ["aquila_vl"]="1"
-  ["gemma3"]="1"
-  ["gemma4"]="1"
+  ["tinyllava"]="2"
+  ["aquila_vl"]="2"
+  ["gemma3"]="2"
+  ["gemma4"]="2"
 )
 
 DEFAULT_MODELS=(

@@ -1,12 +1,12 @@
 #!/bin/bash
-# Submit 10 Slurm launches of 10 true-random runs each (total 100).
+# Submit 10 Slurm launches of 5 true-random runs each (total 100).
 #
 # Default target model is qwen35-4B: typically much stronger than smolvlm2-256M
 # while still practical for repeated hosted runs.
 #
 # Usage:
-#   bash scripts/slurm/submit_resampling_100.sh
-#   MODEL_NAME=internvl35 MODEL_SIZE=8B VERSION=v1_new_parser bash scripts/slurm/submit_resampling_100.sh
+#   bash scripts/slurm/submit_resampling_50.sh
+#   MODEL_NAME=internvl35 MODEL_SIZE=8B VERSION=v1_new_parser bash scripts/slurm/submit_resampling_50.sh
 
 set -euo pipefail
 
@@ -32,12 +32,12 @@ MODEL_NAME="${MODEL_NAME:-qwen35}"
 MODEL_SIZE="${MODEL_SIZE:-4B}"
 VERSION="${VERSION:-v1}"
 DEVICE="${DEVICE:-cuda}"
-BATCH_SIZE="${BATCH_SIZE:-1}"
-MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-512}"
-USE_JSON_FORMAT="${USE_JSON_FORMAT:-false}"
+BATCH_SIZE="${BATCH_SIZE:-2}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-2048}"
+USE_JSON_FORMAT="${USE_JSON_FORMAT:-true}"
 
 TOTAL_LAUNCHES=10
-RUNS_PER_LAUNCH=10
+RUNS_PER_LAUNCH=5 #down from 10 for better timing
 
 RESULTS_ROOT="${RESULTS_ROOT:-$CODE_DIR/results/resampling/${MODEL_NAME}-${MODEL_SIZE}}"
 

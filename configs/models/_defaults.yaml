@@ -6,6 +6,7 @@ thinking_budget: 512
 dtype: bfloat16
 attn_implementation: flash_attention_2
 max_image_edge: 512
+image_size: 512
 capabilities:
   - text_only
   - single_image

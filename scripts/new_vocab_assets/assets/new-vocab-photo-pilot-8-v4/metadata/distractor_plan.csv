@@ -1,0 +1,9 @@
+item_uid,answer,high_similarity_distractor,medium_similarity_distractor,low_similarity_distractor,high_similarity_aoa,medium_similarity_aoa,low_similarity_aoa,age_band,category,hardness
+synthetic_vocab__key,key,rag,grape,lava,5.220,3.940,6.440,4,object,1
+synthetic_vocab__banana,banana,lemon,pea,hyena,4.740,3.950,6.610,4,object,1
+synthetic_vocab__button,button,knob,crutch,floss,4.680,7.210,7.060,5,object,2
+synthetic_vocab__umbrella,umbrella,raincoat,jeans,noodle,5.500,5.260,3.440,6,object,2
+synthetic_vocab__celery,celery,lettuce,bun,anteater,4.280,5.790,8.500,6,object,2
+synthetic_vocab__hydrant,hydrant,hose,hovercraft,cable,5.330,9.280,9.200,7,object,2
+synthetic_vocab__microwave,microwave,oven,taffy,suspenders,5.670,7.440,7.390,8,object,3
+synthetic_vocab__stethoscope,stethoscope,headset,tray,aardvark,9.050,6.050,9.890,8,object,3

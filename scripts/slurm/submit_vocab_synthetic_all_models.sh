@@ -28,7 +28,8 @@ CODE_DIR="${PROJECT_ROOT}/code/levante-bench"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 VERSION="${VERSION:-v1}"
 DEVICE="${DEVICE:-cuda}"
-TASKS_CSV="${TASKS_CSV:-vocab,synthetic-vocab}"
+# Use ';' here because sbatch --export uses commas as key separators.
+TASKS_CSV="${TASKS_CSV:-vocab;synthetic-vocab}"
 WAIT_FOR_COMPLETION="${WAIT_FOR_COMPLETION:-1}"
 POLL_SECONDS="${POLL_SECONDS:-20}"
 

@@ -32,6 +32,8 @@ USE_JOB_OUTPUT_ROOT="${USE_JOB_OUTPUT_ROOT:-1}"
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 # Default full benchmark task set; can be overridden via TASKS_CSV export.
+# NOTE: sbatch --export treats commas as variable separators, so callers that
+# pass TASKS_CSV via --export should prefer ';' as the delimiter.
 TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
 
 CODE_DIR="${PROJECT_ROOT}/code/levante-bench"
@@ -59,7 +61,8 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
   fi
   echo ""
   echo "tasks:"
-  IFS=',' read -r -a TASK_LIST <<< "$TASKS_CSV"
+  tasks_normalized="${TASKS_CSV//;/,}"
+  IFS=',' read -r -a TASK_LIST <<< "$tasks_normalized"
   for task in "${TASK_LIST[@]}"; do
     task_trimmed="$(echo "$task" | xargs)"
     if [[ -n "$task_trimmed" ]]; then

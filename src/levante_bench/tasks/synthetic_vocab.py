@@ -94,6 +94,23 @@ class SyntheticVocabDataset(VLMDataset):
         phrase = str(source.get("prompt_phrase", "")).strip() or str(fallback_phrase)
         return self.build_localized_prompt(prompt, phrase)
 
+    @staticmethod
+    def _ensure_option_placeholders(prompt: str, phrase: str) -> str:
+        """Guarantee prompts include labeled option-image anchors A/B/C/D.
+
+        The synthetic manifest prompts are natural-language only, but model
+        adapters rely on <imageN> placeholders to bind option labels to images.
+        """
+        p = str(prompt or "").strip()
+        if "<image1>" in p and "<image2>" in p:
+            return p
+        phrase_s = str(phrase or "").strip()
+        return (
+            f'Choose the image that matches the text: "{phrase_s}". '
+            "Answer with A, B, C, or D. "
+            "A: <image1>; B: <image2>; C: <image3>; D: <image4>"
+        )
+
     def __len__(self):
         return len(self.manifest)
 
@@ -129,10 +146,14 @@ class SyntheticVocabDataset(VLMDataset):
                 )
             option_image_paths.append(str(path))
 
-        prompt = self._localized_prompt(
+        localized_prompt = self._localized_prompt(
             item_uid=item_uid,
             fallback_prompt=str(row.get("full_prompt", "")),
             fallback_phrase=str(row.get("prompt_phrase", "")),
+        )
+        prompt = self._ensure_option_placeholders(
+            prompt=localized_prompt,
+            phrase=str(row.get("prompt_phrase", "")),
         )
 
         return {

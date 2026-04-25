@@ -59,6 +59,52 @@ GLOBAL_FRIENDLY_NOTES = {
     "totem": "Use a generic carved wooden pole; avoid sacred or identifiable cultural designs.",
 }
 
+GENERATED_IMAGE_EXCLUDED_TERMS = {
+    "baby",
+    "beard",
+    "boy",
+    "girl",
+    "man",
+    "person",
+    "woman",
+    "arm",
+    "chin",
+    "ear",
+    "elbow",
+    "eye",
+    "face",
+    "finger",
+    "foot",
+    "hair",
+    "hand",
+    "head",
+    "knee",
+    "leg",
+    "mouth",
+    "nose",
+    "pantyhose",
+    "seahorse",
+    "skin",
+    "shuffleboard",
+    "taffy",
+    "tattoo",
+    "toe",
+    "tongue",
+    "tooth",
+    "whistle",
+    "wrist",
+    "bazooka",
+    "bullet",
+    "cannon",
+    "dagger",
+    "gun",
+    "knife",
+    "missile",
+    "rifle",
+    "shotgun",
+    "sword",
+}
+
 
 @dataclass(frozen=True)
 class PromptRecord:
@@ -95,6 +141,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--version", default=DEFAULT_VERSION)
     parser.add_argument("--n-items", type=int, default=170)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--seed-targets-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional existing manifest whose answer labels should be preserved as "
+            "targets before adding more stratified THINGS/AoA targets."
+        ),
+    )
     parser.add_argument(
         "--things-meta-csv",
         type=Path,
@@ -249,6 +304,17 @@ def load_original_targets(path: Path) -> set[str]:
         }
 
 
+def load_seed_target_labels(path: Path | None) -> list[str]:
+    if path is None:
+        return []
+    with path.open(newline="", encoding="utf-8") as handle:
+        return [
+            str(row["answer"]).strip().lower()
+            for row in csv.DictReader(handle)
+            if str(row.get("answer", "")).strip()
+        ]
+
+
 def split_band_counts(n_items: int, n_bands: int) -> list[int]:
     base = n_items // n_bands
     remainder = n_items % n_bands
@@ -259,6 +325,7 @@ def select_stratified_by_aoa(
     candidates: list[dict[str, str]],
     n_items: int,
     seed: int,
+    seed_labels: list[str] | None = None,
 ) -> list[dict[str, str]]:
     sorted_candidates = sorted(
         candidates,
@@ -276,9 +343,35 @@ def select_stratified_by_aoa(
         sorted_candidates[band_size * 2 :],
     ]
     rng = random.Random(seed)
+    by_label = {row["answer"].lower(): row for row in sorted_candidates}
     selected: list[dict[str, str]] = []
+    selected_labels: set[str] = set()
+    band_by_label: dict[str, str] = {}
+    for band_name, band in zip(["low", "mid", "high"], bands):
+        for row in band:
+            band_by_label[row["answer"].lower()] = band_name
+
+    for label in seed_labels or []:
+        if label not in by_label:
+            raise SystemExit(f"Seed target '{label}' was not found in the filtered THINGS/AoA pool.")
+        if label in selected_labels:
+            continue
+        row = by_label[label]
+        row["_aoa_tercile"] = band_by_label[label]
+        selected.append(row)
+        selected_labels.add(label)
+
+    if len(selected) > n_items:
+        raise SystemExit(
+            f"Seed manifest has {len(selected)} usable target labels; requested only {n_items}."
+        )
+    seed_count = len(selected)
 
     for band_name, needed, band in zip(["low", "mid", "high"], counts, bands):
+        locked_in_band = sum(
+            1 for row in selected if row.get("_aoa_tercile") == band_name
+        )
+        needed = max(0, needed - locked_in_band)
         if len(band) < needed:
             raise SystemExit(
                 f"Only {len(band)} candidates available in AoA {band_name} band; "
@@ -287,7 +380,7 @@ def select_stratified_by_aoa(
         # Keep randomness for variety, but draw from the clearer, more nameable side of each band.
         nameable_pool_size = min(len(band), max(needed * 2, needed))
         nameable_pool = sorted(
-            band,
+            [row for row in band if row["answer"].lower() not in selected_labels],
             key=lambda row: (
                 -parse_float(row.get("_nameability", ""), default=0.0),
                 parse_float(row.get("_aoa", ""), default=99.0),
@@ -297,10 +390,17 @@ def select_stratified_by_aoa(
         sampled = rng.sample(nameable_pool, needed)
         for row in sampled:
             row["_aoa_tercile"] = band_name
+            selected_labels.add(row["answer"].lower())
         selected.extend(sampled)
 
-    return sorted(
-        selected,
+    if len(selected) < n_items:
+        fill_pool = [
+            row for row in sorted_candidates if row["answer"].lower() not in selected_labels
+        ]
+        selected.extend(fill_pool[: n_items - len(selected)])
+
+    return selected[:seed_count] + sorted(
+        selected[seed_count:],
         key=lambda row: (
             parse_float(row.get("_aoa", ""), default=99.0),
             -parse_float(row.get("_nameability", ""), default=0.0),
@@ -315,15 +415,19 @@ def read_things_lexicon(
     original_targets_csv: Path,
     n_items: int,
     seed: int,
+    seed_targets_manifest: Path | None,
 ) -> list[dict[str, str]]:
     aoa_by_word = load_aoa(aoa_csv)
     original_targets = load_original_targets(original_targets_csv)
+    seed_labels = load_seed_target_labels(seed_targets_manifest)
     candidates = []
 
     with things_meta_csv.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
             label = str(row.get("label", "")).strip().lower()
             if not label or label in original_targets:
+                continue
+            if label in GENERATED_IMAGE_EXCLUDED_TERMS:
                 continue
             if not truthy(row.get("child_safe", "")):
                 continue
@@ -360,7 +464,12 @@ def read_things_lexicon(
             f"Only {len(candidates)} THINGS/AoA candidates available after filtering; "
             f"need {n_items}."
         )
-    selected = select_stratified_by_aoa(candidates, n_items=n_items, seed=seed)
+    selected = select_stratified_by_aoa(
+        candidates,
+        n_items=n_items,
+        seed=seed,
+        seed_labels=seed_labels,
+    )
     selected_answers = {row["answer"] for row in selected}
     remaining = sorted(
         [row for row in candidates if row["answer"] not in selected_answers],
@@ -1011,6 +1120,11 @@ def main() -> int:
             original_targets_csv=input_csvs[2],
             n_items=args.n_items,
             seed=args.seed,
+            seed_targets_manifest=(
+                args.seed_targets_manifest.resolve()
+                if args.seed_targets_manifest is not None
+                else None
+            ),
         )
     elif args.source_manifest is None and legacy_lexicon_script.exists():
         source_rows = read_legacy_lexicon(legacy_lexicon_script, n_items=args.n_items)

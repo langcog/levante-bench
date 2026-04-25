@@ -1,0 +1,33 @@
+{
+  "task_id": "synthetic-vocab",
+  "n_items": 170,
+  "n_unique_image_terms": 680,
+  "n_unique_distractor_sets": 170,
+  "target_selection_policy": "THINGS/AoA candidates are filtered for child safety, original-target exclusion, and AoA <= 11, then sampled evenly from low/mid/high AoA terciles with a nameability-biased deterministic seed.",
+  "distractor_policy": {
+    "per_item": "Each item receives a unique 3-distractor set drawn from non-target candidate terms.",
+    "image_uniqueness": "Distractor terms are not reused across items and do not overlap target answers, yielding one unique image prompt per option placement.",
+    "similarity_tiers": "For each target, candidates are restricted to a nearby AoA window when possible. The three distractors are selected as high, medium, and low text-similarity options. CLIP text embeddings are used when enabled; otherwise a category/tag/age heuristic is used."
+  },
+  "age_band_counts": {
+    "3": 5,
+    "4": 23,
+    "5": 26,
+    "6": 36,
+    "7": 23,
+    "8": 33,
+    "9": 16,
+    "10": 7,
+    "11": 1
+  },
+  "category_counts": {
+    "animal": 23,
+    "object": 147
+  },
+  "notes": [
+    "Photo-like generated-image workflow.",
+    "Image prompts explicitly prohibit text, letters, numbers, logos, signs, labels, captions, watermarks, icons, cartoons, and clip art.",
+    "Rows are clamped to age bands 3-11 for this rebuild.",
+    "Run validation and manual review before using generated images for scoring."
+  ]
+}

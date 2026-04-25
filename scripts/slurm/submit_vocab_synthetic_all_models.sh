@@ -35,6 +35,7 @@ POLL_SECONDS="${POLL_SECONDS:-20}"
 RESULTS_ROOT="${RESULTS_ROOT:-$PROJECT_ROOT/outputs/results/vocab_synthetic_all_models}"
 OUTPUT_CSV="${OUTPUT_CSV:-$RESULTS_ROOT/vocab_synthetic_table.csv}"
 OUTPUT_MD="${OUTPUT_MD:-$RESULTS_ROOT/vocab_synthetic_table.md}"
+SYNTHETIC_MANIFEST="$CODE_DIR/scripts/new_vocab_assets/assets/new-vocab-2026-04-24/manifest.csv"
 
 declare -A MODEL_SIZE_MAP=(
   ["smolvlm2"]="2.2B"
@@ -80,6 +81,17 @@ else
 fi
 
 mkdir -p "$RESULTS_ROOT"
+
+if [[ "$TASKS_CSV" == *"synthetic-vocab"* ]]; then
+  if [[ ! -f "$SYNTHETIC_MANIFEST" ]]; then
+    echo "ERROR: synthetic-vocab manifest not found:" >&2
+    echo "  $SYNTHETIC_MANIFEST" >&2
+    echo "" >&2
+    echo "The synthetic vocab assets are currently outside tracked repo files." >&2
+    echo "Sync scripts/new_vocab_assets/ to Marlowe before launching this workflow." >&2
+    exit 1
+  fi
+fi
 
 echo "Submitting vocab + synthetic-vocab jobs:"
 echo "  VERSION=$VERSION"

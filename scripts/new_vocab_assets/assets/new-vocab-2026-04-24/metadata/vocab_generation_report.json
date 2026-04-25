@@ -1,0 +1,279 @@
+{
+  "seed": 42,
+  "n_items": 170,
+  "age_band_counts": {
+    "3": 11,
+    "4": 13,
+    "5": 18,
+    "6": 20,
+    "7": 18,
+    "8": 20,
+    "9": 18,
+    "10": 20,
+    "11": 18,
+    "12": 14
+  },
+  "category_counts": {
+    "animal": 9,
+    "art": 8,
+    "clothing": 8,
+    "food": 4,
+    "household": 19,
+    "machine": 6,
+    "music": 6,
+    "nature": 26,
+    "object": 30,
+    "place": 28,
+    "tool": 16,
+    "toy": 3,
+    "vehicle": 7
+  },
+  "notes": [
+    "Manifest preserves the columns required by src/levante_bench/tasks/vocab.py.",
+    "Images are generated de novo as simple icon-style PNGs named after the corresponding word.",
+    "For strongest contamination protection, keep a held-out split private and manually review all items."
+  ],
+  "sample_items": {
+    "vocab__cat": {
+      "target": {
+        "word": "cat",
+        "category": "animal",
+        "age_band": 3,
+        "tags": [
+          "pet",
+          "whiskers"
+        ],
+        "shape": "cat",
+        "hardness": 1
+      },
+      "distractors": [
+        {
+          "word": "teapot",
+          "category": "household",
+          "age_band": 4,
+          "tags": [
+            "pour",
+            "tea"
+          ],
+          "shape": "cup",
+          "hardness": 1
+        },
+        {
+          "word": "book",
+          "category": "household",
+          "age_band": 3,
+          "tags": [
+            "read",
+            "pages"
+          ],
+          "shape": "book",
+          "hardness": 1
+        },
+        {
+          "word": "moon",
+          "category": "nature",
+          "age_band": 4,
+          "tags": [
+            "night",
+            "sky"
+          ],
+          "shape": "moon",
+          "hardness": 1
+        }
+      ]
+    },
+    "vocab__dog": {
+      "target": {
+        "word": "dog",
+        "category": "animal",
+        "age_band": 3,
+        "tags": [
+          "pet",
+          "tail"
+        ],
+        "shape": "dog",
+        "hardness": 1
+      },
+      "distractors": [
+        {
+          "word": "ball",
+          "category": "toy",
+          "age_band": 3,
+          "tags": [
+            "round",
+            "play"
+          ],
+          "shape": "circle",
+          "hardness": 1
+        },
+        {
+          "word": "cup",
+          "category": "household",
+          "age_band": 3,
+          "tags": [
+            "drink",
+            "container"
+          ],
+          "shape": "cup",
+          "hardness": 1
+        },
+        {
+          "word": "chair",
+          "category": "household",
+          "age_band": 4,
+          "tags": [
+            "sit",
+            "furniture"
+          ],
+          "shape": "chair",
+          "hardness": 1
+        }
+      ]
+    },
+    "vocab__fish": {
+      "target": {
+        "word": "fish",
+        "category": "animal",
+        "age_band": 3,
+        "tags": [
+          "water",
+          "swim"
+        ],
+        "shape": "fish",
+        "hardness": 1
+      },
+      "distractors": [
+        {
+          "word": "boat",
+          "category": "vehicle",
+          "age_band": 4,
+          "tags": [
+            "water",
+            "travel"
+          ],
+          "shape": "boat",
+          "hardness": 1
+        },
+        {
+          "word": "wagon",
+          "category": "vehicle",
+          "age_band": 3,
+          "tags": [
+            "wheels",
+            "pull"
+          ],
+          "shape": "wagon",
+          "hardness": 1
+        },
+        {
+          "word": "cup",
+          "category": "household",
+          "age_band": 3,
+          "tags": [
+            "drink",
+            "container"
+          ],
+          "shape": "cup",
+          "hardness": 1
+        }
+      ]
+    },
+    "vocab__shoe": {
+      "target": {
+        "word": "shoe",
+        "category": "clothing",
+        "age_band": 3,
+        "tags": [
+          "foot",
+          "wear"
+        ],
+        "shape": "shoe",
+        "hardness": 1
+      },
+      "distractors": [
+        {
+          "word": "car",
+          "category": "vehicle",
+          "age_band": 3,
+          "tags": [
+            "wheels",
+            "drive"
+          ],
+          "shape": "car",
+          "hardness": 1
+        },
+        {
+          "word": "banana",
+          "category": "food",
+          "age_band": 4,
+          "tags": [
+            "fruit",
+            "yellow"
+          ],
+          "shape": "banana",
+          "hardness": 1
+        },
+        {
+          "word": "boat",
+          "category": "vehicle",
+          "age_band": 4,
+          "tags": [
+            "water",
+            "travel"
+          ],
+          "shape": "boat",
+          "hardness": 1
+        }
+      ]
+    },
+    "vocab__apple": {
+      "target": {
+        "word": "apple",
+        "category": "food",
+        "age_band": 3,
+        "tags": [
+          "fruit",
+          "round",
+          "red"
+        ],
+        "shape": "apple",
+        "hardness": 1
+      },
+      "distractors": [
+        {
+          "word": "ball",
+          "category": "toy",
+          "age_band": 3,
+          "tags": [
+            "round",
+            "play"
+          ],
+          "shape": "circle",
+          "hardness": 1
+        },
+        {
+          "word": "spoon",
+          "category": "household",
+          "age_band": 4,
+          "tags": [
+            "eat",
+            "utensil"
+          ],
+          "shape": "spoon",
+          "hardness": 1
+        },
+        {
+          "word": "wagon",
+          "category": "vehicle",
+          "age_band": 3,
+          "tags": [
+            "wheels",
+            "pull"
+          ],
+          "shape": "wagon",
+          "hardness": 1
+        }
+      ]
+    }
+  }
+}

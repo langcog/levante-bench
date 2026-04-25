@@ -31,8 +31,8 @@ SLURM_RUN_LABEL="${SLURM_RUN_LABEL:-true}"
 USE_JOB_OUTPUT_ROOT="${USE_JOB_OUTPUT_ROOT:-1}"
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
-# Always run the full benchmark task set.
-TASKS_CSV="egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab"
+# Default full benchmark task set; can be overridden via TASKS_CSV export.
+TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
 
 CODE_DIR="${PROJECT_ROOT}/code/levante-bench"
 if [[ ! -d "$CODE_DIR" ]]; then

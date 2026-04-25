@@ -42,24 +42,24 @@ class SyntheticVocabDataset(VLMDataset):
 
     def __init__(self, task_def, version, data_root=None):
         super().__init__(task_def=task_def, version=version, data_root=data_root)
-        self.assets_root = (
-            Path(__file__).resolve().parent.parent.parent.parent
-            / "scripts"
-            / "new_vocab_assets"
-            / "assets"
-            / "new-vocab-2026-04-24"
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+        assets_base = repo_root / "scripts" / "new_vocab_assets" / "assets"
+        corpus_file = Path(
+            str(getattr(task_def, "corpus_file", "new-vocab-2026-04-24/manifest.csv"))
         )
+        self.assets_root = assets_base / corpus_file.parent
+        self.manifest_filename = corpus_file.name
         self.manifest = self._load_manifest()
         self.translation_rows = self._load_translations()
         self.image_dir = self._resolve_image_dir()
         self.image_index = _build_image_index_recursive(self.image_dir)
 
     def _load_manifest(self) -> pd.DataFrame:
-        path = self.assets_root / "manifest.csv"
+        path = self.assets_root / self.manifest_filename
         if not path.exists():
             raise FileNotFoundError(f"Synthetic vocab manifest missing: {path}")
         df = pd.read_csv(path)
-        df = df[df["task"] == "vocab"]
+        df = df[df["task"].isin(["synthetic-vocab", "vocab"])]
         return df.reset_index(drop=True)
 
     def _load_translations(self) -> pd.DataFrame:

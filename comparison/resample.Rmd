@@ -1,0 +1,290 @@
+---
+title: "resampling"
+author: "sunny yu"
+date: "2026-04-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(jsonlite)
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(readr)
+library(tibble)
+library(stringr)
+```
+
+## KL divergence code 
+
+```{r cars}
+
+# KL divergence for two probability vectors
+kl_divergence <- function(p, q, epsilon = 1e-12) {
+  p <- as.numeric(p)
+  q <- as.numeric(q)
+  
+  # add epsilon for numerical stability
+  p <- p + epsilon
+  q <- q + epsilon
+  
+  # renormalize
+  p <- p / sum(p)
+  q <- q / sum(q)
+  
+  sum(p * log(p / q))
+}
+
+# main function
+get_kl_by_item <- function(human_df, model_df, epsilon = 1e-12) {
+  
+  prob_cols <- c("image1", "image2", "image3", "image4")
+  
+  # keep only needed columns from model df
+  model_small <- model_df %>%
+    select(item_uid, all_of(prob_cols))
+  
+  # join model distribution onto every human row by item_uid
+  joined_df <- human_df %>%
+    left_join(
+      model_small,
+      by = "item_uid",
+      suffix = c("_human", "_model")
+    )
+  
+  # compute KL(human || model) for each human row
+  kl_df <- joined_df %>%
+    rowwise() %>%
+    mutate(
+      kl_divergence = kl_divergence(
+        p = c_across(all_of(paste0(prob_cols, "_human"))),
+        q = c_across(all_of(paste0(prob_cols, "_model"))),
+        epsilon = epsilon
+      )
+    ) %>%
+    ungroup()
+  
+  return(kl_df)
+}
+```
+
+# sample n runs from full data
+```{r pressure, echo=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(purrr)
+
+# KL helper: KL(P || Q)
+compute_kl <- function(p, q, eps = 1e-12) {
+  p <- p + eps
+  q <- q + eps
+  sum(p * log(p / q))
+}
+
+make_item_distribution_no_save <- function(processed_df) {
+  possible_images <- c("image1", "image2", "image3", "image4")
+  
+  distribution_df <- processed_df %>%
+    filter(!is.na(matched_image)) %>%
+    count(item_uid, matched_image) %>%
+    pivot_wider(
+      names_from = matched_image,
+      values_from = n,
+      values_fill = 0
+    )
+  
+  for (img in possible_images) {
+    if (!img %in% names(distribution_df)) {
+      distribution_df[[img]] <- 0
+    }
+  }
+  
+  distribution_df %>%
+    mutate(across(all_of(possible_images), ~ coalesce(.x, 0))) %>%
+    rowwise() %>%
+    mutate(total = sum(c_across(all_of(possible_images)))) %>%
+    ungroup() %>%
+    mutate(across(all_of(possible_images), ~ ifelse(total > 0, .x / total, 0))) %>%
+    select(item_uid, all_of(possible_images))
+}
+
+estimate_subsample_kl <- function(
+  simulated_df,
+  ground_truth_distribution_df,
+  N = 10,
+  n_samples = 100,
+  eps = 1e-12,
+  seed = NULL
+) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  possible_images <- c("image1", "image2", "image3", "image4")
+  
+  run_ids <- unique(simulated_df$run_id)
+  
+  if (N > length(run_ids)) {
+    stop("N cannot be larger than the number of unique run_ids.")
+  }
+  
+  kl_results <- map_dfr(seq_len(n_samples), function(i) {
+    
+    sampled_run_ids <- sample(run_ids, size = N, replace = FALSE)
+    
+    sampled_df <- simulated_df %>%
+      filter(run_id %in% sampled_run_ids)
+    
+    sampled_distribution_df <- make_item_distribution_no_save(sampled_df)
+    
+    joined_df <- ground_truth_distribution_df %>%
+      select(item_uid, all_of(possible_images)) %>%
+      rename_with(~ paste0(.x, "_true"), all_of(possible_images)) %>%
+      left_join(
+        sampled_distribution_df %>%
+          select(item_uid, all_of(possible_images)) %>%
+          rename_with(~ paste0(.x, "_sample"), all_of(possible_images)),
+        by = "item_uid"
+      ) %>%
+      mutate(
+        across(ends_with("_sample"), ~ coalesce(.x, 0))
+      )
+    
+    item_kl_df <- joined_df %>%
+      rowwise() %>%
+      mutate(
+        kl_divergence = compute_kl(
+          c_across(ends_with("_true")),
+          c_across(ends_with("_sample")),
+          eps = eps
+        )
+      ) %>%
+      ungroup()
+    
+    tibble(
+      sample_id = i,
+      N = N,
+      sampled_run_ids = paste(sampled_run_ids, collapse = ","),
+      mean_kl = mean(item_kl_df$kl_divergence, na.rm = TRUE),
+      median_kl = median(item_kl_df$kl_divergence, na.rm = TRUE)
+    )
+  })
+  
+  list(
+    average_kl = mean(kl_results$mean_kl, na.rm = TRUE),
+    sd_kl = sd(kl_results$mean_kl, na.rm = TRUE),
+    kl_results = kl_results
+  )
+}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+result <- estimate_subsample_kl(
+  simulated_df = egma_math_processed,
+  ground_truth_distribution_df = egma_math_distribution,
+  N = 10,
+  n_samples = 100,
+  seed = 123
+)
+
+result$average_kl
+result$kl_results
+```
+
+
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(purrr)
+
+library(dplyr)
+library(purrr)
+library(ggplot2)
+
+plot_kl_vs_N <- function(
+  simulated_df,
+  ground_truth_distribution_df,
+  N_values = c(10, 20, 40),
+  n_samples = 100,
+  seed = 123
+) {
+  
+  if (!is.null(seed)) set.seed(seed)
+  
+  results_list <- purrr::map(N_values, function(N) {
+    
+    res <- estimate_subsample_kl(
+      simulated_df = simulated_df,
+      ground_truth_distribution_df = ground_truth_distribution_df,
+      N = N,
+      n_samples = n_samples
+    )
+    
+    res$kl_results %>%
+      dplyr::mutate(N = N)
+  })
+  
+  combined_results <- dplyr::bind_rows(results_list) %>%
+    dplyr::rename(kl_value = mean_kl)
+  
+  summary_df <- combined_results %>%
+    dplyr::group_by(N) %>%
+    dplyr::summarise(
+      mean_kl = mean(kl_value, na.rm = TRUE),
+      sd_kl = sd(kl_value, na.rm = TRUE),
+      n = sum(!is.na(kl_value)),
+      se_kl = sd_kl / sqrt(n),
+      ci_kl = 1.96 * se_kl,
+      .groups = "drop"
+    )
+  
+  p <- ggplot(summary_df, aes(x = factor(N), y = mean_kl)) +
+    geom_col(width = 0.6, fill = "steelblue") +
+    geom_errorbar(
+      aes(
+        ymin = mean_kl - se_kl,
+        ymax = mean_kl + se_kl
+      ),
+      width = 0.2,
+      linewidth = 0.8
+    ) +
+    labs(
+      x = "Number of sampled runs (N)",
+      y = "Average KL divergence",
+      title = "KL divergence vs. subsample size"
+    ) +
+    theme_minimal(base_size = 14)
+  
+  return(list(
+    plot = p,
+    summary_df = summary_df,
+    raw_results = combined_results
+  ))
+}
+
+
+```
+
+
+
+```{r}
+out <- plot_kl_vs_N(
+  simulated_df = vocab_processed,
+  ground_truth_distribution_df = vocab_distribution,
+  N_values = c(10, 20, 40),
+  n_samples = 100
+)
+
+out$plot
+out$summary_df
+```
+
+
+
+
+

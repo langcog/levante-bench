@@ -81,6 +81,25 @@ python scripts/analysis/stitch_resampling_runs.py \
   --output-root /projects/m000102/code/levante-bench/results/resampling/qwen35-4B/v1/qwen35-4B_r0100
 ```
 
+Resume preempted partial runs in place:
+
+```bash
+RUN_ROOT=/projects/m000102/code/levante-bench/results/resampling/qwen35-4B/v1/qwen35-4B \
+BATCH_SIZE=2 MAX_NEW_TOKENS=1024 USE_JSON_FORMAT=true \
+sbatch scripts/slurm/run_resume_resampling_partials.sbatch
+```
+
+The resume job reads each partial run's `metadata.json`, reuses
+`cache/responses.json`, skips task CSVs that already exist, evaluates missing
+tasks with the original true-random run seed, and writes `summary.csv` when the
+run becomes complete. Preview without loading a model:
+
+```bash
+python scripts/slurm/resume_resampling_partials.py \
+  --run-root /projects/m000102/code/levante-bench/results/resampling/qwen35-4B/v1/qwen35-4B \
+  --dry-run
+```
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:

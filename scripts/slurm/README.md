@@ -89,6 +89,16 @@ BATCH_SIZE=2 MAX_NEW_TOKENS=1024 USE_JSON_FORMAT=true \
 sbatch scripts/slurm/run_resume_resampling_partials.sbatch
 ```
 
+To resume chunks in parallel, submit one resume job per `chunk_01..chunk_10`:
+
+```bash
+BATCH_SIZE=2 MAX_NEW_TOKENS=1024 USE_JSON_FORMAT=true \
+bash scripts/slurm/submit_resume_resampling_chunks.sh
+```
+
+This launches separate jobs with `RUN_ROOT` set to each chunk directory, so each
+job completes partial runs only within its own chunk.
+
 The resume job reads each partial run's `metadata.json`, reuses
 `cache/responses.json`, skips task CSVs that already exist, evaluates missing
 tasks with the original true-random run seed, and writes `summary.csv` when the

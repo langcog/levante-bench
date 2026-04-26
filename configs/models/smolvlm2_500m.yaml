@@ -2,7 +2,7 @@ name: smolvlm2_500m
 hf_name: HuggingFaceTB/SmolVLM2-500M-Video-Instruct
 params_b: 0.5
 family: smolvlm2
-attn_implementation: sdpa
+attn_implementation: flash_attention_2
 # 500M echoes JSON template placeholders like `<one of A, B, ...>` rather
 # than filling them in. Use the simple letter-only instruction instead.
 use_json_format: false

@@ -67,6 +67,15 @@ class SmolVLM2Model(VLMModel):
             warn_attn_fallback(self.model_name, requested_attn, exc)
             self.attn_implementation = "sdpa"
             self.model = _load_for_attn("sdpa")
+        active_attn = (
+            getattr(getattr(self.model, "config", None), "_attn_implementation", None)
+            or getattr(getattr(self.model, "config", None), "attn_implementation", None)
+            or self.attn_implementation
+        )
+        print(
+            f"[smolvlm2] attention backend requested={requested_attn!r} active={active_attn!r}",
+            file=sys.stderr,
+        )
         self.model = self.model.to(self.device)
         self.model.eval()
 

@@ -4,7 +4,6 @@
 name: smolvlm2
 hf_name: HuggingFaceTB/SmolVLM2-${size}-Instruct
 size: 256M  # 256M | 500M | 2.2B
-# Default fast path on modern GPUs; override to eager if needed for debugging
-# or compatibility on specific environments.
-attn_implementation: sdpa
+# Prefer FlashAttention 2 when available; loader auto-falls back to SDPA.
+attn_implementation: flash_attention_2
 use_json_format: false

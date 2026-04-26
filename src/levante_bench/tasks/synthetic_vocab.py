@@ -1,4 +1,4 @@
-"""Synthetic vocab dataset authored under scripts/new_vocab_assets."""
+"""Synthetic vocab dataset backed by downloaded synthetic vocab assets."""
 
 from __future__ import annotations
 
@@ -43,7 +43,13 @@ class SyntheticVocabDataset(VLMDataset):
     def __init__(self, task_def, version, data_root=None):
         super().__init__(task_def=task_def, version=version, data_root=data_root)
         repo_root = Path(__file__).resolve().parent.parent.parent.parent
-        assets_base = repo_root / "scripts" / "new_vocab_assets" / "assets"
+        downloaded_assets_base = Path(self.data_root) / "assets" / "synth_vocab" / "assets"
+        legacy_assets_base = repo_root / "scripts" / "new_vocab_assets" / "assets"
+        assets_base = (
+            downloaded_assets_base
+            if downloaded_assets_base.exists()
+            else legacy_assets_base
+        )
         corpus_file = Path(
             str(getattr(task_def, "corpus_file", "new-vocab-2026-04-24/manifest.csv"))
         )

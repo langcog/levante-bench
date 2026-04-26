@@ -245,6 +245,74 @@ def _download_many(
     return downloaded, skipped
 
 
+def _download_additional_images(
+    *,
+    base_url: str,
+    bucket_name: str,
+    base_prefix: str,
+    output_dir: Path,
+    workers: int,
+) -> None:
+    """Download shared additional images that live outside versioned assets."""
+    list_prefix = (
+        f"{base_prefix}/additional_images/" if base_prefix else "additional_images/"
+    )
+    download_prefix = "additional_images/"
+    try:
+        keys = _list_bucket_keys(bucket_name, list_prefix)
+    except Exception as exc:
+        print(
+            "Warning: could not list additional images at "
+            f"{list_prefix} ({type(exc).__name__}: {exc}); skipping."
+        )
+        return
+
+    if base_prefix:
+        keys = [
+            key[len(base_prefix) + 1 :]
+            if key.startswith(f"{base_prefix}/")
+            else key
+            for key in keys
+        ]
+
+    n_downloaded, n_skipped = _download_many(
+        base_url=base_url,
+        keys=keys,
+        visual_local_dir=output_dir,
+        prefix=download_prefix,
+        workers=workers,
+    )
+    print(
+        "  additional_images: "
+        f"{n_downloaded} downloaded, {n_skipped} already present ({len(keys)} keys in bucket)"
+    )
+
+
+def download_additional_images_bundle(
+    *,
+    data_root: Path | None = None,
+    base_url: str | None = None,
+    additional_images_dir: Path | None = None,
+    workers: int = 8,
+) -> None:
+    data_root = data_root or _project_root() / "data"
+    base_url = base_url or get_assets_base_url()
+    bucket_name, base_prefix = _bucket_and_base_prefix_from_base(base_url)
+    additional_images_dir = additional_images_dir or Path(
+        os.environ.get(
+            "LEVANTE_ADDITIONAL_IMAGES_DIR",
+            str(data_root / "assets" / "additional_images"),
+        )
+    )
+    _download_additional_images(
+        base_url=base_url,
+        bucket_name=bucket_name,
+        base_prefix=base_prefix,
+        output_dir=additional_images_dir,
+        workers=workers,
+    )
+
+
 def _load_task_mapping(path: Path) -> list[dict]:
     rows = []
     with open(path, newline="", encoding="utf-8") as f:
@@ -411,6 +479,8 @@ def run(
     check_completeness: bool = False,
     workers: int = 8,
     write_split_manifests: bool = True,
+    additional_images_dir: Path | None = None,
+    download_additional_images: bool = True,
 ) -> None:
     data_root = data_root or _project_root() / "data"
     base_url = base_url or get_assets_base_url()
@@ -435,6 +505,14 @@ def run(
         tasks = [t for t in tasks if t["internal_name"] == task_filter or t["benchmark_name"] == task_filter]
     if not tasks:
         return
+
+    if download_additional_images:
+        download_additional_images_bundle(
+            data_root=data_root,
+            base_url=base_url,
+            additional_images_dir=additional_images_dir,
+            workers=workers,
+        )
 
     index: dict[str, dict] = {}  # item_uid -> { task, internal_name, corpus_row, image_paths }
 
@@ -590,7 +668,34 @@ def main() -> None:
         action="store_true",
         help="Disable split manifest emission under data/assets/<version>/manifests.",
     )
+    p.add_argument(
+        "--additional-images-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Directory for shared additional images "
+            "(default: LEVANTE_ADDITIONAL_IMAGES_DIR or data/assets/additional_images)."
+        ),
+    )
+    p.add_argument(
+        "--skip-additional-images",
+        action="store_true",
+        help="Do not download the shared additional_images bucket prefix.",
+    )
+    p.add_argument(
+        "--only-additional-images",
+        action="store_true",
+        help="Only download the shared additional_images bucket prefix and exit.",
+    )
     args = p.parse_args()
+    if args.only_additional_images:
+        download_additional_images_bundle(
+            data_root=args.data_root,
+            base_url=args.base_url,
+            additional_images_dir=args.additional_images_dir,
+            workers=max(1, int(args.workers)),
+        )
+        return
     run(
         version=args.version,
         task_filter=args.task,
@@ -599,6 +704,8 @@ def main() -> None:
         check_completeness=args.check_completeness,
         workers=max(1, int(args.workers)),
         write_split_manifests=not bool(args.no_write_split_manifests),
+        additional_images_dir=args.additional_images_dir,
+        download_additional_images=not bool(args.skip_additional_images),
     )
 
 

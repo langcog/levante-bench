@@ -96,9 +96,11 @@ class EgmaMathDataset(VLMDataset):
         if self.image_dir.exists():
             index.update(build_image_index(self.image_dir))
 
-        # Optional local graphics bundle for number line items.
+        # Optional shared graphics bundle for number line items.
         project_root = Path(self.data_root).parent
         extra_dirs = [
+            Path(self.data_root) / "assets" / "additional_images" / "numberline-graphics" / "egma-math",
+            Path(self.data_root) / "assets" / "additional_images" / "numberline_graphics" / "egma-math",
             project_root / "local_data" / "numberline-graphics" / "egma-math",
             project_root / "local_data" / "numberline_graphics" / "egma-math",
         ]

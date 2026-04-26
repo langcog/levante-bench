@@ -16,6 +16,7 @@ node_modules/
 /results/
 /scripts/results/
 /scripts/new_vocab_assets/
+/local_data/
 /screenshots/
 
 # Python

@@ -106,11 +106,12 @@ The file `src/levante_bench/config/irt_model_mapping.csv` maps each task to its 
 
 ## Vocab Graphics Bundle
 
-Tracked vocab quadrant graphics live under `local_data/vocab_graphics/`.
+Vocab quadrant graphics live in the shared additional images bundle, downloaded
+by `scripts/data_prep/download_levante_assets.py`.
 
-- Graphics directory: `local_data/vocab_graphics/images/`
-- Placement manifest: `local_data/vocab_graphics/vocab-quadrants-manifest.csv`
-- Summary stats: `local_data/vocab_graphics/vocab-quadrants-summary.json`
+- Graphics directory: `data/assets/additional_images/vocab_graphics/images/`
+- Placement manifest: `data/assets/additional_images/vocab_graphics/vocab-quadrants-manifest.csv`
+- Summary stats: `data/assets/additional_images/vocab_graphics/vocab-quadrants-summary.json`
 
 Regenerate with:
 
@@ -118,8 +119,8 @@ Regenerate with:
 python3 scripts/build_vocab_quadrant_graphics.py \
   --corpus-csv data/assets/2026-03-24/corpus/vocab/vocab-item-bank.csv \
   --visual-dir data/assets/2026-03-24/visual/vocab \
-  --out-dir local_data/vocab_graphics/images \
-  --manifest-csv local_data/vocab_graphics/vocab-quadrants-manifest.csv \
-  --summary-json local_data/vocab_graphics/vocab-quadrants-summary.json \
+  --out-dir data/assets/additional_images/vocab_graphics/images \
+  --manifest-csv data/assets/additional_images/vocab_graphics/vocab-quadrants-manifest.csv \
+  --summary-json data/assets/additional_images/vocab_graphics/vocab-quadrants-summary.json \
   --seed 11
 ```

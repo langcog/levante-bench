@@ -152,7 +152,7 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
 - `build_vocab_quadrant_graphics.py`
   - **Purpose:** build tracked 2x2 vocab graphics bundle
   - **Inputs:** vocab corpus + visual directory
-  - **Outputs:** `local_data/vocab_graphics/images` + manifest + summary
+  - **Outputs:** `data/assets/additional_images/vocab_graphics/images` + manifest + summary
   - **Example:** `python scripts/build_vocab_quadrant_graphics.py --help`
 
 ## Validation and reporting helpers

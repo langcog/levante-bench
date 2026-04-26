@@ -165,7 +165,7 @@ def _run_experiment_style_args(cli_args: list[str]) -> int:
                 by_type_csv = math_dir / "egma-math-by-type.csv"
                 by_type_png = math_dir / "egma-math-by-type.png"
                 math_corpus = root / "data" / "assets" / version / "corpus" / "egma-math" / "math-item-bank.csv"
-                numberline_graphics = root / "local_data" / "numberline-graphics" / "egma-math"
+                numberline_graphics = root / "data" / "assets" / "additional_images" / "numberline-graphics" / "egma-math"
                 cmd_build = [
                     sys.executable,
                     str(root / "scripts" / "build_math_prompts.py"),

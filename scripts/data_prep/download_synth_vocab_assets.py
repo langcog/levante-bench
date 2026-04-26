@@ -21,7 +21,7 @@ def run(
     repo_root = Path(__file__).resolve().parents[2]
     output_dir = output_dir or repo_root / "data" / "assets" / "synth_vocab"
     output_dir = output_dir.resolve()
-    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [
         "gcloud",

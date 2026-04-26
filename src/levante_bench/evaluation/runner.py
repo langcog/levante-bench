@@ -3,6 +3,7 @@
 import json
 import os
 import random
+import subprocess
 import sys
 from pathlib import Path
 
@@ -86,10 +87,57 @@ def resolve_device(device: str) -> str:
         return choice
     try:
         import torch
-
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    except Exception:
+    except Exception as exc:
+        print(f"  device=auto -> cpu (torch import failed: {exc})", file=sys.stderr)
         return "cpu"
+
+    cuda_error = _probe_cuda_runtime(torch)
+    if cuda_error is None:
+        return "cuda"
+
+    hint = ""
+    if _gpu_visible_via_nvidia_smi():
+        hint = " ; GPU is visible via nvidia-smi, so check driver/runtime visibility in this process"
+    print(f"  device=auto -> cpu ({cuda_error}{hint})", file=sys.stderr)
+    return "cpu"
+
+
+def _probe_cuda_runtime(torch_module: object) -> str | None:
+    """Return None when CUDA is usable, otherwise an error reason."""
+    cuda_mod = getattr(torch_module, "cuda", None)
+    if cuda_mod is None:
+        return "torch.cuda is unavailable"
+    try:
+        if not cuda_mod.is_available():
+            return "torch.cuda.is_available() returned False"
+    except Exception as exc:
+        return f"torch.cuda.is_available() failed: {exc}"
+    try:
+        if cuda_mod.device_count() < 1:
+            return "torch.cuda.device_count() returned 0"
+    except Exception as exc:
+        return f"torch.cuda.device_count() failed: {exc}"
+    try:
+        # Force a tiny allocation to confirm runtime usability, not just detection.
+        _ = torch_module.empty(1, device="cuda")
+    except Exception as exc:
+        return f"CUDA runtime probe failed: {exc}"
+    return None
+
+
+def _gpu_visible_via_nvidia_smi() -> bool:
+    """Best-effort check for any visible GPU via nvidia-smi."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "-L"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+    except Exception:
+        return False
+    return result.returncode == 0 and bool(result.stdout.strip())
 
 
 def _slurm_run_label() -> str | None:

@@ -28,6 +28,72 @@ def test_resolve_device_auto_without_torch_defaults_cpu(monkeypatch) -> None:
     assert runner.resolve_device("auto") == "cpu"
 
 
+def test_resolve_device_auto_with_usable_cuda_selects_cuda(monkeypatch) -> None:
+    import builtins
+
+    class _FakeCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return True
+
+        @staticmethod
+        def device_count() -> int:
+            return 1
+
+    class _FakeTorch:
+        cuda = _FakeCuda()
+
+        @staticmethod
+        def empty(*_args, **_kwargs):
+            return object()
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "torch":
+            return _FakeTorch
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(runner, "_gpu_visible_via_nvidia_smi", lambda: False)
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    assert runner.resolve_device("auto") == "cuda"
+
+
+def test_resolve_device_auto_with_unusable_cuda_falls_back_to_cpu(monkeypatch, capsys) -> None:
+    import builtins
+
+    class _FakeCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return True
+
+        @staticmethod
+        def device_count() -> int:
+            return 1
+
+    class _FakeTorch:
+        cuda = _FakeCuda()
+
+        @staticmethod
+        def empty(*_args, **_kwargs):
+            raise RuntimeError("driver missing")
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "torch":
+            return _FakeTorch
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(runner, "_gpu_visible_via_nvidia_smi", lambda: True)
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    assert runner.resolve_device("auto") == "cpu"
+    captured = capsys.readouterr()
+    assert "CUDA runtime probe failed: driver missing" in captured.err
+    assert "GPU is visible via nvidia-smi" in captured.err
+
+
 def test_run_eval_merges_overrides_and_filters_constructor_kwargs(
     monkeypatch,
     tmp_path: Path,

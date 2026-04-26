@@ -15,6 +15,7 @@ node_modules/
 # Generated evaluation artifacts
 /results/
 /scripts/results/
+/scripts/new_vocab_assets/
 /screenshots/
 
 # Python

@@ -139,7 +139,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--assets-root",
         type=Path,
-        default=Path("scripts/new_vocab_assets/assets"),
+        default=Path("data/assets/synth_vocab/assets"),
         help="Root that contains versioned synthetic vocab asset folders.",
     )
     parser.add_argument(
@@ -177,19 +177,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--things-meta-csv",
         type=Path,
-        default=Path("scripts/new_vocab_assets/inputs/things_meta.csv"),
+        default=Path("data/assets/synth_vocab/inputs/things_meta.csv"),
         help="Optional THINGS metadata CSV with columns concept_id,label,child_safe,nameability,animacy.",
     )
     parser.add_argument(
         "--aoa-csv",
         type=Path,
-        default=Path("scripts/new_vocab_assets/inputs/aoa_kuperman.csv"),
+        default=Path("data/assets/synth_vocab/inputs/aoa_kuperman.csv"),
         help="Optional AoA norms CSV with columns word,aoa.",
     )
     parser.add_argument(
         "--original-targets-csv",
         type=Path,
-        default=Path("scripts/new_vocab_assets/inputs/original_108.csv"),
+        default=Path("data/assets/synth_vocab/inputs/original_108.csv"),
         help="Optional original target labels CSV with column label; these labels are excluded.",
     )
     parser.add_argument(

@@ -1,9 +1,0 @@
-task,item_uid,answer,response_alternatives,prompt_phrase,full_prompt,trial_type,age_band,category,hardness
-synthetic-vocab,synthetic_vocab__key,key,"rag,grape,lava",key,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: key.",test,4,object,1
-synthetic-vocab,synthetic_vocab__banana,banana,"lemon,pea,hyena",banana,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: banana.",test,4,object,1
-synthetic-vocab,synthetic_vocab__button,button,"knob,crutch,floss",button,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: button.",test,5,object,2
-synthetic-vocab,synthetic_vocab__umbrella,umbrella,"raincoat,jeans,noodle",umbrella,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: umbrella.",test,6,object,2
-synthetic-vocab,synthetic_vocab__celery,celery,"lettuce,bun,anteater",celery,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: celery.",test,6,object,2
-synthetic-vocab,synthetic_vocab__hydrant,hydrant,"hose,hovercraft,cable",hydrant,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: hydrant.",test,7,object,2
-synthetic-vocab,synthetic_vocab__microwave,microwave,"oven,taffy,suspenders",microwave,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: microwave.",test,8,object,3
-synthetic-vocab,synthetic_vocab__stethoscope,stethoscope,"headset,tray,aardvark",stethoscope,"You will see four pictures labeled A, B, C, and D. Choose the picture that best matches the word: stethoscope.",test,8,object,3

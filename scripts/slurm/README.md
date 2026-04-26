@@ -98,6 +98,9 @@ bash scripts/slurm/submit_resume_resampling_chunks.sh
 
 This launches separate jobs with `RUN_ROOT` set to each chunk directory, so each
 job completes partial runs only within its own chunk.
+By default it expects chunk folders under
+`/projects/m000102/code/levante-bench/results/resampling/qwen35-4B/chunk_01`.
+Set `CHUNKS_ROOT=/path/to/root-with-chunk-dirs` for another layout.
 
 The resume job reads each partial run's `metadata.json`, reuses
 `cache/responses.json`, skips task CSVs that already exist, evaluates missing

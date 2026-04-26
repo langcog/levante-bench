@@ -39,20 +39,20 @@ TOTAL_CHUNKS="${TOTAL_CHUNKS:-10}"
 WALLTIME="${WALLTIME:-04:00:00}"
 
 RESULTS_ROOT="${RESULTS_ROOT:-$CODE_DIR/results/resampling/${MODEL_NAME}-${MODEL_SIZE}}"
-MODEL_ROOT="${MODEL_ROOT:-$RESULTS_ROOT/$VERSION/${MODEL_NAME}-${MODEL_SIZE}}"
+CHUNKS_ROOT="${CHUNKS_ROOT:-${MODEL_ROOT:-$RESULTS_ROOT}}"
 
 echo "Submitting one partial-resume job per chunk:"
 echo "  model=${MODEL_NAME} size=${MODEL_SIZE}"
 echo "  version=${VERSION}, device=${DEVICE}, batch_size=${BATCH_SIZE}"
 echo "  max_new_tokens=${MAX_NEW_TOKENS}, use_json_format=${USE_JSON_FORMAT}"
-echo "  model_root=${MODEL_ROOT}"
+echo "  chunks_root=${CHUNKS_ROOT}"
 echo "  total_chunks=${TOTAL_CHUNKS}, walltime=${WALLTIME}"
 echo ""
 
 submitted=0
 for chunk in $(seq -w 1 "$TOTAL_CHUNKS"); do
   run_label="chunk_${chunk}"
-  run_root="$MODEL_ROOT/$run_label"
+  run_root="$CHUNKS_ROOT/$run_label"
 
   if [[ ! -d "$run_root" ]]; then
     echo "${run_label}: missing directory ${run_root}, skipping."

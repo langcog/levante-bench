@@ -181,11 +181,15 @@ class VLMModel:
             max_new_tokens=max_new_tokens,
         )
         clean_text = self.parse_response(raw_output)
-        return self._build_result_from_text(
+        result = self._build_result_from_text(
             trial=trial,
             clean_text=clean_text,
             answer_format=answer_format,
         )
+        metadata = getattr(self, "last_generation_metadata", None)
+        if isinstance(metadata, dict) and metadata:
+            result.update(metadata)
+        return result
 
     def _prepare_trial_inputs(self, trial: dict) -> tuple[str, str, list[str], int]:
         """Build canonical prompt/input payload for a trial.

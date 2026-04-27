@@ -90,6 +90,9 @@ class GPT53Model(VLMModel):
 
         # Retry path for GPT-5.* cases where output tokens are consumed by
         # reasoning and no final text is emitted.
+        initial_budget = int(payload["max_output_tokens"])
+        retry_reasons: list[str] = []
+        self.last_generation_metadata = {}
         for attempt in range(self.retry_attempts):
             response = requests.post(
                 f"{self.api_base}/responses",
@@ -104,6 +107,7 @@ class GPT53Model(VLMModel):
                     and response.status_code >= 500
                     and attempt < self.retry_attempts - 1
                 ):
+                    retry_reasons.append(f"http_{response.status_code}")
                     continue
                 raise RuntimeError(
                     f"OpenAI API error {response.status_code}: {response.text[:500]}"
@@ -111,12 +115,26 @@ class GPT53Model(VLMModel):
             data = response.json()
             text = self._extract_response_text(data)
             if text:
+                self.last_generation_metadata = {
+                    "api_provider": "openai",
+                    "api_attempts": attempt + 1,
+                    "api_initial_max_output_tokens": initial_budget,
+                    "api_final_max_output_tokens": int(payload["max_output_tokens"]),
+                    "api_retried_with_larger_limit": int(payload["max_output_tokens"])
+                    > initial_budget,
+                    "api_retry_reasons": ";".join(retry_reasons),
+                    "api_finish_reason": str(
+                        (data.get("incomplete_details") or {}).get("reason") or ""
+                    ),
+                    "api_response_status": str(data.get("status") or ""),
+                }
                 return text
 
             incomplete = data.get("incomplete_details") or {}
             if incomplete.get("reason") == "max_output_tokens" and int(
                 payload["max_output_tokens"]
             ) < self.max_output_tokens_cap:
+                retry_reasons.append("max_output_tokens")
                 payload["max_output_tokens"] = min(
                     self.max_output_tokens_cap, int(payload["max_output_tokens"]) * 2
                 )

@@ -29,6 +29,17 @@ _HUMAN_FIELDS = [
     "human_plurality_agrees_model",
 ]
 
+_GENERATION_METADATA_FIELDS = [
+    "api_provider",
+    "api_attempts",
+    "api_initial_max_output_tokens",
+    "api_final_max_output_tokens",
+    "api_retried_with_larger_limit",
+    "api_retry_reasons",
+    "api_finish_reason",
+    "api_response_status",
+]
+
 
 def write_task_csv(output_dir: Path, task_id: str, results: list[dict]) -> Path:
     """Write per-task detailed results CSV.
@@ -41,7 +52,14 @@ def write_task_csv(output_dir: Path, task_id: str, results: list[dict]) -> Path:
     has_human = results and any(
         r.get("human_correct_prop") is not None for r in results
     )
-    fieldnames = _BASE_FIELDS + (_HUMAN_FIELDS if has_human else [])
+    has_generation_metadata = results and any(
+        any(field in r for field in _GENERATION_METADATA_FIELDS) for r in results
+    )
+    fieldnames = (
+        _BASE_FIELDS
+        + (_HUMAN_FIELDS if has_human else [])
+        + (_GENERATION_METADATA_FIELDS if has_generation_metadata else [])
+    )
 
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")

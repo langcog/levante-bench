@@ -67,6 +67,9 @@ class GeminiProModel(VLMModel):
         }
 
         url = f"{self.API_BASE}/models/{self.model_name}:generateContent"
+        initial_budget = int(payload["generationConfig"]["maxOutputTokens"])
+        retry_reasons: list[str] = []
+        self.last_generation_metadata = {}
         for attempt in range(self.retry_attempts):
             response = requests.post(
                 url,
@@ -88,24 +91,46 @@ class GeminiProModel(VLMModel):
             out_parts = content.get("parts", []) if isinstance(content, dict) else []
             text_chunks = [p.get("text", "") for p in out_parts if isinstance(p, dict)]
             text = "\n".join([t for t in text_chunks if t]).strip()
+            finish_reason = str(candidate.get("finishReason") or "").upper()
             if text:
+                current_budget = int(payload["generationConfig"]["maxOutputTokens"])
+                self.last_generation_metadata = {
+                    "api_provider": "gemini",
+                    "api_attempts": attempt + 1,
+                    "api_initial_max_output_tokens": initial_budget,
+                    "api_final_max_output_tokens": current_budget,
+                    "api_retried_with_larger_limit": current_budget > initial_budget,
+                    "api_retry_reasons": ";".join(retry_reasons),
+                    "api_finish_reason": finish_reason,
+                    "api_response_status": "",
+                }
                 return text
 
             # Gemini 2.5 can consume all output budget in thoughts and emit no text.
             # Retry with a larger output budget before giving up.
-            finish_reason = str(candidate.get("finishReason") or "").upper()
             current_budget = int(payload["generationConfig"]["maxOutputTokens"])
             if (
                 finish_reason == "MAX_TOKENS"
                 and current_budget < self.max_output_tokens_cap
                 and attempt < self.retry_attempts - 1
             ):
+                retry_reasons.append("MAX_TOKENS")
                 payload["generationConfig"]["maxOutputTokens"] = min(
                     self.max_output_tokens_cap,
                     current_budget * 2,
                 )
                 continue
 
+            self.last_generation_metadata = {
+                "api_provider": "gemini",
+                "api_attempts": attempt + 1,
+                "api_initial_max_output_tokens": initial_budget,
+                "api_final_max_output_tokens": current_budget,
+                "api_retried_with_larger_limit": current_budget > initial_budget,
+                "api_retry_reasons": ";".join(retry_reasons),
+                "api_finish_reason": finish_reason,
+                "api_response_status": "",
+            }
             return ""
 
         return ""

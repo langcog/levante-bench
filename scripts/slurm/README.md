@@ -37,6 +37,28 @@ Optional overrides:
 VERSION=v1_new_parser bash scripts/slurm/submit_all_local_models_once.sh
 ```
 
+## Updated paper model list
+
+Use this to submit the 18-model paper list on Marlowe. By default it skips
+model-size labels that already have a `summary.csv` locally or in
+`gs://levante-bench/results/<version>/<model-size>/baseline/`.
+
+```bash
+bash scripts/slurm/submit_paper_model_list.sh
+```
+
+Useful overrides:
+
+```bash
+DRY_RUN=1 bash scripts/slurm/submit_paper_model_list.sh
+FORCE=1 bash scripts/slurm/submit_paper_model_list.sh
+ONLY="internvl35:14B qwen35:27B molmo2:O-7B" bash scripts/slurm/submit_paper_model_list.sh
+```
+
+Each job runs through `run_paper_model_baseline.sbatch`, writes deterministic
+results to `results/<version>/<model-size>/`, and copies the CSV/JSON outputs
+into `results/<version>/<model-size>/baseline/` for dashboard ingestion.
+
 ## Deterministic hosted-model launcher
 
 Use this to run each hosted model once (no randomized option order) and write

@@ -2,4 +2,4 @@
 
 name: internvl35
 hf_name: OpenGVLab/InternVL3_5-${size}-HF
-size: 1B  # 1B | 2B | 4B | 8B
+size: 1B  # 1B | 2B | 4B | 8B | 14B | 38B

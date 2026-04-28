@@ -35,6 +35,10 @@ module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
 
+# Keep Marlowe user-site packages (e.g. ~/.local transformers/llava) from
+# shadowing the project conda env and model-specific dependencies.
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+
 mkdir -p "$SLURM_LOG_DIR"
 mkdir -p "$RESULTS_ROOT"
 
@@ -60,6 +64,15 @@ echo "Experiment: $EXPERIMENT_CONFIG"
 echo "Conda env: $CONDA_ENV_PATH"
 echo "Python after activate: $(command -v python)"
 echo "Python version: $(python -V 2>&1)"
+python - <<'PY'
+import site
+print(f"User site enabled: {site.ENABLE_USER_SITE}")
+try:
+    import transformers
+    print(f"Transformers: {transformers.__version__} ({transformers.__file__})")
+except Exception as exc:
+    print(f"Transformers import failed: {exc}")
+PY
 if [[ "$USE_JOB_OUTPUT_ROOT" == "1" ]]; then
   echo "Job output root: $JOB_OUTPUT_ROOT"
 fi

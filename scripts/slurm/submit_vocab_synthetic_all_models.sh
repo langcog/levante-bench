@@ -5,7 +5,7 @@
 # Usage:
 #   bash scripts/slurm/submit_vocab_synthetic_all_models.sh
 #   WAIT_FOR_COMPLETION=0 bash scripts/slurm/submit_vocab_synthetic_all_models.sh
-#   MODELS="smolvlm2 internvl35 qwen35" bash scripts/slurm/submit_vocab_synthetic_all_models.sh
+#   TARGETS="smolvlm2:256M internvl35:8B qwen35:4B" bash scripts/slurm/submit_vocab_synthetic_all_models.sh
 
 set -euo pipefail
 
@@ -38,47 +38,63 @@ OUTPUT_CSV="${OUTPUT_CSV:-$RESULTS_ROOT/vocab_synthetic_table.csv}"
 OUTPUT_MD="${OUTPUT_MD:-$RESULTS_ROOT/vocab_synthetic_table.md}"
 SYNTHETIC_MANIFEST="$CODE_DIR/scripts/new_vocab_assets/assets/new-vocab-2026-04-24/manifest.csv"
 
-declare -A MODEL_SIZE_MAP=(
-  ["smolvlm2"]="2.2B"
-  ["internvl35"]="8B"
-  ["qwen35"]="4B"
-  ["qwen3vl_30b"]=""
-  ["qwen25vl_32b"]=""
-  ["tinyllava"]=""
-  ["aquila_vl"]=""
-  ["gemma3"]="4b-it"
-  ["gemma4"]="E4B-it"
-)
-
 declare -A BATCH_SIZE_MAP=(
-  ["smolvlm2"]="1"
-  ["internvl35"]="1"
-  ["qwen35"]="1"
-  ["qwen3vl_30b"]="1"
-  ["qwen25vl_32b"]="1"
-  ["tinyllava"]="1"
-  ["aquila_vl"]="1"
-  ["gemma3"]="1"
-  ["gemma4"]="1"
+  ["gemma4:E2B-it"]="1"
+  ["gemma4:E4B-it"]="1"
+  ["gemma4:26B-A4B-it"]="1"
+  ["gemma4:31B-it"]="1"
+  ["internvl35:1B"]="1"
+  ["internvl35:2B"]="1"
+  ["internvl35:4B"]="1"
+  ["internvl35:8B"]="1"
+  ["internvl35:14B"]="1"
+  ["internvl35:38B"]="1"
+  ["molmo2:4B"]="1"
+  ["molmo2:O-7B"]="1"
+  ["molmo2:8B"]="1"
+  ["qwen35:0.8B"]="1"
+  ["qwen35:2B"]="1"
+  ["qwen35:4B"]="1"
+  ["qwen35:9B"]="1"
+  ["qwen35:27B"]="1"
+  ["smolvlm2:256M"]="1"
+  ["smolvlm2:500M"]="1"
+  ["smolvlm2:2.2B"]="1"
+  ["tinyllava:2.4B"]="1"
+  ["tinyllava:3.1B"]="1"
 )
 
-DEFAULT_MODELS=(
-  smolvlm2
-  internvl35
-  qwen35
-  qwen3vl_30b
-  qwen25vl_32b
-  tinyllava
-  aquila_vl
-  gemma3
-  gemma4
+DEFAULT_TARGETS=(
+  "gemma4:E2B-it"
+  "gemma4:E4B-it"
+  "gemma4:26B-A4B-it"
+  "gemma4:31B-it"
+  "internvl35:1B"
+  "internvl35:2B"
+  "internvl35:4B"
+  "internvl35:8B"
+  "internvl35:14B"
+  "internvl35:38B"
+  "molmo2:4B"
+  "molmo2:O-7B"
+  "molmo2:8B"
+  "qwen35:0.8B"
+  "qwen35:2B"
+  "qwen35:4B"
+  "qwen35:9B"
+  "qwen35:27B"
+  "smolvlm2:256M"
+  "smolvlm2:500M"
+  "smolvlm2:2.2B"
+  "tinyllava:2.4B"
+  "tinyllava:3.1B"
 )
 
-if [[ -n "${MODELS:-}" ]]; then
+if [[ -n "${TARGETS:-}" ]]; then
   # shellcheck disable=SC2206
-  MODELS_ARR=( $MODELS )
+  TARGETS_ARR=( $TARGETS )
 else
-  MODELS_ARR=("${DEFAULT_MODELS[@]}")
+  TARGETS_ARR=("${DEFAULT_TARGETS[@]}")
 fi
 
 mkdir -p "$RESULTS_ROOT"
@@ -105,14 +121,19 @@ echo ""
 JOB_IDS=()
 EXPECTED_MODELS=()
 
-for model in "${MODELS_ARR[@]}"; do
-  if [[ -z "${BATCH_SIZE_MAP[$model]+x}" ]]; then
-    echo "Skipping unknown model key: $model" >&2
+for target in "${TARGETS_ARR[@]}"; do
+  if [[ "$target" != *:* ]]; then
+    echo "Skipping malformed target, expected model:size: $target" >&2
+    continue
+  fi
+  if [[ -z "${BATCH_SIZE_MAP[$target]+x}" ]]; then
+    echo "Skipping unknown paper target: $target" >&2
     continue
   fi
 
-  size="${MODEL_SIZE_MAP[$model]}"
-  batch_size="${BATCH_SIZE_MAP[$model]}"
+  model="${target%%:*}"
+  size="${target#*:}"
+  batch_size="${BATCH_SIZE_MAP[$target]}"
   EXPECTED_MODELS+=("${model}${size:+-$size}")
 
   submit_output="$(

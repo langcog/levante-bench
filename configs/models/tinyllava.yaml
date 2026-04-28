@@ -3,8 +3,12 @@
 # labeled 2×2 grid passed as a single image.
 
 name: tinyllava
-hf_name: tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B
+size: 3.1B
+hf_name: ${hf_names.${size}}
 dtype: float16  # upstream config.json saves weights in float16
+hf_names:
+  2.4B: tinyllava/TinyLLaVA-Gemma-SigLIP-2.4B
+  3.1B: tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B
 # Available sizes (set hf_name to the desired model):
 #   0.5B → tinyllava/TinyLLaVA-Qwen2-0.5B-SigLIP
 #   0.9B → tinyllava/TinyLLaVA-OpenELM-450M-SigLIP-0.89B

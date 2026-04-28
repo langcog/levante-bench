@@ -3,6 +3,7 @@
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.prompts import render_prompt_template_for_row
 from levante_bench.tasks.image_index import build_image_index
 from levante_bench.tasks.option_order import (
     derive_true_random_item_seed,
@@ -104,7 +105,8 @@ class MentalRotationDataset(VLMDataset):
                 prompt = prompt.replace("<prompt_phrase>", prompt_phrase)
             return prompt
 
-        return self.build_localized_prompt(
-            prompt_template=row["full_prompt"],
-            prompt_phrase=row["prompt_phrase"],
+        return render_prompt_template_for_row(
+            "mental-rotation",
+            row,
+            prompt_language=self.prompt_language,
         )

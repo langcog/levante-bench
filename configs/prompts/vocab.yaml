@@ -6,6 +6,23 @@ task_id: vocab
 n_options: 4
 labels: "A, B, C, or D"
 
+schema_version: 1
+default_template_id: image_match.default
+
+prompt_templates:
+  image_match.default:
+    description: "Current manifest prompt for matching a vocabulary item to an image"
+    template: >
+      Choose the image that matches the text: "{prompt_phrase}". Answer with A, B, C, or D.
+      A: {image1}; B: {image2}; C: {image3}; D: {image4}
+    locales:
+      es-CO: >
+        Elige la imagen que corresponde al texto: "{prompt_phrase}". Responde con A, B, C o D.
+        A: {image1}; B: {image2}; C: {image3}; D: {image4}
+      de: >
+        Wahle das Bild, das zum Text passt: "{prompt_phrase}". Antworte mit A, B, C oder D.
+        A: {image1}; B: {image2}; C: {image3}; D: {image4}
+
 task_framings:
   TF1_minimal:
     description: "Manifest default — match text to image"

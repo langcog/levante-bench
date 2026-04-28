@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.prompts import render_prompt_template_for_row
 from levante_bench.tasks.option_order import (
     derive_true_random_item_seed,
     deterministic_option_order,
@@ -108,9 +109,15 @@ class VocabDataset(VLMDataset):
             option_image_paths.append(str(path))
 
         # Build prompt from template — keep <imageN> placeholders for interleaving
-        prompt = self.build_localized_prompt(
-            prompt_template=row["full_prompt"],
-            prompt_phrase=row["prompt_phrase"],
+        localized_phrase = self.translate_item_by_source_text(
+            row["prompt_phrase"],
+            fallback_text=row["prompt_phrase"],
+        )
+        prompt = render_prompt_template_for_row(
+            "vocab",
+            row,
+            prompt_language=self.prompt_language,
+            placeholders={"prompt_phrase": localized_phrase},
         )
 
         return {

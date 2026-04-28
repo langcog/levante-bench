@@ -3,6 +3,7 @@
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.prompts import render_prompt_template_for_row
 from levante_bench.tasks.image_index import build_image_index
 from levante_bench.tasks.option_order import (
     derive_true_random_item_seed,
@@ -65,13 +66,16 @@ class MatrixReasoningDataset(VLMDataset):
                 )
             option_image_paths.append(str(path))
 
-        prompt_template = row.get("full_prompt", "")
-        if str(prompt_template) in {"NA", "nan"}:
-            prompt_template = row.get("prompt", "")
-        prompt = self.build_localized_prompt(
-            prompt_template=prompt_template,
-            prompt_phrase=row.get("prompt_phrase", ""),
+        prompt = render_prompt_template_for_row(
+            "matrix-reasoning",
+            row,
+            prompt_language=self.prompt_language,
         )
+        if not prompt:
+            prompt = self.build_localized_prompt(
+                prompt_template=row.get("prompt", ""),
+                prompt_phrase=row.get("prompt_phrase", ""),
+            )
 
         context_image_paths = []
         if "<prompt_image>" in prompt:

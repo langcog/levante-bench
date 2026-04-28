@@ -3,6 +3,7 @@
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.prompts import render_prompt_template_for_row
 from levante_bench.tasks.image_index import build_image_index
 from levante_bench.tasks.option_order import (
     derive_true_random_item_seed,
@@ -11,15 +12,6 @@ from levante_bench.tasks.option_order import (
 from levante_bench.tasks.registry import register_task
 
 LABELS = ["A", "B", "C", "D"]
-
-_ANSWER_INSTRUCTION_BY_LANG = {
-    "de": 'Antworte mit A, B, C oder D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-    "de-CH": 'Antworte mit A, B, C oder D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-    "es-CO": 'Responde con A, B, C o D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-    "es-AR": 'Responde con A, B, C o D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-    "fr-CA": 'Reponds avec A, B, C ou D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-    "nl": 'Antwoord met A, B, C of D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-}
 
 
 @register_task("trog")
@@ -96,20 +88,15 @@ class TrogDataset(VLMDataset):
                 )
             option_image_paths.append(str(path))
 
-        answer_instruction = _ANSWER_INSTRUCTION_BY_LANG.get(
-            self.prompt_language,
-            'Answer with A, B, C, or D. A: <image1>; B: <image2>; C: <image3>; D: <image4>',
-        )
         item_id = self.item_id_by_uid.get(item_uid, "")
         localized_item_prompt = self.translate_item(item_id, "")
-        if localized_item_prompt:
-            prompt = f"{localized_item_prompt} {answer_instruction}"
-        else:
-            prompt_base = self.build_localized_prompt(
-                prompt_template=row["prompt"],
-                prompt_phrase=row["prompt_phrase"],
-            )
-            prompt = f'{prompt_base} "{self.translate_text(row["prompt_phrase"])}". {answer_instruction}'
+        prompt_phrase = localized_item_prompt or self.translate_text(row["prompt_phrase"])
+        prompt = render_prompt_template_for_row(
+            "trog",
+            row,
+            prompt_language=self.prompt_language,
+            placeholders={"prompt_phrase": prompt_phrase},
+        )
 
         context_image_paths = []
         prompt_image = str(row.get("prompt_image", "NA")).strip()

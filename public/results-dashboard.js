@@ -154,21 +154,24 @@
     models: {
       title: "Models",
       html: `
-        <p>Current benchmark runs include the following model families:</p>
-        <h3>Aquila-VL</h3>
-        <p><a href="https://huggingface.co/BAAI/Aquila-VL-2B-llava-qwen" target="_blank" rel="noopener noreferrer">BAAI/Aquila-VL-2B-llava-qwen</a></p>
-        <p><a href="https://github.com/BAAI-DCAI/Aquila-VL" target="_blank" rel="noopener noreferrer">Aquila-VL project repository</a></p>
+        <p>
+          The dashboard selectors are loaded from published <code>v1</code> bucket results.
+          Current paper runs include these model families:
+        </p>
+        <h3>Gemini</h3>
+        <p>Gemini Pro baseline runs, including English, Spanish, and German prompt variants.</p>
+        <h3>GPT-5.3</h3>
+        <p>GPT-5.3 baseline runs.</p>
+        <h3>Gemma 4</h3>
+        <p><a href="https://huggingface.co/google" target="_blank" rel="noopener noreferrer">Google Gemma model family</a> (<code>gemma4-E2B-it</code>, <code>gemma4-E4B-it</code>, and <code>gemma4-26B-A4B-it</code>).</p>
+        <h3>InternVL3.5</h3>
+        <p><a href="https://huggingface.co/OpenGVLab" target="_blank" rel="noopener noreferrer">OpenGVLab InternVL3.5 family</a> (<code>1B</code>, <code>2B</code>, <code>4B</code>, <code>8B</code>, <code>14B</code>, and <code>38B</code>).</p>
+        <h3>Qwen3.5</h3>
+        <p><a href="https://huggingface.co/Qwen" target="_blank" rel="noopener noreferrer">Qwen model family</a> (<code>0.8B</code>, <code>2B</code>, <code>4B</code>, <code>9B</code>, and <code>27B</code>).</p>
         <h3>SmolVLM2</h3>
         <p><a href="https://huggingface.co/HuggingFaceTB/SmolVLM2-256M-Instruct" target="_blank" rel="noopener noreferrer">HuggingFaceTB/SmolVLM2-256M-Instruct</a></p>
         <p><a href="https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Instruct" target="_blank" rel="noopener noreferrer">HuggingFaceTB/SmolVLM2-500M-Instruct</a></p>
-        <h3>Qwen3.5</h3>
-        <p><a href="https://huggingface.co/Qwen" target="_blank" rel="noopener noreferrer">Qwen model family (Qwen3.5 variants)</a></p>
-        <h3>Gemma</h3>
-        <p><a href="https://huggingface.co/google/gemma-3-4b-it" target="_blank" rel="noopener noreferrer">google/gemma-3-4b-it</a></p>
-        <p><a href="https://huggingface.co/google/gemma-4-E2B-it" target="_blank" rel="noopener noreferrer">google/gemma-4-E2B-it</a></p>
-        <p><a href="https://huggingface.co/google/gemma-4-E4B-it" target="_blank" rel="noopener noreferrer">google/gemma-4-E4B-it</a></p>
-        <h3>InternVL3.5</h3>
-        <p><a href="https://huggingface.co/OpenGVLab/InternVL3_5-1B-HF" target="_blank" rel="noopener noreferrer">OpenGVLab/InternVL3_5-1B-HF</a></p>
+        <p><a href="https://huggingface.co/HuggingFaceTB/SmolVLM2-2.2B-Instruct" target="_blank" rel="noopener noreferrer">HuggingFaceTB/SmolVLM2-2.2B-Instruct</a></p>
         <h3>TinyLLaVA</h3>
         <p><a href="https://huggingface.co/tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B" target="_blank" rel="noopener noreferrer">tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B</a></p>
       `,

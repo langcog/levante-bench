@@ -9,6 +9,8 @@
   const closestBinColumnHeaderEl = document.getElementById("closest-bin-column-header");
   const gapColumnHeaderEl = document.getElementById("gap-column-header");
   const summaryStatsEl = document.getElementById("summary-stats");
+  const languageComparisonEl = document.getElementById("language-comparison");
+  const languageComparisonContentEl = document.getElementById("language-comparison-content");
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
   const allModelsBtn = document.getElementById("all-models");
@@ -331,6 +333,92 @@
       return NaN;
     }
     return values.reduce((acc, val) => acc + val, 0) / values.length;
+  }
+
+  function languageLabel(language) {
+    const normalized = String(language || "en").trim().toLowerCase() || "en";
+    const labels = {
+      en: "English",
+      de: "German",
+      es: "Spanish",
+    };
+    return labels[normalized] || normalized.toUpperCase();
+  }
+
+  function seriesDisplayLabel(row) {
+    const language = String((row && row.language) || "en").trim().toLowerCase() || "en";
+    const model = String((row && row.model) || "unknown").trim() || "unknown";
+    return language === "en" ? model : `${model} · ${language}`;
+  }
+
+  function meanForRow(row) {
+    const values = Object.values((row && row.taskMeans) || {}).filter((value) =>
+      Number.isFinite(value),
+    );
+    return mean(values);
+  }
+
+  function groupRowsByModel(rows) {
+    const grouped = new Map();
+    (rows || []).forEach((row) => {
+      if (!row || row.kind !== "model") {
+        return;
+      }
+      const model = String(row.model || "unknown").trim() || "unknown";
+      const language = String(row.language || "en").trim().toLowerCase() || "en";
+      if (!grouped.has(model)) {
+        grouped.set(model, new Map());
+      }
+      grouped.get(model).set(language, row);
+    });
+    return grouped;
+  }
+
+  function buildLanguageComparisonRows(rows) {
+    const grouped = groupRowsByModel(rows);
+    return Array.from(grouped.entries())
+      .map(([model, languageRows]) => {
+        const languageStats = Array.from(languageRows.entries())
+          .map(([language, row]) => ({
+            language,
+            label: languageLabel(language),
+            mean: meanForRow(row),
+          }))
+          .filter((entry) => Number.isFinite(entry.mean))
+          .sort((a, b) => {
+            if (a.language === "en") {
+              return -1;
+            }
+            if (b.language === "en") {
+              return 1;
+            }
+            return a.label.localeCompare(b.label);
+          });
+        const english = languageStats.find((entry) => entry.language === "en");
+        const best = languageStats.slice().sort((a, b) => b.mean - a.mean)[0] || null;
+        return {
+          model,
+          englishMean: english ? english.mean : NaN,
+          languages: languageStats.map((entry) => ({
+            ...entry,
+            deltaFromEnglish: english ? entry.mean - english.mean : NaN,
+          })),
+          bestLanguage: best ? best.label : "n/a",
+          bestMean: best ? best.mean : NaN,
+        };
+      })
+      .filter((entry) => entry.languages.length > 1)
+      .sort((a, b) => a.model.localeCompare(b.model, undefined, { numeric: true }));
+  }
+
+  function formatDelta(value) {
+    if (!Number.isFinite(value)) {
+      return "n/a";
+    }
+    if (Math.abs(value) < 0.0005) {
+      return "0.000";
+    }
+    return `${value > 0 ? "+" : ""}${value.toFixed(3)}`;
   }
 
   function currentMetric() {
@@ -814,8 +902,8 @@
           }
         }
         return `<tr>
-          <td>${row.kind === "run" ? `${row.model} / ${row.runLabel}` : row.model}</td>
-          <td>${row.language}</td>
+          <td>${row.kind === "run" ? `${seriesDisplayLabel(row)} / ${row.runLabel}` : seriesDisplayLabel(row)}</td>
+          <td>${languageLabel(row.language)}</td>
           <td>${taskCount}</td>
           <td>${closestBinText}</td>
           <td>${gapText}</td>
@@ -837,7 +925,7 @@
     const overallMean = mean(means);
     const best = rows
       .map((row) => ({
-        label: row.label,
+        label: seriesDisplayLabel(row),
         score: mean(Object.values(row.taskMeans)),
       }))
       .sort((a, b) => (isKlMetric() ? a.score - b.score : b.score - a.score))[0];
@@ -853,6 +941,100 @@
         : "Best mean";
     summaryStatsEl.textContent =
       `Series shown: ${rows.length} | ${bestLabel}: ${best.label} (${best.score.toFixed(4)}) | Overall mean ${metricName}: ${overallMean.toFixed(4)}`;
+  }
+
+  function renderLanguageComparison(rows) {
+    if (!languageComparisonEl || !languageComparisonContentEl) {
+      return;
+    }
+    const shouldShow = activeSeriesTab === "models" && currentMetric() === "accuracy";
+    languageComparisonEl.classList.toggle("hidden", !shouldShow);
+    if (!shouldShow) {
+      languageComparisonContentEl.innerHTML = "";
+      return;
+    }
+
+    const comparisons = buildLanguageComparisonRows(rows);
+    if (!comparisons.length) {
+      languageComparisonContentEl.innerHTML =
+        '<p class="comparison-empty">Select at least one model with multiple language runs to compare non-English performance against English.</p>';
+      return;
+    }
+
+    const languageSet = new Set();
+    comparisons.forEach((comparison) => {
+      comparison.languages.forEach((entry) => languageSet.add(entry.language));
+    });
+    const languages = Array.from(languageSet).sort((a, b) => {
+      if (a === "en") {
+        return -1;
+      }
+      if (b === "en") {
+        return 1;
+      }
+      return languageLabel(a).localeCompare(languageLabel(b));
+    });
+
+    const headerCells = languages
+      .map((language) => `<th>${languageLabel(language)}</th>`)
+      .join("");
+    const deltaHeaderCells = languages
+      .filter((language) => language !== "en")
+      .map((language) => `<th>${languageLabel(language)} vs English</th>`)
+      .join("");
+    const rowsHtml = comparisons
+      .map((comparison) => {
+        const byLanguage = new Map(
+          comparison.languages.map((entry) => [entry.language, entry]),
+        );
+        const meanCells = languages
+          .map((language) => {
+            const entry = byLanguage.get(language);
+            return `<td>${entry ? entry.mean.toFixed(4) : "n/a"}</td>`;
+          })
+          .join("");
+        const deltaCells = languages
+          .filter((language) => language !== "en")
+          .map((language) => {
+            const entry = byLanguage.get(language);
+            const delta = entry ? entry.deltaFromEnglish : NaN;
+            const className = Number.isFinite(delta)
+              ? delta > 0.0005
+                ? "delta-positive"
+                : delta < -0.0005
+                  ? "delta-negative"
+                  : "delta-neutral"
+              : "delta-missing";
+            return `<td class="${className}">${formatDelta(delta)}</td>`;
+          })
+          .join("");
+        const bestText = Number.isFinite(comparison.bestMean)
+          ? `${comparison.bestLanguage} (${comparison.bestMean.toFixed(4)})`
+          : "n/a";
+        return `<tr>
+          <td>${comparison.model}</td>
+          ${meanCells}
+          ${deltaCells}
+          <td>${bestText}</td>
+        </tr>`;
+      })
+      .join("");
+
+    languageComparisonContentEl.innerHTML = `
+      <div class="comparison-table-scroll">
+        <table class="language-comparison-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              ${headerCells}
+              ${deltaHeaderCells}
+              <th>Best Language</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    `;
   }
 
   function renderChart(rows) {
@@ -884,7 +1066,7 @@
         return { value, question };
       });
       return {
-        label: row.label,
+        label: seriesDisplayLabel(row),
         data: points.map((p) => p.value),
         questionMarkMask: points.map((p) => p.question),
         borderColor: color,
@@ -1003,6 +1185,7 @@
             : ageEqAccMetric
               ? `Showing ${rows.length} model series (Age Eq from Accuracy)`
               : `Showing ${rows.length} series entries`;
+    renderLanguageComparison(rows);
     renderSummary(rows);
     renderTable(rows);
     renderChart(rows);

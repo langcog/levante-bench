@@ -262,6 +262,7 @@ select:focus-visible {
 }
 
 .chart-wrap,
+.language-comparison-wrap,
 .table-wrap,
 .summary-wrap {
   background: var(--panel);
@@ -278,6 +279,66 @@ select:focus-visible {
 .chart-wrap canvas {
   width: 100% !important;
   height: 380px !important;
+}
+
+.language-comparison-wrap.hidden {
+  display: none;
+}
+
+.section-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.section-heading-row h2 {
+  margin: 0;
+  color: #0369a1;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.section-heading-row p {
+  margin: 4px 0 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.comparison-table-scroll {
+  overflow-x: auto;
+}
+
+.language-comparison-table {
+  min-width: 720px;
+}
+
+.language-comparison-table td:first-child,
+.language-comparison-table th:first-child {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.delta-positive {
+  color: #047857;
+  font-weight: 700;
+}
+
+.delta-negative {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.delta-neutral,
+.delta-missing {
+  color: var(--muted);
+}
+
+.comparison-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.94rem;
 }
 
 .summary-wrap h2 {

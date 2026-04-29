@@ -276,6 +276,67 @@ select:focus-visible {
   min-height: 420px;
 }
 
+.chart-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.chart-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.line-swatch {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 0;
+  border-top: 3px solid #334155;
+}
+
+.line-swatch::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border: 2px solid #334155;
+  border-radius: 999px;
+}
+
+.line-swatch-de {
+  border-top-style: dashed;
+}
+
+.line-swatch-de::after {
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.line-swatch-es {
+  border-top-style: dotted;
+}
+
+.line-swatch-es::after {
+  width: 0;
+  height: 0;
+  top: -7px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #334155;
+  border-top: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
 .chart-wrap canvas {
   width: 100% !important;
   height: 380px !important;

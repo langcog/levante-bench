@@ -345,6 +345,16 @@
     return labels[normalized] || normalized.toUpperCase();
   }
 
+  function languageChartStyle(language) {
+    const normalized = String(language || "en").trim().toLowerCase() || "en";
+    const styles = {
+      en: { borderDash: [], pointStyle: "circle" },
+      de: { borderDash: [7, 4], pointStyle: "rectRot" },
+      es: { borderDash: [2, 4], pointStyle: "triangle" },
+    };
+    return styles[normalized] || { borderDash: [5, 3, 1, 3], pointStyle: "rect" };
+  }
+
   function seriesDisplayLabel(row) {
     const language = String((row && row.language) || "en").trim().toLowerCase() || "en";
     const model = String((row && row.model) || "unknown").trim() || "unknown";
@@ -1043,8 +1053,13 @@
       Object.keys(row.taskMeans).forEach((taskId) => taskSet.add(taskId));
     });
     const labels = sortTasks(Array.from(taskSet));
-    const datasets = rows.map((row, idx) => {
-      const color = levantePalette[idx % levantePalette.length];
+    const modelColors = new Map();
+    uniqueSorted(rows.map((row) => row.model)).forEach((model, idx) => {
+      modelColors.set(model, levantePalette[idx % levantePalette.length]);
+    });
+    const datasets = rows.map((row) => {
+      const color = modelColors.get(row.model) || levantePalette[0];
+      const style = languageChartStyle(row.language);
       const points = labels.map((taskId) => {
         if (!Object.prototype.hasOwnProperty.call(row.taskMeans, taskId)) {
           return { value: null, question: false };
@@ -1073,6 +1088,8 @@
         backgroundColor: `${color}55`,
         pointBackgroundColor: color,
         pointBorderColor: "#ffffff",
+        pointStyle: style.pointStyle,
+        borderDash: style.borderDash,
         pointRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 4),
         pointHoverRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 5),
         borderWidth: 2.4,
@@ -1104,7 +1121,8 @@
             labels: {
               color: "#334155",
               boxWidth: 16,
-              boxHeight: 2,
+              boxHeight: 8,
+              usePointStyle: true,
             },
           },
           tooltip: {

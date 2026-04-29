@@ -1,0 +1,11 @@
+# Molmo 2 model config.
+#
+# Common sizes:
+# - 4B
+# - O-7B
+# - 8B
+
+name: molmo2
+hf_name: allenai/Molmo2-${size}
+size: 8B
+trust_remote_code: true

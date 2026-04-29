@@ -14,6 +14,8 @@ node_modules/
 
 # Generated evaluation artifacts
 /results/
+/results_test_*/
+/results_test_*.log
 /scripts/results/
 /scripts/new_vocab_assets/
 /local_data/

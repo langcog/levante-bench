@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from levante_bench.data.datasets import VLMDataset
+from levante_bench.prompts import render_prompt_template_for_row
 from levante_bench.tasks.registry import register_task
 from levante_bench.tasks.image_index import build_image_index
 from levante_bench.tasks.option_order import (
@@ -265,10 +266,13 @@ class EgmaMathDataset(VLMDataset):
         # egma-math uses <optionX> placeholders (not <imageX>) so we must substitute option text.
         # Some rows also include <prompt_image> (context image), which we convert to <image0>.
         prompt_phrase_s = self.translate_text(row.get("prompt_phrase"))
-        prompt_template = row["full_prompt"]
-        if str(prompt_template) in {"", "NA", "nan"}:
-            prompt_template = row.get("prompt", "")
-        prompt = self.translate_text(prompt_template).strip()
+        prompt = render_prompt_template_for_row(
+            "egma-math",
+            row,
+            prompt_language=self.prompt_language,
+        ).strip()
+        if not prompt:
+            prompt = self.translate_text(row.get("prompt", "")).strip()
 
         context_image_paths = []
         if is_numberline and include_numberline:

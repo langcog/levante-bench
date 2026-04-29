@@ -10,7 +10,7 @@
 # Usage:
 #   bash scripts/slurm/submit_all_local_models_once.sh
 #   VERSION=v1_new_parser bash scripts/slurm/submit_all_local_models_once.sh
-#   bash scripts/slurm/submit_all_local_models_once.sh internvl35 qwen3vl_30b
+#   bash scripts/slurm/submit_all_local_models_once.sh internvl35:8B qwen35:4B
 
 set -euo pipefail
 
@@ -34,46 +34,62 @@ CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 VERSION="${VERSION:-v1}"
 DEVICE="${DEVICE:-cuda}"
 
-declare -A MODEL_SIZE_MAP=(
-  ["smolvlm2"]="2.2B"
-  ["internvl35"]="8B"
-  ["qwen35"]="4B"
-  ["qwen3vl_30b"]=""
-  ["qwen25vl_32b"]=""
-  ["tinyllava"]=""
-  ["aquila_vl"]=""
-  ["gemma3"]="4b-it"
-  ["gemma4"]="E4B-it"
-)
-
 declare -A BATCH_SIZE_MAP=(
-  ["smolvlm2"]="4"
-  ["internvl35"]="2"
-  ["qwen35"]="2"
-  ["qwen3vl_30b"]="1"
-  ["qwen25vl_32b"]="1"
-  ["tinyllava"]="2"
-  ["aquila_vl"]="2"
-  ["gemma3"]="2"
-  ["gemma4"]="2"
+  ["gemma4:E2B-it"]="2"
+  ["gemma4:E4B-it"]="2"
+  ["gemma4:26B-A4B-it"]="1"
+  ["gemma4:31B-it"]="1"
+  ["internvl35:1B"]="4"
+  ["internvl35:2B"]="2"
+  ["internvl35:4B"]="2"
+  ["internvl35:8B"]="1"
+  ["internvl35:14B"]="1"
+  ["internvl35:38B"]="1"
+  ["molmo2:4B"]="2"
+  ["molmo2:O-7B"]="1"
+  ["molmo2:8B"]="1"
+  ["qwen35:0.8B"]="4"
+  ["qwen35:2B"]="2"
+  ["qwen35:4B"]="2"
+  ["qwen35:9B"]="1"
+  ["qwen35:27B"]="1"
+  ["smolvlm2:256M"]="4"
+  ["smolvlm2:500M"]="2"
+  ["smolvlm2:2.2B"]="1"
+  ["tinyllava:2.4B"]="2"
+  ["tinyllava:3.1B"]="2"
 )
 
-DEFAULT_MODELS=(
-  smolvlm2
-  internvl35
-  qwen35
-  qwen3vl_30b
-  qwen25vl_32b
-  tinyllava
-  aquila_vl
-  gemma3
-  gemma4
+DEFAULT_TARGETS=(
+  "gemma4:E2B-it"
+  "gemma4:E4B-it"
+  "gemma4:26B-A4B-it"
+  "gemma4:31B-it"
+  "internvl35:1B"
+  "internvl35:2B"
+  "internvl35:4B"
+  "internvl35:8B"
+  "internvl35:14B"
+  "internvl35:38B"
+  "molmo2:4B"
+  "molmo2:O-7B"
+  "molmo2:8B"
+  "qwen35:0.8B"
+  "qwen35:2B"
+  "qwen35:4B"
+  "qwen35:9B"
+  "qwen35:27B"
+  "smolvlm2:256M"
+  "smolvlm2:500M"
+  "smolvlm2:2.2B"
+  "tinyllava:2.4B"
+  "tinyllava:3.1B"
 )
 
 if [[ $# -gt 0 ]]; then
-  MODELS=("$@")
+  TARGETS=("$@")
 else
-  MODELS=("${DEFAULT_MODELS[@]}")
+  TARGETS=("${DEFAULT_TARGETS[@]}")
 fi
 
 echo "Submitting deterministic single-run local-model jobs:"
@@ -83,15 +99,20 @@ echo "  PROJECT_ROOT=$PROJECT_ROOT"
 echo "  CONDA_ENV_PATH=$CONDA_ENV_PATH"
 echo ""
 
-for model in "${MODELS[@]}"; do
-  if [[ -z "${BATCH_SIZE_MAP[$model]+x}" ]]; then
-    echo "Skipping unknown model key: $model" >&2
+for target in "${TARGETS[@]}"; do
+  if [[ "$target" != *:* ]]; then
+    echo "Skipping malformed target, expected model:size: $target" >&2
+    continue
+  fi
+  if [[ -z "${BATCH_SIZE_MAP[$target]+x}" ]]; then
+    echo "Skipping unknown paper target: $target" >&2
     continue
   fi
 
-  size="${MODEL_SIZE_MAP[$model]}"
-  batch_size="${BATCH_SIZE_MAP[$model]}"
-  results_root="$CODE_DIR/results/$model"
+  model="${target%%:*}"
+  size="${target#*:}"
+  batch_size="${BATCH_SIZE_MAP[$target]}"
+  results_root="$CODE_DIR/results/$model-$size"
 
   echo "Submitting model=$model size=${size:-<default>} batch_size=$batch_size results_root=$results_root"
   sbatch \

@@ -7,6 +7,35 @@ task_id: theory-of-mind
 n_options: 2
 labels: "A or B"
 
+schema_version: 1
+default_template_id: story.default
+
+prompt_templates:
+  story.default:
+    description: "Compatibility fallback for current manifest prompt"
+    template: "{full_prompt}"
+
+  answer_options.2_images:
+    description: "Two image answer options"
+    template: "Answer A or B. A: {image1}; B: {image2}"
+    locales:
+      es-CO: "Responde con A o B. A: {image1}; B: {image2}"
+      de: "Antworte mit A oder B. A: {image1}; B: {image2}"
+
+  answer_options.3_images:
+    description: "Three image answer options"
+    template: "Answer A, B, or C. A: {image1}; B: {image2}; C: {image3}"
+    locales:
+      es-CO: "Responde con A, B o C. A: {image1}; B: {image2}; C: {image3}"
+      de: "Antworte mit A, B oder C. A: {image1}; B: {image2}; C: {image3}"
+
+  answer_options.4_images:
+    description: "Four image answer options"
+    template: "Answer A, B, C, or D. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
+    locales:
+      es-CO: "Responde con A, B, C o D. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
+      de: "Antworte mit A, B, C oder D. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
+
 task_framings:
   TF1_minimal:
     description: "Manifest default — story + question inline"

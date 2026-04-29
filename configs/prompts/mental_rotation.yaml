@@ -6,6 +6,23 @@ task_id: mental-rotation
 n_options: 2
 labels: "A or B"
 
+schema_version: 1
+default_template_id: match_image.default
+
+prompt_templates:
+  match_image.default:
+    description: "Current manifest prompt for matching a rotated image"
+    template: >
+      {prompt_image} Choose the option that matches this image. Answer with A or B.
+      A: {image1}; B: {image2}
+    locales:
+      es-CO: >
+        {prompt_image} Elige la opcion que corresponde a esta imagen. Responde con A o B.
+        A: {image1}; B: {image2}
+      de: >
+        {prompt_image} Wahle die Option, die zu diesem Bild passt. Antworte mit A oder B.
+        A: {image1}; B: {image2}
+
 task_framings:
   TF1_minimal:
     description: "Manifest default — minimal instruction"

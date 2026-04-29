@@ -15,6 +15,7 @@ from levante_bench.models import tinyllava  # noqa: F401
 from levante_bench.models import aquila_vl  # noqa: F401
 from levante_bench.models import gemma3  # noqa: F401
 from levante_bench.models import gemma4  # noqa: F401
+from levante_bench.models import molmo2  # noqa: F401
 from levante_bench.models import hf_hosted  # noqa: F401
 from levante_bench.models import gemini  # noqa: F401
 from levante_bench.models import gpt  # noqa: F401

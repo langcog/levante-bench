@@ -6,6 +6,23 @@ task_id: matrix-reasoning
 n_options: 4
 labels: "A, B, C, or D"
 
+schema_version: 1
+default_template_id: blank_option.default
+
+prompt_templates:
+  blank_option.default:
+    description: "Current manifest prompt for choosing the missing matrix option"
+    template: >
+      {prompt_image} Choose the best option to fill in the blank. Answer with A, B, C, or D.
+      A: {image1}; B: {image2}; C: {image3}; D: {image4}
+    locales:
+      es-CO: >
+        {prompt_image} Elige la mejor opcion para completar el espacio en blanco. Responde con A, B, C o D.
+        A: {image1}; B: {image2}; C: {image3}; D: {image4}
+      de: >
+        {prompt_image} Wahle die beste Option, um die Lucke zu fullen. Antworte mit A, B, C oder D.
+        A: {image1}; B: {image2}; C: {image3}; D: {image4}
+
 task_framings:
   TF1_minimal:
     description: "Manifest default — minimal instruction"

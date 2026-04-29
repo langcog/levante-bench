@@ -18,6 +18,9 @@ _MODEL_CFG_EXCLUDE = {
     "max_new_tokens",
     "use_json_format",
     "capabilities",
+    "family",
+    "hf_names",
+    "params_b",
 }
 
 

@@ -6,6 +6,148 @@ task_id: egma-math
 n_options: 4
 labels: "A, B, C, or D"
 
+schema_version: 1
+default_template_id: number_identification.default
+
+prompt_templates:
+  number_identification.default:
+    description: "Current manifest prompt for number identification"
+    template: >
+      Choose the same number: {prompt_phrase}. Answer with A, B, C, or D.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+    locales:
+      es-CO: >
+        Elige el mismo numero: {prompt_phrase}. Responde con A, B, C o D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+      de: >
+        Wahle dieselbe Zahl: {prompt_phrase}. Antworte mit A, B, C oder D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  number_comparison.default:
+    description: "Current manifest prompt for number comparison"
+    template: >
+      Choose which is larger. Answer with A or B. A: {option1}; B: {option2}
+    locales:
+      es-CO: >
+        Elige cual es mayor. Responde con A o B. A: {option1}; B: {option2}
+      de: >
+        Wahle, welche Zahl grosser ist. Antworte mit A oder B. A: {option1}; B: {option2}
+
+  missing_number.default:
+    description: "Current manifest prompt for missing number"
+    template: >
+      Choose the number that goes in the blank: {prompt_phrase}. Answer with A, B, C, or D.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+    locales:
+      es-CO: >
+        Elige el numero que va en el espacio en blanco: {prompt_phrase}. Responde con A, B, C o D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+      de: >
+        Wahle die Zahl, die in die Lucke passt: {prompt_phrase}. Antworte mit A, B, C oder D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  addition.default:
+    description: "Current manifest prompt for addition and fraction items"
+    template: >
+      Add the numbers and choose the correct answer: {prompt_phrase}. Answer with A, B, C, or D.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+    locales:
+      es-CO: >
+        Suma los numeros y elige la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+      de: >
+        Addiere die Zahlen und wahle die richtige Antwort: {prompt_phrase}. Antworte mit A, B, C oder D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  subtraction.default:
+    description: "Current manifest prompt for subtraction"
+    template: >
+      Subtract the numbers and choose the correct answer: {prompt_phrase}. Answer with A, B, C, or D.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+    locales:
+      es-CO: >
+        Resta los numeros y elige la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+      de: >
+        Subtrahiere die Zahlen und wahle die richtige Antwort: {prompt_phrase}. Antworte mit A, B, C oder D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  multiplication.default:
+    description: "Current manifest prompt for multiplication"
+    template: >
+      Multiply the numbers and choose the correct answer: {prompt_phrase}. Answer with A, B, C, or D.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+    locales:
+      es-CO: >
+        Multiplica los numeros y elige la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+      de: >
+        Multipliziere die Zahlen und wahle die richtige Antwort: {prompt_phrase}. Antworte mit A, B, C oder D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  counting.default:
+    description: "Current manifest prompt for open counting"
+    template: >
+      {prompt_image} How many {prompt_phrase} is this? Answer with only a numeral.
+    locales:
+      es-CO: >
+        {prompt_image} Cuantos {prompt_phrase} hay aqui? Responde solo con un numero.
+      de: >
+        {prompt_image} Wie viele {prompt_phrase} sind das? Antworte nur mit einer Zahl.
+
+  counting_afc.default:
+    description: "Current manifest prompt for counting multiple choice"
+    template: >
+      {prompt_image} How many {prompt_phrase} is this? Answer with A or B.
+      A: {option1}; B: {option2}
+    locales:
+      es-CO: >
+        {prompt_image} Cuantos {prompt_phrase} hay aqui? Responde con A o B.
+        A: {option1}; B: {option2}
+      de: >
+        {prompt_image} Wie viele {prompt_phrase} sind das? Antworte mit A oder B.
+        A: {option1}; B: {option2}
+
+  non_symbolic_number_comparison.default:
+    description: "Current manifest prompt for non-symbolic number comparison"
+    template: >
+      Which image has more {prompt_phrase}? Answer with A or B. A: {option1}; B: {option2}
+    locales:
+      es-CO: >
+        Que imagen tiene mas {prompt_phrase}? Responde con A o B. A: {option1}; B: {option2}
+      de: >
+        Welches Bild hat mehr {prompt_phrase}? Antworte mit A oder B. A: {option1}; B: {option2}
+
+  non_symbolic_number_identification.default:
+    description: "Current manifest prompt for non-symbolic number identification"
+    template: >
+      Choose the image that shows {prompt_phrase}. Answer with A, B, or C.
+      A: {image1}; B: {image2}; C: {image3}
+    locales:
+      es-CO: >
+        Elige la imagen que muestra {prompt_phrase}. Responde con A, B o C.
+        A: {image1}; B: {image2}; C: {image3}
+      de: >
+        Wahle das Bild, das {prompt_phrase} zeigt. Antworte mit A, B oder C.
+        A: {image1}; B: {image2}; C: {image3}
+
+  number_line_4afc.default:
+    description: "Current manifest prompt for number line multiple choice"
+    template: >
+      {prompt_image} Choose the number that is marked on the number line. Answer with A, B, C, or D.
+      A: {option1}; B: {option2}; C: {option3}; D: {option4}
+    locales:
+      es-CO: >
+        {prompt_image} Elige el numero marcado en la recta numerica. Responde con A, B, C o D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+      de: >
+        {prompt_image} Wahle die Zahl, die auf dem Zahlenstrahl markiert ist. Antworte mit A, B, C oder D.
+        A: {option1}; B: {option2}; C: {option3}; D: {option4}
+
+  number_line_slider.default:
+    description: "Number line slider has no manifest full_prompt; runtime builds it from task metadata"
+    template: ""
+
 task_framings:
   TF1_minimal:
     description: "Manifest default — choose the same number"

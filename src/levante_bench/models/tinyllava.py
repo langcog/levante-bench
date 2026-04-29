@@ -74,6 +74,7 @@ class TinyLLaVAModel(VLMModel):
 
             model_cls = None
             for class_ref in (
+                "modeling_tinyllava_gemma.TinyLlavaForConditionalGeneration",
                 "modeling_tinyllava_phi.TinyLlavaForConditionalGeneration",
                 "modeling_tinyllava.TinyLlavaForConditionalGeneration",
             ):

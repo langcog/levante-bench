@@ -9,6 +9,7 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=/projects/m000102/outputs/slurm/%x-%j.out
 #SBATCH --error=/projects/m000102/outputs/slurm/%x-%j.err
+#SBATCH --export=NONE
 #SBATCH --requeue
 
 set -euo pipefail
@@ -32,6 +33,7 @@ module load conda
 module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
 
 cd "$CODE_DIR"
 

@@ -9,6 +9,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --output=/projects/m000102/outputs/slurm/%x-%j.out
 #SBATCH --error=/projects/m000102/outputs/slurm/%x-%j.err
+#SBATCH --export=NONE
 #SBATCH --requeue
 
 set -euo pipefail
@@ -16,7 +17,7 @@ set -euo pipefail
 # Required
 MODEL_NAME="${MODEL_NAME:?MODEL_NAME is required (e.g., internvl35)}"
 
-# Optional runtime knobs (override via sbatch --export=ALL,...)
+# Optional runtime knobs (override via explicit sbatch --export variables)
 MODEL_SIZE="${MODEL_SIZE:-}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-}"
 USE_JSON_FORMAT="${USE_JSON_FORMAT:-}"

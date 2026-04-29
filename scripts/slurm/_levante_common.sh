@@ -34,6 +34,11 @@ module load conda
 module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
+
+# Keep Marlowe user-site packages (e.g. ~/.local transformers/llava) from
+# shadowing the project conda env and model-specific dependencies.
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+
 export LEVANTE_PYTHON_BIN="${LEVANTE_PYTHON_BIN:-$CONDA_ENV_PATH/bin/python}"
 if [[ ! -x "$LEVANTE_PYTHON_BIN" ]]; then
   echo "ERROR: LEVANTE_PYTHON_BIN is not executable: $LEVANTE_PYTHON_BIN" >&2
@@ -43,10 +48,6 @@ if ! "$LEVANTE_PYTHON_BIN" -c "import omegaconf" >/dev/null 2>&1; then
   echo "ERROR: omegaconf not importable via LEVANTE_PYTHON_BIN=$LEVANTE_PYTHON_BIN" >&2
   exit 1
 fi
-
-# Keep Marlowe user-site packages (e.g. ~/.local transformers/llava) from
-# shadowing the project conda env and model-specific dependencies.
-export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
 
 mkdir -p "$SLURM_LOG_DIR"
 mkdir -p "$RESULTS_ROOT"

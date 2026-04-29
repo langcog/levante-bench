@@ -11,6 +11,7 @@
 #   bash scripts/slurm/submit_paper_model_list.sh
 #   DRY_RUN=1 bash scripts/slurm/submit_paper_model_list.sh
 #   FORCE=1 bash scripts/slurm/submit_paper_model_list.sh
+#   TIME=02:00:00 ONLY="molmo2:4B tinyllava:2.4B" bash scripts/slurm/submit_paper_model_list.sh
 #   ONLY="internvl35:14B qwen35:27B" bash scripts/slurm/submit_paper_model_list.sh
 
 set -euo pipefail
@@ -112,10 +113,29 @@ declare -A MEM_MAP=(
 )
 
 declare -A TIME_MAP=(
-  ["internvl35:38B"]="12:00:00"
-  ["qwen35:27B"]="12:00:00"
-  ["gemma4:26B-A4B-it"]="12:00:00"
-  ["gemma4:31B-it"]="12:00:00"
+  ["gemma4:E2B-it"]="01:30:00"
+  ["gemma4:E4B-it"]="02:00:00"
+  ["gemma4:26B-A4B-it"]="04:00:00"
+  ["gemma4:31B-it"]="04:00:00"
+  ["internvl35:1B"]="01:30:00"
+  ["internvl35:2B"]="01:30:00"
+  ["internvl35:4B"]="02:00:00"
+  ["internvl35:8B"]="02:00:00"
+  ["internvl35:14B"]="04:00:00"
+  ["internvl35:38B"]="06:00:00"
+  ["molmo2:4B"]="02:00:00"
+  ["molmo2:O-7B"]="02:00:00"
+  ["molmo2:8B"]="02:00:00"
+  ["qwen35:0.8B"]="01:30:00"
+  ["qwen35:2B"]="01:30:00"
+  ["qwen35:4B"]="02:00:00"
+  ["qwen35:9B"]="04:00:00"
+  ["qwen35:27B"]="04:00:00"
+  ["smolvlm2:256M"]="01:30:00"
+  ["smolvlm2:500M"]="01:30:00"
+  ["smolvlm2:2.2B"]="01:30:00"
+  ["tinyllava:2.4B"]="01:30:00"
+  ["tinyllava:3.1B"]="01:30:00"
 )
 
 has_existing_summary() {
@@ -148,6 +168,9 @@ echo "  CONDA_ENV_PATH=$CONDA_ENV_PATH"
 echo "  GCS_RESULTS_ROOT=$GCS_RESULTS_ROOT"
 echo "  FORCE=$FORCE"
 echo "  DRY_RUN=$DRY_RUN"
+if [[ -n "${TIME:-}" ]]; then
+  echo "  TIME=$TIME (global walltime override)"
+fi
 echo ""
 
 submitted=0
@@ -173,7 +196,7 @@ for target in "${TARGETS[@]}"; do
   batch_size="${BATCH_SIZE_MAP[$target]:-1}"
   gpus="${GPU_MAP[$target]:-1}"
   mem="${MEM_MAP[$target]:-96G}"
-  time_limit="${TIME_MAP[$target]:-06:00:00}"
+  time_limit="${TIME:-${TIME_MAP[$target]:-02:00:00}}"
 
   cmd=(
     sbatch

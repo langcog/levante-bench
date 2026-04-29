@@ -53,7 +53,12 @@ Useful overrides:
 DRY_RUN=1 bash scripts/slurm/submit_paper_model_list.sh
 FORCE=1 bash scripts/slurm/submit_paper_model_list.sh
 ONLY="internvl35:14B qwen35:27B molmo2:O-7B tinyllava:3.1B" bash scripts/slurm/submit_paper_model_list.sh
+TIME=02:00:00 ONLY="molmo2:4B molmo2:O-7B molmo2:8B" bash scripts/slurm/submit_paper_model_list.sh
 ```
+
+`TIME` is a global walltime override for every submitted target. If unset, the
+launcher uses size-specific defaults so smaller models do not request the old
+six-hour catch-all walltime.
 
 Each job runs through `run_paper_model_baseline.sbatch`, writes deterministic
 results to `results/<version>/<model-size>/`, and copies the CSV/JSON outputs

@@ -146,7 +146,9 @@ async function listBucketObjects(bucketName, prefix) {
 }
 
 async function buildReportFromBucket(bucketName, prefix) {
-  const allObjects = await listBucketObjects(bucketName, prefix);
+  const cleanPrefix = String(prefix || "").replace(/^\/+|\/+$/g, "");
+  const listingPrefix = cleanPrefix ? `${cleanPrefix}/` : "";
+  const allObjects = await listBucketObjects(bucketName, listingPrefix);
   // New bucket layout:
   // - baseline: results/<version>/<model>/baseline/summary.csv
   // - multirun: results/<version>/<model>/<run_id>/summary.csv
@@ -155,7 +157,9 @@ async function buildReportFromBucket(bucketName, prefix) {
 
   const runs = [];
   for (const obj of summaryObjects) {
-    const relativePath = obj.name.startsWith(prefix) ? obj.name.slice(prefix.length) : obj.name;
+    const relativePath = obj.name.startsWith(listingPrefix)
+      ? obj.name.slice(listingPrefix.length)
+      : obj.name;
     const cleanedRelative = relativePath.replace(/^\/+/, "");
     const summaryUrl = `https://storage.googleapis.com/${bucketName}/${obj.name}`;
     const csvText = await readText(summaryUrl);
@@ -225,7 +229,7 @@ async function buildReportFromBucket(bucketName, prefix) {
 
   return {
     generated_at: new Date().toISOString(),
-    results_root: `gs://${bucketName}/${prefix}`,
+    results_root: `gs://${bucketName}/${cleanPrefix}`,
     summary_file_count: baselineObjects.length,
     run_summary_file_count: runs.length,
     runs,

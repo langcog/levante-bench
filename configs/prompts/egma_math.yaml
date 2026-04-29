@@ -17,7 +17,7 @@ prompt_templates:
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
       es-CO: >
-        Elige el mismo numero: {prompt_phrase}. Responde con A, B, C o D.
+        Escoge el mismo número: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
       de: >
         Wahle dieselbe Zahl: {prompt_phrase}. Antworte mit A, B, C oder D.
@@ -29,7 +29,7 @@ prompt_templates:
       Choose which is larger. Answer with A or B. A: {option1}; B: {option2}
     locales:
       es-CO: >
-        Elige cual es mayor. Responde con A o B. A: {option1}; B: {option2}
+        Escoge el mayor. Responde con A o B. A: {option1}; B: {option2}
       de: >
         Wahle, welche Zahl grosser ist. Antworte mit A oder B. A: {option1}; B: {option2}
 
@@ -40,7 +40,7 @@ prompt_templates:
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
       es-CO: >
-        Elige el numero que va en el espacio en blanco: {prompt_phrase}. Responde con A, B, C o D.
+        Escoge el número que va en el espacio en blanco: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
       de: >
         Wahle die Zahl, die in die Lucke passt: {prompt_phrase}. Antworte mit A, B, C oder D.
@@ -53,7 +53,7 @@ prompt_templates:
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
       es-CO: >
-        Suma los numeros y elige la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
+        Suma los números y escoge la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
       de: >
         Addiere die Zahlen und wahle die richtige Antwort: {prompt_phrase}. Antworte mit A, B, C oder D.
@@ -66,7 +66,7 @@ prompt_templates:
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
       es-CO: >
-        Resta los numeros y elige la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
+        Resta los números y escoge la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
       de: >
         Subtrahiere die Zahlen und wahle die richtige Antwort: {prompt_phrase}. Antworte mit A, B, C oder D.
@@ -79,7 +79,7 @@ prompt_templates:
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
       es-CO: >
-        Multiplica los numeros y elige la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
+        Multiplica los números y escoge la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
       de: >
         Multipliziere die Zahlen und wahle die richtige Antwort: {prompt_phrase}. Antworte mit A, B, C oder D.
@@ -91,7 +91,7 @@ prompt_templates:
       {prompt_image} How many {prompt_phrase} is this? Answer with only a numeral.
     locales:
       es-CO: >
-        {prompt_image} Cuantos {prompt_phrase} hay aqui? Responde solo con un numero.
+        {prompt_image} ¿Cuántos {prompt_phrase} hay? Responde solo con un número.
       de: >
         {prompt_image} Wie viele {prompt_phrase} sind das? Antworte nur mit einer Zahl.
 
@@ -102,7 +102,7 @@ prompt_templates:
       A: {option1}; B: {option2}
     locales:
       es-CO: >
-        {prompt_image} Cuantos {prompt_phrase} hay aqui? Responde con A o B.
+        {prompt_image} ¿Cuántos {prompt_phrase} hay? Responde con A o B.
         A: {option1}; B: {option2}
       de: >
         {prompt_image} Wie viele {prompt_phrase} sind das? Antworte mit A oder B.
@@ -114,7 +114,7 @@ prompt_templates:
       Which image has more {prompt_phrase}? Answer with A or B. A: {option1}; B: {option2}
     locales:
       es-CO: >
-        Que imagen tiene mas {prompt_phrase}? Responde con A o B. A: {option1}; B: {option2}
+        ¿Cuál imagen tiene más {prompt_phrase}? Responde con A o B. A: {option1}; B: {option2}
       de: >
         Welches Bild hat mehr {prompt_phrase}? Antworte mit A oder B. A: {option1}; B: {option2}
 
@@ -125,7 +125,7 @@ prompt_templates:
       A: {image1}; B: {image2}; C: {image3}
     locales:
       es-CO: >
-        Elige la imagen que muestra {prompt_phrase}. Responde con A, B o C.
+        Escoge la imagen que muestra {prompt_phrase}. Responde con A, B o C.
         A: {image1}; B: {image2}; C: {image3}
       de: >
         Wahle das Bild, das {prompt_phrase} zeigt. Antworte mit A, B oder C.
@@ -138,7 +138,7 @@ prompt_templates:
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
       es-CO: >
-        {prompt_image} Elige el numero marcado en la recta numerica. Responde con A, B, C o D.
+        {prompt_image} Escoge el número marcado en la recta numerica. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
       de: >
         {prompt_image} Wahle die Zahl, die auf dem Zahlenstrahl markiert ist. Antworte mit A, B, C oder D.

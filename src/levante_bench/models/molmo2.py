@@ -13,6 +13,47 @@ from levante_bench.models.base import SYSTEM_PROMPT, VLMModel
 from levante_bench.models.registry import register
 
 
+_MOLMO2_PROCESSOR_OPTIONAL_KWARGS = {
+    "time_mode",
+    "image_use_col_tokens",
+    "use_single_crop_col_tokens",
+    "use_single_crop_start_token",
+    "video_use_col_tokens",
+    "use_frame_special_tokens",
+}
+
+
+def _patch_processor_mixin_for_molmo2() -> None:
+    """Allow Molmo2 remote processor optional kwargs on newer Transformers.
+
+    Molmo2Processor forwards image/video token formatting options to
+    ProcessorMixin.__init__. Some Transformers releases reject those options
+    before setting them, even though the remote processor expects them as
+    instance attributes.
+    """
+    from transformers.processing_utils import ProcessorMixin
+
+    if getattr(ProcessorMixin, "_levante_molmo2_optional_kwargs_patch", False):
+        return
+
+    original_init = ProcessorMixin.__init__
+
+    def _patched_init(self, *args, **kwargs):
+        molmo2_kwargs = {}
+        if self.__class__.__name__ == "Molmo2Processor":
+            for key in list(kwargs):
+                if key in _MOLMO2_PROCESSOR_OPTIONAL_KWARGS:
+                    molmo2_kwargs[key] = kwargs.pop(key)
+
+        original_init(self, *args, **kwargs)
+
+        for key, value in molmo2_kwargs.items():
+            setattr(self, key, value)
+
+    ProcessorMixin.__init__ = _patched_init
+    ProcessorMixin._levante_molmo2_optional_kwargs_patch = True
+
+
 @register("molmo2")
 class Molmo2Model(VLMModel):
     """Molmo 2 via HuggingFace AutoProcessor + AutoModelForImageTextToText."""
@@ -32,6 +73,7 @@ class Molmo2Model(VLMModel):
         """Load Molmo 2 model and processor from HuggingFace."""
         from transformers import AutoModelForImageTextToText, AutoProcessor
 
+        _patch_processor_mixin_for_molmo2()
         self.processor = AutoProcessor.from_pretrained(
             self.model_name,
             trust_remote_code=True,

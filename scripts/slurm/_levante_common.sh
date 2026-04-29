@@ -34,6 +34,15 @@ module load conda
 module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
+export LEVANTE_PYTHON_BIN="${LEVANTE_PYTHON_BIN:-$CONDA_ENV_PATH/bin/python}"
+if [[ ! -x "$LEVANTE_PYTHON_BIN" ]]; then
+  echo "ERROR: LEVANTE_PYTHON_BIN is not executable: $LEVANTE_PYTHON_BIN" >&2
+  exit 1
+fi
+if ! "$LEVANTE_PYTHON_BIN" -c "import omegaconf" >/dev/null 2>&1; then
+  echo "ERROR: omegaconf not importable via LEVANTE_PYTHON_BIN=$LEVANTE_PYTHON_BIN" >&2
+  exit 1
+fi
 
 # Keep Marlowe user-site packages (e.g. ~/.local transformers/llava) from
 # shadowing the project conda env and model-specific dependencies.
@@ -62,9 +71,10 @@ echo "Starting levante-bench on $(hostname) at $(date)"
 echo "Job ID: ${SLURM_JOB_ID:-manual}"
 echo "Experiment: $EXPERIMENT_CONFIG"
 echo "Conda env: $CONDA_ENV_PATH"
+echo "LEVANTE_PYTHON_BIN: $LEVANTE_PYTHON_BIN"
 echo "Python after activate: $(command -v python)"
 echo "Python version: $(python -V 2>&1)"
-python - <<'PY'
+"$LEVANTE_PYTHON_BIN" - <<'PY'
 import site
 print(f"User site enabled: {site.ENABLE_USER_SITE}")
 try:

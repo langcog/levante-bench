@@ -49,6 +49,15 @@ def resolve_model_config(
     if model_overrides:
         merged.update(dict(model_overrides))
 
+    hf_names = merged.get("hf_names")
+    size = str(merged.get("size", "")).strip()
+    if isinstance(hf_names, Mapping) and size:
+        hf_name = hf_names.get(size)
+        if hf_name:
+            # Resolve size-specific repo IDs here so sizes containing dots
+            # (for example 2.2B or 3.1B) are not parsed as OmegaConf key paths.
+            merged["hf_name"] = hf_name
+
     return OmegaConf.to_container(OmegaConf.create(merged), resolve=True)
 
 

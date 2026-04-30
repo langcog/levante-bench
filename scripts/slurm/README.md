@@ -1,3 +1,10 @@
+# Model run notes 4/30
+Gemma4 31b timed out after 4 hours
+  Nothing in the output file, so maybe retry
+Molmo2 8b & 7b code issues
+ 
+
+
 # Slurm Launchers (Marlowe)
 
 This folder contains Slurm wrappers for running LEVANTE experiments on Marlowe.

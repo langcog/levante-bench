@@ -279,12 +279,14 @@ class Molmo2Model(VLMModel):
         prompt_text: str,
         pil_images: list | None = None,
     ) -> list[dict]:
-        """Build Molmo 2 chat messages with optional interleaved images."""
-        content = build_pil_content(prompt_text, pil_images)
-        return [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": content},
-        ]
+        """Build Molmo 2 chat messages with optional interleaved images.
+
+        Molmo2's remote chat template expects strict user/assistant alternation
+        and rejects a separate system role. Fold the shared system instruction
+        into the first user turn instead.
+        """
+        content = build_pil_content(f"{SYSTEM_PROMPT}\n\n{prompt_text}", pil_images)
+        return [{"role": "user", "content": content}]
 
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()

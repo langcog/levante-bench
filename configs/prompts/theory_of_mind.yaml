@@ -19,6 +19,7 @@ prompt_templates:
     description: "Two image answer options"
     template: "Answer A or B. A: {image1}; B: {image2}"
     locales:
+      tlh: "A 'ej B, Qapchu'. A: {image1}; B: {image2}"
       es-CO: "Responde con A ó B. A: {image1}; B: {image2}"
       de: "Antworte mit A oder B. A: {image1}; B: {image2}"
 
@@ -26,6 +27,7 @@ prompt_templates:
     description: "Three image answer options"
     template: "Answer A, B, or C. A: {image1}; B: {image2}; C: {image3}"
     locales:
+      tlh: "A, B, vaj C paqpu'. A: {image1}, B: {image2}, C: {image3}."
       es-CO: "Responde con A, B ó C. A: {image1}; B: {image2}; C: {image3}"
       de: "Antworte mit A, B oder C. A: {image1}; B: {image2}; C: {image3}"
 
@@ -33,6 +35,7 @@ prompt_templates:
     description: "Four image answer options"
     template: "Answer A, B, C, or D. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
     locales:
+      tlh: "A, B, C, vaj D bIjatlh. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
       es-CO: "Responde con A, B, C ó D. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
       de: "Antworte mit A, B, C oder D. A: {image1}; B: {image2}; C: {image3}; D: {image4}"
 

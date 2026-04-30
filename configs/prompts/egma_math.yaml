@@ -16,6 +16,8 @@ prompt_templates:
       Choose the same number: {prompt_phrase}. Answer with A, B, C, or D.
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
+      tlh: >
+        Hoch DIch tlhe'taH: {prompt_phrase}. A, B, C, D 'Iw 'oHtaH. A: {option1}; B: {option2}; C: {option3}; D: {option4}
       es-CO: >
         Escoge el mismo número: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
@@ -28,6 +30,8 @@ prompt_templates:
     template: >
       Choose which is larger. Answer with A or B. A: {option1}; B: {option2}
     locales:
+      tlh: >
+        wej DIch Daj ghaj. A 'ej B gho. A: {option1}; B: {option2}
       es-CO: >
         Escoge el mayor. Responde con A o B. A: {option1}; B: {option2}
       de: >
@@ -39,6 +43,8 @@ prompt_templates:
       Choose the number that goes in the blank: {prompt_phrase}. Answer with A, B, C, or D.
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
+      tlh: >
+        ghomDaj Daj yIloS: {prompt_phrase}. A, B, C, D-ghom yIjatlhpu'. A: {option1}; B: {option2}; C: {option3}; D: {option4}
       es-CO: >
         Escoge el número que va en el espacio en blanco: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
@@ -52,6 +58,8 @@ prompt_templates:
       Add the numbers and choose the correct answer: {prompt_phrase}. Answer with A, B, C, or D.
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
+      tlh: >
+        ghotI'pu' chu'qa' 'ej tlhIngan Hol chu'qa': {prompt_phrase}. A, B, C, vaj D. A: {option1}; B: {option2}; C: {option3}; D: {option4}
       es-CO: >
         Suma los números y escoge la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
@@ -65,6 +73,8 @@ prompt_templates:
       Subtract the numbers and choose the correct answer: {prompt_phrase}. Answer with A, B, C, or D.
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
+      tlh: >
+        ghotI'pu' qaqmoH je tlhIngan 'ej chu': {prompt_phrase}. A, B, C, D, chu' 'ej. A: {option1}; B: {option2}; C: {option3}; D: {option4}
       es-CO: >
         Resta los números y escoge la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
@@ -78,6 +88,8 @@ prompt_templates:
       Multiply the numbers and choose the correct answer: {prompt_phrase}. Answer with A, B, C, or D.
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
+      tlh: >
+        ghotI'pu' qaS 'ej tlhIngan QonoS ghoS: {prompt_phrase}. A, B, C, vaj D, QonoS. A: {option1}; B: {option2}; C: {option3}; D: {option4}
       es-CO: >
         Multiplica los números y escoge la respuesta correcta: {prompt_phrase}. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}
@@ -90,6 +102,8 @@ prompt_templates:
     template: >
       {prompt_image} How many {prompt_phrase} is this? Answer with only a numeral.
     locales:
+      tlh: >
+        {prompt_image} vaj {prompt_phrase} 'oH? vaj bIjatlh 'ej bIghaj.
       es-CO: >
         {prompt_image} ¿Cuántos {prompt_phrase} hay? Responde solo con un número.
       de: >
@@ -101,6 +115,8 @@ prompt_templates:
       {prompt_image} How many {prompt_phrase} is this? Answer with A or B.
       A: {option1}; B: {option2}
     locales:
+      tlh: >
+        {prompt_image} vaj {prompt_phrase} 'oH? A Qap B ghoH. A: {option1}; B: {option2}
       es-CO: >
         {prompt_image} ¿Cuántos {prompt_phrase} hay? Responde con A o B.
         A: {option1}; B: {option2}
@@ -113,6 +129,8 @@ prompt_templates:
     template: >
       Which image has more {prompt_phrase}? Answer with A or B. A: {option1}; B: {option2}
     locales:
+      tlh: >
+        nuq qoch Hoch {prompt_phrase} yIghaj? A pagh B ghoH. A: {option1}; B: {option2}
       es-CO: >
         ¿Cuál imagen tiene más {prompt_phrase}? Responde con A o B. A: {option1}; B: {option2}
       de: >
@@ -124,6 +142,8 @@ prompt_templates:
       Choose the image that shows {prompt_phrase}. Answer with A, B, or C.
       A: {image1}; B: {image2}; C: {image3}
     locales:
+      tlh: >
+        {prompt_phrase} gho' ghom chu'. A, B, Qong C-ghom bIjatlh. A: {image1}; B: {image2}; C: {image3}
       es-CO: >
         Escoge la imagen que muestra {prompt_phrase}. Responde con A, B o C.
         A: {image1}; B: {image2}; C: {image3}
@@ -137,6 +157,8 @@ prompt_templates:
       {prompt_image} Choose the number that is marked on the number line. Answer with A, B, C, or D.
       A: {option1}; B: {option2}; C: {option3}; D: {option4}
     locales:
+      tlh: >
+        {prompt_image} ghom'a' qonDu'meyDaq ghajpu'pu' qonDu' tIghaj. A, B, C, vaj D chu' tIghaj. A: {option1}; B: {option2}; C: {option3}; D: {option4}
       es-CO: >
         {prompt_image} Escoge el número marcado en la recta numerica. Responde con A, B, C o D.
         A: {option1}; B: {option2}; C: {option3}; D: {option4}

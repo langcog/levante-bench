@@ -16,6 +16,8 @@ prompt_templates:
       {prompt_image} Choose the best option to fill in the blank. Answer with A, B, C, or D.
       A: {image1}; B: {image2}; C: {image3}; D: {image4}
     locales:
+      tlh: >
+        {prompt_image} tlhIchDaq Hoch qaS qaS yIghoS. A, B, C, vaj D yIjatlh. A: {image1}; B: {image2}; C: {image3}; D: {image4}
       es-CO: >
         {prompt_image} Escoge la mejor opción para completar el espacio en blanco. Responde con A, B, C o D.
         A: {image1}; B: {image2}; C: {image3}; D: {image4}

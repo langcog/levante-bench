@@ -337,6 +337,18 @@ select:focus-visible {
   border-radius: 0;
 }
 
+.line-swatch-tl {
+  border-top-style: dashed;
+}
+
+.line-swatch-tl::after {
+  width: 10px;
+  height: 10px;
+  top: -7px;
+  border-radius: 2px;
+  transform: rotate(18deg);
+}
+
 .chart-wrap canvas {
   width: 100% !important;
   height: 380px !important;

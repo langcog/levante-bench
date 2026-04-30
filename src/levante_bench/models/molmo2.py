@@ -163,6 +163,7 @@ class Molmo2Model(VLMModel):
                 trust_remote_code=True,
             ).to(self.device)
         self.model.eval()
+        self._patch_prepare_inputs_for_generation()
 
     def generate(
         self,
@@ -290,6 +291,67 @@ class Molmo2Model(VLMModel):
 
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()
+
+    def _patch_prepare_inputs_for_generation(self) -> None:
+        """Provide cache_position for Molmo2 remote code on newer Transformers.
+
+        Current Transformers can call trusted remote generation code with
+        ``cache_position=None``. Molmo2's remote ``prepare_inputs_for_generation``
+        indexes that value, so synthesize the same monotonic position tensor the
+        older generation stack supplied.
+        """
+        if getattr(self.model, "_levante_molmo2_cache_position_patch", False):
+            return
+
+        original_prepare = self.model.prepare_inputs_for_generation
+
+        def _cached_length(past_key_values) -> int | None:
+            if past_key_values is None:
+                return None
+            get_seq_length = getattr(past_key_values, "get_seq_length", None)
+            if callable(get_seq_length):
+                try:
+                    return int(get_seq_length())
+                except Exception:
+                    pass
+            try:
+                first_layer = past_key_values[0]
+                first_key = first_layer[0] if isinstance(first_layer, (tuple, list)) else first_layer
+                return int(first_key.shape[-2])
+            except Exception:
+                return None
+
+        def _infer_cache_position(input_ids, past_key_values=None):
+            if input_ids is None:
+                return None
+            token_count = int(input_ids.shape[1])
+            past_length = _cached_length(past_key_values)
+            if past_length is None or past_length <= 0:
+                start = 0
+                stop = token_count
+            elif past_length < token_count:
+                start = past_length
+                stop = token_count
+            else:
+                start = past_length
+                stop = past_length + token_count
+            return torch.arange(start, stop, device=input_ids.device, dtype=torch.long)
+
+        def _patched_prepare_inputs_for_generation(*args, **kwargs):
+            if kwargs.get("cache_position") is None:
+                input_ids = kwargs.get("input_ids")
+                if input_ids is None and args:
+                    input_ids = args[0]
+                cache_position = _infer_cache_position(
+                    input_ids,
+                    kwargs.get("past_key_values"),
+                )
+                if cache_position is not None:
+                    kwargs["cache_position"] = cache_position
+            return original_prepare(*args, **kwargs)
+
+        self.model.prepare_inputs_for_generation = _patched_prepare_inputs_for_generation
+        self.model._levante_molmo2_cache_position_patch = True
 
     def _pad_token_id(self) -> int | None:
         processor_tokenizer = getattr(self.processor, "tokenizer", None)

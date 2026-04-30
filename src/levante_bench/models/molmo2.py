@@ -23,6 +23,68 @@ _MOLMO2_PROCESSOR_OPTIONAL_KWARGS = {
 }
 
 
+def _patch_rope_init_functions_for_molmo2() -> None:
+    """Restore the legacy RoPE "default" key expected by Molmo2 remote code.
+
+    Some newer Transformers releases removed ``ROPE_INIT_FUNCTIONS["default"]``
+    while Molmo2's trusted remote modeling code still indexes that key. Keep the
+    compatibility patch in our adapter instead of editing the Hugging Face cache
+    on each machine.
+    """
+    from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS
+
+    if "default" in ROPE_INIT_FUNCTIONS:
+        return
+
+    def _compute_default_rope_parameters(
+        config=None,
+        device=None,
+        seq_len: int | None = None,
+        layer_type: str | None = None,
+    ):
+        del seq_len  # The default RoPE initializer does not use current length.
+        if config is None:
+            raise ValueError("Molmo2 default RoPE initialization requires a config.")
+
+        if hasattr(config, "standardize_rope_params"):
+            config.standardize_rope_params()
+
+        rope_parameters = getattr(config, "rope_parameters", None)
+        if isinstance(rope_parameters, dict):
+            if layer_type is not None and isinstance(rope_parameters.get(layer_type), dict):
+                rope_parameters = rope_parameters[layer_type]
+        else:
+            rope_parameters = {}
+
+        base = (
+            rope_parameters.get("rope_theta")
+            or rope_parameters.get("base")
+            or getattr(config, "rope_theta", None)
+            or 10000
+        )
+        partial_rotary_factor = rope_parameters.get(
+            "partial_rotary_factor",
+            getattr(config, "partial_rotary_factor", 1.0),
+        )
+        head_dim = getattr(config, "head_dim", None) or (
+            config.hidden_size // config.num_attention_heads
+        )
+        dim = int(head_dim * partial_rotary_factor)
+        inv_freq = 1.0 / (
+            float(base)
+            ** (
+                torch.arange(0, dim, 2, dtype=torch.int64).to(
+                    device=device,
+                    dtype=torch.float,
+                )
+                / dim
+            )
+        )
+        return inv_freq, 1.0
+
+    ROPE_INIT_FUNCTIONS["default"] = _compute_default_rope_parameters
+
+
 def _patch_processor_mixin_for_molmo2() -> None:
     """Allow Molmo2 remote processor optional kwargs on newer Transformers.
 
@@ -73,6 +135,7 @@ class Molmo2Model(VLMModel):
         """Load Molmo 2 model and processor from HuggingFace."""
         from transformers import AutoModelForImageTextToText, AutoProcessor
 
+        _patch_rope_init_functions_for_molmo2()
         _patch_processor_mixin_for_molmo2()
         self.processor = AutoProcessor.from_pretrained(
             self.model_name,

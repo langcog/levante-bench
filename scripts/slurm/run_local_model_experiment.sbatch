@@ -37,7 +37,7 @@ CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 # pass TASKS_CSV via --export should prefer ';' as the delimiter.
 TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
 
-CODE_DIR="${PROJECT_ROOT}/code/levante-bench"
+CODE_DIR="${CODE_DIR:-${PROJECT_ROOT}/code/levante-bench}"
 if [[ ! -d "$CODE_DIR" ]]; then
   echo "ERROR: CODE_DIR not found: $CODE_DIR" >&2
   exit 1

@@ -341,6 +341,7 @@
       en: "English",
       de: "German",
       es: "Spanish",
+      tl: "Klingon",
     };
     return labels[normalized] || normalized.toUpperCase();
   }
@@ -351,6 +352,7 @@
       en: { borderDash: [], pointStyle: "circle" },
       de: { borderDash: [7, 4], pointStyle: "rectRot" },
       es: { borderDash: [2, 4], pointStyle: "triangle" },
+      tl: { borderDash: [10, 3, 2, 3], pointStyle: "star" },
     };
     return styles[normalized] || { borderDash: [5, 3, 1, 3], pointStyle: "rect" };
   }
@@ -358,7 +360,7 @@
   function seriesDisplayLabel(row) {
     const language = String((row && row.language) || "en").trim().toLowerCase() || "en";
     const model = String((row && row.model) || "unknown").trim() || "unknown";
-    return language === "en" ? model : `${model} · ${language}`;
+    return language === "en" ? model : `${model} · ${languageLabel(language)}`;
   }
 
   function meanForRow(row) {

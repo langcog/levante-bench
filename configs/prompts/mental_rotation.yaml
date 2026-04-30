@@ -16,6 +16,8 @@ prompt_templates:
       {prompt_image} Choose the option that matches this image. Answer with A or B.
       A: {image1}; B: {image2}
     locales:
+      tlh: >
+        {prompt_image} tlhIngan Hol chu'ghach ghoS chu'ghach. A' puS B' chu'ghach. A: {image1}; B: {image2}
       es-CO: >
         {prompt_image} Elige la opcion que corresponde a esta imagen. Responde con A o B.
         A: {image1}; B: {image2}

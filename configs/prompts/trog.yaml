@@ -16,6 +16,8 @@ prompt_templates:
       Choose the image that matches the text: "{prompt_phrase}". Answer with A, B, C, or D.
       A: {image1}; B: {image2}; C: {image3}; D: {image4}
     locales:
+      tlh: >
+        chu'wI' "{prompt_phrase}" tIq ghochwI' yIghoS. A, B, C, Qap D-ghom yIqaH. A: {image1}; B: {image2}; C: {image3}; D: {image4}
       es-CO: >
         Elige la imagen que corresponde al texto: "{prompt_phrase}". Responde con A, B, C o D.
         A: {image1}; B: {image2}; C: {image3}; D: {image4}

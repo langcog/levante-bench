@@ -2,7 +2,7 @@
 Gemma4 31b timed out after 4 hours
   Nothing in the output file, so maybe retry
 Molmo2 8b & 7b -- code issues
-Tinyllava -- missing stuff
+Tinyllava 2.4b -- FIXED! -- was missing stuff
 
 
 # Slurm Launchers (Marlowe)

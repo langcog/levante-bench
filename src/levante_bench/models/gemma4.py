@@ -67,9 +67,7 @@ class Gemma4Model(VLMModel):
         pil_images = load_pil_images(image_paths)
         messages = self._build_messages(prompt_text, pil_images)
 
-        text = self.processor.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
+        text = self._format_prompt(prompt_text, messages)
         inputs = self.processor(
             text=[text],
             images=pil_images if pil_images else None,
@@ -113,10 +111,8 @@ class Gemma4Model(VLMModel):
                 for prompt_text, pil_images in zip(prompts, pil_batches)
             ]
             texts = [
-                self.processor.apply_chat_template(
-                    m, tokenize=False, add_generation_prompt=True
-                )
-                for m in messages
+                self._format_prompt(prompt_text, message)
+                for prompt_text, message in zip(prompts, messages)
             ]
 
             batched_images = None if all(batch is None for batch in pil_batches) else pil_batches
@@ -171,6 +167,21 @@ class Gemma4Model(VLMModel):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
         ]
+
+    def _format_prompt(self, prompt_text: str, messages: list[dict]) -> str:
+        """Format Gemma 4 prompts with a plain-text fallback.
+
+        Some Gemma 4 processor snapshots do not ship a chat template. In that
+        case, keep the benchmark instruction and task prompt as plain text and
+        still pass images separately through the processor.
+        """
+        if getattr(self.processor, "chat_template", None):
+            return self.processor.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+        return f"{SYSTEM_PROMPT}\n\n{prompt_text}"
 
     def parse_response(self, raw_output: str) -> str:
         return raw_output.strip()

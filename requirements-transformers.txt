@@ -2,3 +2,7 @@
 -r requirements.txt
 # SmolVLMv2 requires a newer Transformers with `smolvlm` support.
 transformers>=4.57.0,<5
+# TinyLLaVA tokenizer conversion paths use protobuf for SentencePiece and
+# tiktoken as the fallback tokenizer-file reader.
+protobuf>=4.25
+tiktoken>=0.7

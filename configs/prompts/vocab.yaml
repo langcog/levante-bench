@@ -17,7 +17,7 @@ prompt_templates:
       A: {image1}; B: {image2}; C: {image3}; D: {image4}
     locales:
       es-CO: >
-        Elige la imagen que corresponde al texto: "{prompt_phrase}". Responde con A, B, C o D.
+        Escoge la imagen que corresponde al texto: "{prompt_phrase}". Responde con A, B, C ó D.
         A: {image1}; B: {image2}; C: {image3}; D: {image4}
       de: >
         Wahle das Bild, das zum Text passt: "{prompt_phrase}". Antworte mit A, B, C oder D.

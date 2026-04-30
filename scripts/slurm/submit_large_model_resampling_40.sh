@@ -224,7 +224,7 @@ for target in "${TARGETS[@]}"; do
     export_arg="$(IFS=,; echo "${export_parts[*]}")"
     cmd=(
       sbatch
-      --job-name="levante-${safe_label}-${run_label}"
+      --job-name="${safe_label}-${run_label}"
       --gres="gpu:${gpus}"
       --mem="$mem"
       --time="$time_limit"

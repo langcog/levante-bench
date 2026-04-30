@@ -9,6 +9,23 @@ Tinyllava 2.4b -- FIXED! -- was missing stuff
 
 This folder contains Slurm wrappers for running LEVANTE experiments on Marlowe.
 
+## Job status
+
+Use the helper below for the default accounting view. It omits `Partition`
+because Marlowe LEVANTE jobs use `preempt`, includes `Reason`, and widens
+`JobName` so model/chunk names are visible.
+
+```bash
+bash scripts/slurm/sacct_recent.sh
+```
+
+Useful overrides:
+
+```bash
+START_TIME=2026-04-30 JOB_NAME_WIDTH=100 bash scripts/slurm/sacct_recent.sh
+bash scripts/slurm/sacct_recent.sh --state=FAILED,TIMEOUT,CANCELLED
+```
+
 ## Bulk local-model launcher
 
 Use this to submit one job per local model with a consistent Marlowe setup:

@@ -16,9 +16,11 @@
 
 set -euo pipefail
 
-if ! command -v sbatch >/dev/null 2>&1; then
+DRY_RUN="${DRY_RUN:-0}"
+
+if [[ "$DRY_RUN" != "1" ]] && ! command -v sbatch >/dev/null 2>&1; then
   echo "ERROR: sbatch not found in PATH." >&2
-  echo "Run this script on a Marlowe login node." >&2
+  echo "Run this script on a Marlowe login node, or set DRY_RUN=1." >&2
   exit 127
 fi
 
@@ -37,7 +39,6 @@ VERSION="${VERSION:-v1}"
 DEVICE="${DEVICE:-cuda}"
 GCS_RESULTS_ROOT="${GCS_RESULTS_ROOT:-gs://levante-bench/results}"
 FORCE="${FORCE:-0}"
-DRY_RUN="${DRY_RUN:-0}"
 
 DEFAULT_TARGETS=(
   "gemma4:E2B-it"
@@ -200,7 +201,7 @@ for target in "${TARGETS[@]}"; do
 
   cmd=(
     sbatch
-    --job-name="levante-${safe_label}"
+    --job-name="${safe_label}"
     --gres="gpu:${gpus}"
     --mem="$mem"
     --time="$time_limit"

@@ -61,7 +61,7 @@ for chunk in $(seq -w 1 "$TOTAL_CHUNKS"); do
 
   echo "${run_label}: submitting resume job for ${run_root}"
   sbatch \
-    --job-name="levante-resume-${MODEL_NAME}-${MODEL_SIZE}-${run_label}" \
+    --job-name="resume-${MODEL_NAME}-${MODEL_SIZE}-${run_label}" \
     --time="$WALLTIME" \
     --export=PROJECT_ROOT="$PROJECT_ROOT",CODE_DIR="$CODE_DIR",CONDA_ENV_PATH="$CONDA_ENV_PATH",RUN_ROOT="$run_root",DEVICE="$DEVICE",BATCH_SIZE="$BATCH_SIZE",MAX_NEW_TOKENS="$MAX_NEW_TOKENS",USE_JSON_FORMAT="$USE_JSON_FORMAT",HF_TOKEN,HUGGINGFACEHUB_API_TOKEN,HF_HOME,HF_HUB_CACHE,TRANSFORMERS_CACHE \
     "$SBATCH_SCRIPT"

@@ -17,7 +17,7 @@ prompt_templates:
       A: {image1}; B: {image2}; C: {image3}; D: {image4}
     locales:
       es-CO: >
-        {prompt_image} Elige la mejor opcion para completar el espacio en blanco. Responde con A, B, C o D.
+        {prompt_image} Escoge la mejor opción para completar el espacio en blanco. Responde con A, B, C o D.
         A: {image1}; B: {image2}; C: {image3}; D: {image4}
       de: >
         {prompt_image} Wahle die beste Option, um die Lucke zu fullen. Antworte mit A, B, C oder D.

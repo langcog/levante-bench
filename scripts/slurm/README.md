@@ -147,6 +147,72 @@ python scripts/slurm/resume_resampling_partials.py \
   --dry-run
 ```
 
+## Large-model 40-run resampling launcher (40 x 1)
+
+Use this workflow for large models where each Slurm job should perform only one
+true-random run. It submits one job per model and chunk, defaults to
+`TOTAL_RUNS=40`, limits each launcher invocation to `MAX_SUBMISSIONS=10`, and
+writes chunked outputs to:
+
+```text
+/projects/m000102/code/levante-bench/results/resampling/<model-size>/v1/<model-size>/chunk_XX/0001/...
+```
+
+Preview the generated `sbatch` commands without submitting:
+
+```bash
+DRY_RUN=1 ONLY="gemma4:31B-it" \
+bash scripts/slurm/submit_large_model_resampling_40.sh
+```
+
+Submit the next ten missing chunks for one large model:
+
+```bash
+ONLY="gemma4:31B-it" bash scripts/slurm/submit_large_model_resampling_40.sh
+```
+
+Submit several large models:
+
+```bash
+ONLY="gemma4:31B-it qwen35:27B internvl35:38B molmo2:8B" \
+bash scripts/slurm/submit_large_model_resampling_40.sh
+```
+
+Useful overrides:
+
+```bash
+TOTAL_RUNS=40 MAX_SUBMISSIONS=10 TIME=08:00:00 MEM=180G GPUS=1 \
+ONLY="qwen35:27B" bash scripts/slurm/submit_large_model_resampling_40.sh
+```
+
+Rerun the launcher safely after the active batch finishes to submit the next
+missing chunks. Completed chunks with a `summary.csv` are skipped. Chunks with a
+partial run folder are also skipped and should be resumed with the resume
+launcher below. Set `MAX_SUBMISSIONS=0` only when you want to remove the
+per-invocation cap.
+
+Resume partial chunks in parallel:
+
+```bash
+ONLY="gemma4:31B-it" \
+BATCH_SIZE=1 MAX_NEW_TOKENS=1024 USE_JSON_FORMAT=true \
+bash scripts/slurm/submit_resume_large_model_resampling_40.sh
+```
+
+The resume launcher scans each `chunk_01..chunk_40` directory and submits a job
+only when a run folder has `metadata.json` but is missing `summary.csv`. It
+passes through `BATCH_SIZE`, `MAX_NEW_TOKENS`, `USE_JSON_FORMAT`, `TASKS_CSV`,
+and `EXTRA_ARGS` so resume jobs can match the original model settings.
+
+After all chunks complete, stitch them into a clean sequential `0001..0040`
+folder:
+
+```bash
+python scripts/analysis/stitch_resampling_runs.py \
+  --source-root results/resampling/gemma4-31B-it/v1/gemma4-31B-it \
+  --output-root results/resampling/gemma4-31B-it/v1/gemma4-31B-it_r0040
+```
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:

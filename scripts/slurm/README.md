@@ -12,8 +12,8 @@ This folder contains Slurm wrappers for running LEVANTE experiments on Marlowe.
 ## Job status
 
 Use the helper below for the default accounting view. It omits `Partition`
-because Marlowe LEVANTE jobs use `preempt`, includes `Reason`, and widens
-`JobName` so model/chunk names are visible.
+because Marlowe LEVANTE jobs use `preempt`, puts left-justified `JobName`
+first, and shows `Reason` immediately after `State`.
 
 ```bash
 bash scripts/slurm/sacct_recent.sh
@@ -22,7 +22,7 @@ bash scripts/slurm/sacct_recent.sh
 Useful overrides:
 
 ```bash
-START_TIME=2026-04-30 JOB_NAME_WIDTH=100 bash scripts/slurm/sacct_recent.sh
+START_TIME=2026-04-30 bash scripts/slurm/sacct_recent.sh
 bash scripts/slurm/sacct_recent.sh --state=FAILED,TIMEOUT,CANCELLED
 ```
 

@@ -1,6 +1,6 @@
 task_id,model_file,languages
 trog,trog/multigroup_site/overlap_items/trog_rasch_f1_scalar.rds,all
-vocab,vocab/by_language/es/vocab_rasch_f1.rds,en
+vocab,vocab/by_language/en/vocab_rasch_f1.rds,en
 mental-rotation,mrot/multigroup_site/all_items/mrot_2pl_f1_scalar.rds,all
 egma-math,math/multigroup_site/all_items/math_rasch_f1_scalar.rds,all
 matrix-reasoning,matrix/multigroup_site/all_items/matrix_rasch_f1_scalar.rds,all

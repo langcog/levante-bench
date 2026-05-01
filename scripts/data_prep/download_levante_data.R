@@ -266,21 +266,42 @@ parse_distractors <- function(s) {
 build_option_map <- function(task_df, n_opts) {
   first_per_item <- task_df %>%
     filter(!is.na(item_uid), item_uid != "", !is.na(answer)) %>%
-    distinct(item_uid, .keep_all = TRUE)
+    distinct(item_uid, item_original, .keep_all = TRUE)
 
   map_rows <- list()
   for (i in seq_len(nrow(first_per_item))) {
+    item_orig <- first_per_item$item_original[i]
     uid <- first_per_item$item_uid[i]
-    ans <- as.character(first_per_item$answer[i])
+    # assumes that at least one participant got each question correct… 
+    # helps correct for errors in "answer" coding
+    corr_ans <- task_df |> 
+      filter(item_uid == uid,
+             item_original == item_orig,
+             correct,
+             !str_detect(response, "<math xmlns")) |> 
+      slice(1) |> 
+      pull(response)
+    # fix for one item that no ppt got correct
+    if (uid == "matrix_set3_pd_mat31") corr_ans <- "tf3_31_t1_ss1_pd"
+    # ans <- as.character(first_per_item$answer[i])
     dist_str <- if ("distractors" %in% names(first_per_item)) first_per_item$distractors[i] else NA
     dists <- parse_distractors(dist_str)
-    opts <- c(ans, dists)
+    opts <- c(corr_ans, dists) |> unique()
     opts <- opts[seq_len(min(length(opts), n_opts))]
-    map_rows[[i]] <- tibble(
+    map_rows <- append(map_rows, list(tibble(
       item_uid = uid,
+      item_original = item_orig,
       response = opts,
       option = seq_along(opts)
-    )
+    )))
+    if (uid %in% c("trog_embedding_book_pencil_on_red", "trog_xnoty_box_not_chair_red")) {
+      map_rows <- append(map_rows, list(tibble(
+        item_uid = str_c(uid, "y"),
+        item_original = item_orig,
+        response = opts |> str_replace_all("green", "yellow"),
+        option = seq_along(opts)
+      )))
+    }
   }
   bind_rows(map_rows)
 }
@@ -288,19 +309,20 @@ build_option_map <- function(task_df, n_opts) {
 # Aggregate response proportions using a pre-built option map.
 aggregate_proportions <- function(df, bin_col, option_map, n_opts) {
   agg <- df %>%
-    inner_join(option_map, by = c("item_uid", "response")) %>%
+    inner_join(option_map, by = c("item_uid", "item_original", "response")) %>%
     group_by(item_uid, !!sym(bin_col)) %>%
     count(option, name = "n") %>%
-    mutate(prop = n / sum(n, na.rm = TRUE)) %>%
+    mutate(prop = n / sum(n, na.rm = TRUE),
+           n_ppts = sum(n, na.rm = TRUE)) %>%
     ungroup() %>%
-    select(item_uid, !!sym(bin_col), option, prop) %>%
+    select(item_uid, !!sym(bin_col), option, prop, n_ppts) %>%
     tidyr::pivot_wider(names_from = option, values_from = prop, names_prefix = "image") %>%
     mutate(across(starts_with("image"), ~ replace_na(., 0)))
   for (j in seq_len(n_opts)) {
     col <- paste0("image", j)
     if (!col %in% names(agg)) agg[[col]] <- 0
   }
-  agg %>% select(item_uid, !!sym(bin_col), paste0("image", seq_len(n_opts)))
+  agg %>% select(item_uid, !!sym(bin_col), paste0("image", seq_len(n_opts)), n_ppts)
 }
 
 for (tid in tasks) {
@@ -338,7 +360,14 @@ for (tid in tasks) {
   # Write option key legend: item_uid, image1, image2, ..., imageN (response labels)
   option_key <- option_map %>%
     tidyr::pivot_wider(names_from = option, values_from = response, names_prefix = "image") %>%
-    select(item_uid, any_of(paste0("image", seq_len(n_opts))))
+    select(item_uid, item_original, any_of(paste0("image", seq_len(n_opts))))
+  if (tid == "trog") {
+    option_key <- option_key |> 
+      mutate(item_uid = replace_values(
+        item_uid,
+        "trog_embedding_book_pencil_on_redy" ~ "trog_embedding_book_pencil_on_red", 
+        "trog_xnoty_box_not_chair_redy" ~ "trog_xnoty_box_not_chair_red"))
+  }
   key_path <- file.path(responses_dir, paste0(safe_name, "_option_key.csv"))
   readr::write_csv(option_key, key_path)
   message("Wrote ", key_path, " (", nrow(option_key), " item_uids; image1 = target)")
@@ -362,7 +391,7 @@ for (tid in tasks) {
     if (nrow(task_trials_binned) > 0L) {
       agg_binned <- aggregate_proportions(task_trials_binned, "ability_bin", option_map, n_opts)
     } else {
-      agg_binned <- tibble(item_uid = character(), ability_bin = character())
+      agg_binned <- tibble(item_uid = character(), item_original = character(), ability_bin = character())
     }
     n_uids_binned <- n_distinct(agg_binned$item_uid)
   } else {

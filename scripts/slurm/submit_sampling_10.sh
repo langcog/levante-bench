@@ -5,8 +5,9 @@
 # while still practical for repeated hosted runs.
 #
 # Usage:
-#   bash scripts/slurm/submit_resampling_10.sh
-#   MODEL_NAME=internvl35 MODEL_SIZE=8B VERSION=v1_new_parser bash scripts/slurm/submit_resampling_10.sh
+#   bash scripts/slurm/submit_sampling_10.sh
+#   MODEL_NAME=internvl35 MODEL_SIZE=8B VERSION=v1_new_parser bash scripts/slurm/submit_sampling_10.sh
+#   WALLTIME=04:00:00 bash scripts/slurm/submit_sampling_10.sh   # override Slurm walltime (default matches sbatch template)
 
 set -euo pipefail
 
@@ -36,6 +37,9 @@ BATCH_SIZE="${BATCH_SIZE:-1}"
 MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-1024}"
 USE_JSON_FORMAT="${USE_JSON_FORMAT:-true}"
 
+# Slurm wall clock (override sbatch default in run_local_model_experiment.sbatch, usually 02:00:00).
+WALLTIME="${WALLTIME:-02:00:00}"
+
 TOTAL_LAUNCHES=10
 RUNS_PER_LAUNCH=1 #down from 10 for better timing
 
@@ -46,6 +50,7 @@ echo "  model=${MODEL_NAME} size=${MODEL_SIZE}"
 echo "  launches=${TOTAL_LAUNCHES}, runs_per_launch=${RUNS_PER_LAUNCH} (target total=100)"
 echo "  version=${VERSION}, device=${DEVICE}, batch_size=${BATCH_SIZE}"
 echo "  max_new_tokens=${MAX_NEW_TOKENS}, use_json_format=${USE_JSON_FORMAT}"
+echo "  walltime=${WALLTIME}"
 echo "  results_root=${RESULTS_ROOT}"
 echo ""
 
@@ -53,6 +58,7 @@ for chunk in $(seq -w 1 "$TOTAL_LAUNCHES"); do
   run_label="chunk_${chunk}"
   echo "Submitting ${run_label}..."
   sbatch \
+    --time="$WALLTIME" \
     --export=PROJECT_ROOT="$PROJECT_ROOT",CONDA_ENV_PATH="$CONDA_ENV_PATH",MODEL_NAME="$MODEL_NAME",MODEL_SIZE="$MODEL_SIZE",MAX_NEW_TOKENS="$MAX_NEW_TOKENS",USE_JSON_FORMAT="$USE_JSON_FORMAT",VERSION="$VERSION",DEVICE="$DEVICE",BATCH_SIZE="$BATCH_SIZE",NUM_RUNS="$RUNS_PER_LAUNCH",TRUE_RANDOM_OPTION_ORDER=true,RUN_LABEL="$run_label",SLURM_RUN_LABEL=false,USE_JOB_OUTPUT_ROOT=0,RESULTS_ROOT="$RESULTS_ROOT",HF_TOKEN,HUGGINGFACEHUB_API_TOKEN,HF_HOME,HF_HUB_CACHE,TRANSFORMERS_CACHE \
     "$SBATCH_SCRIPT"
 done

@@ -1,0 +1,19 @@
+models:
+  - name: gemma4
+    size: E4B-it
+
+tasks:
+  - egma-math
+  - matrix-reasoning
+  - mental-rotation
+  - theory-of-mind
+  - trog
+  - vocab
+
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+batch_size: 2
+true_random_option_order: true
+num_runs: 10

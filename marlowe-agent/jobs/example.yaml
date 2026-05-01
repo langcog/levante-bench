@@ -1,0 +1,8 @@
+name: vlm-eval-qwen
+remote_workdir: ~/projects/vlm-bench
+submit_command: sbatch run_eval.sbatch
+resubmit_on:
+  - FAILED
+  - TIMEOUT
+max_retries: 2
+poll_seconds: 60

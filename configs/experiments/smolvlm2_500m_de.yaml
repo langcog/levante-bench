@@ -20,5 +20,5 @@ task_overrides:
 
 data_root: data
 output_dir: results/german-full
-version: hackathon
+version: v1
 device: cuda

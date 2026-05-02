@@ -25,19 +25,19 @@ def _load_download_assets_module():
 
 
 def test_detect_data_version_prefers_env(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("LEVANTE_DATA_VERSION", "hackathon")
-    assert detect_data_version(tmp_path) == "hackathon"
+    monkeypatch.setenv("LEVANTE_DATA_VERSION", "v1")
+    assert detect_data_version(tmp_path) == "v1"
 
 
 def test_detect_data_version_uses_most_recent_folder(tmp_path: Path) -> None:
     assets = tmp_path / "assets"
     older = assets / "2026-03-24"
-    newer = assets / "hackathon"
+    newer = assets / "pilot"
     older.mkdir(parents=True)
     time.sleep(0.01)
     newer.mkdir(parents=True)
 
-    assert detect_data_version(tmp_path) == "hackathon"
+    assert detect_data_version(tmp_path) == "pilot"
 
 
 def test_detect_data_version_raises_when_assets_missing(tmp_path: Path) -> None:
@@ -68,7 +68,7 @@ def test_detect_latest_bucket_version_prefers_date_prefixes(monkeypatch) -> None
     monkeypatch.setattr(
         m,
         "_list_bucket_prefixes",
-        lambda bucket_name, parent_prefix="": ["hackathon", "2026-03-24", "2026-04-01"],
+        lambda bucket_name, parent_prefix="": ["pilot", "2026-03-24", "2026-04-01"],
     )
     assert m._detect_latest_bucket_version("levante-bench") == "2026-04-01"
 
@@ -78,9 +78,9 @@ def test_detect_latest_bucket_version_single_non_date(monkeypatch) -> None:
     monkeypatch.setattr(
         m,
         "_list_bucket_prefixes",
-        lambda bucket_name, parent_prefix="": ["hackathon"],
+        lambda bucket_name, parent_prefix="": ["pilot"],
     )
-    assert m._detect_latest_bucket_version("levante-bench") == "hackathon"
+    assert m._detect_latest_bucket_version("levante-bench") == "pilot"
 
 
 def test_detect_latest_bucket_version_prefers_v1_for_non_date_prefixes(monkeypatch) -> None:
@@ -88,7 +88,7 @@ def test_detect_latest_bucket_version_prefers_v1_for_non_date_prefixes(monkeypat
     monkeypatch.setattr(
         m,
         "_list_bucket_prefixes",
-        lambda bucket_name, parent_prefix="": ["hackathon", "v1"],
+        lambda bucket_name, parent_prefix="": ["pilot", "v1"],
     )
     assert m._detect_latest_bucket_version("levante-bench") == "v1"
 
@@ -98,7 +98,7 @@ def test_detect_latest_bucket_version_multiple_non_date_without_v1_raises(monkey
     monkeypatch.setattr(
         m,
         "_list_bucket_prefixes",
-        lambda bucket_name, parent_prefix="": ["hackathon", "pilot"],
+        lambda bucket_name, parent_prefix="": ["pilot", "staging"],
     )
     with pytest.raises(RuntimeError, match="Multiple non-date version prefixes"):
         m._detect_latest_bucket_version("levante-bench")

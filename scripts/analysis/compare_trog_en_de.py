@@ -17,7 +17,7 @@ from levante_bench.tasks import get_task_dataset
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", default="hackathon")
+    parser.add_argument("--version", default="v1")
     parser.add_argument("--n", type=int, default=30)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--resume", action="store_true")

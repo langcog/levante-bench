@@ -345,7 +345,7 @@ Then point downloads at the destination bucket:
 
 ```bash
 export LEVANTE_ASSETS_BUCKET_URL=https://storage.googleapis.com/levante-bench/corpus_data
-python scripts/data_prep/download_levante_assets.py --version hackathon --workers 8
+python scripts/data_prep/download_levante_assets.py --version v1 --workers 8
 ```
 
 `corpus_data` is the default destination prefix in the migration script, and can
@@ -358,7 +358,7 @@ Versioned snapshots also include:
 
 When running benchmark/eval commands with `--version current`, local version
 resolution now picks the most recently modified folder under `data/assets/`
-(not only `YYYY-MM-DD` names), so labels like `hackathon` are supported.
+(not only `YYYY-MM-DD` names), so version labels like `v1` or `pilot` are supported.
 
 ## Hosted HF VLMs
 

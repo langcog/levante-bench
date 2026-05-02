@@ -7,6 +7,9 @@
 # Usage:
 #   bash scripts/slurm/submit_resume_resampling_chunks.sh
 #   MODEL_NAME=internvl35 MODEL_SIZE=8B VERSION=v1 bash scripts/slurm/submit_resume_resampling_chunks.sh
+#   WALLTIME=06:00:00 MODEL_NAME=molmo2 MODEL_SIZE=4B bash scripts/slurm/submit_resume_resampling_chunks.sh
+#   # If chunks are under repo results/v1/<model-label>/ (not results/resampling/...), set e.g.:
+#   CHUNKS_ROOT=$PWD/results/v1/molmo2-4B bash scripts/slurm/submit_resume_resampling_chunks.sh
 
 set -euo pipefail
 
@@ -39,12 +42,16 @@ TOTAL_CHUNKS="${TOTAL_CHUNKS:-10}"
 WALLTIME="${WALLTIME:-04:00:00}"
 
 RESULTS_ROOT="${RESULTS_ROOT:-$CODE_DIR/results/resampling/${MODEL_NAME}-${MODEL_SIZE}}"
-CHUNKS_ROOT="${CHUNKS_ROOT:-${MODEL_ROOT:-$RESULTS_ROOT}}"
+MODEL_LABEL="${MODEL_NAME}-${MODEL_SIZE}"
+# Chunk folders live under .../<version>/<model-label>/chunk_XX/ (same layout as resubmit_resampling_remaining.sh).
+MODEL_ROOT="${MODEL_ROOT:-$RESULTS_ROOT/$VERSION/$MODEL_LABEL}"
+CHUNKS_ROOT="${CHUNKS_ROOT:-$MODEL_ROOT}"
 
 echo "Submitting one partial-resume job per chunk:"
 echo "  model=${MODEL_NAME} size=${MODEL_SIZE}"
 echo "  version=${VERSION}, device=${DEVICE}, batch_size=${BATCH_SIZE}"
 echo "  max_new_tokens=${MAX_NEW_TOKENS}, use_json_format=${USE_JSON_FORMAT}"
+echo "  model_root=${MODEL_ROOT}"
 echo "  chunks_root=${CHUNKS_ROOT}"
 echo "  total_chunks=${TOTAL_CHUNKS}, walltime=${WALLTIME}"
 echo ""

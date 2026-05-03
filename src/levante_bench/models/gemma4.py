@@ -37,25 +37,36 @@ class Gemma4Model(VLMModel):
             trust_remote_code=True,
         )
         requested_attn = self.attn_implementation
+        use_device_map = self.device == "auto"
+        load_kwargs: dict = dict(
+            torch_dtype=self.dtype,
+            attn_implementation=requested_attn,
+            trust_remote_code=True,
+        )
+        if use_device_map:
+            load_kwargs["device_map"] = "auto"
         try:
             self.model = AutoModelForImageTextToText.from_pretrained(
-                self.model_name,
-                dtype=self.dtype,
-                attn_implementation=requested_attn,
-                trust_remote_code=True,
-            ).to(self.device)
+                self.model_name, **load_kwargs
+            )
+            if not use_device_map:
+                self.model = self.model.to(self.device)
         except Exception as exc:
             if not should_fallback_to_sdpa(requested_attn, exc):
                 raise
             warn_attn_fallback(self.model_name, requested_attn, exc)
             self.attn_implementation = "sdpa"
+            load_kwargs["attn_implementation"] = "sdpa"
             self.model = AutoModelForImageTextToText.from_pretrained(
-                self.model_name,
-                dtype=self.dtype,
-                attn_implementation="sdpa",
-                trust_remote_code=True,
-            ).to(self.device)
+                self.model_name, **load_kwargs
+            )
+            if not use_device_map:
+                self.model = self.model.to(self.device)
         self.model.eval()
+        # When device_map="auto", resolve self.device to the first-layer device
+        # so that input tensors can be moved there with .to(self.device).
+        if use_device_map:
+            self.device = next(self.model.parameters()).device
 
     def generate(
         self,

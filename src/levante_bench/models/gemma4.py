@@ -36,15 +36,33 @@ class Gemma4Model(VLMModel):
             self.model_name,
             trust_remote_code=True,
         )
+        import torch
+
         requested_attn = self.attn_implementation
-        use_device_map = self.device == "auto"
+        # Use device_map="auto" when the caller requests "auto" or when multiple
+        # CUDA devices are visible (runner.py resolves "auto" → "cuda" before
+        # this point, so we also detect the multi-GPU case explicitly).
+        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+        use_device_map = self.device == "auto" or (
+            str(self.device).startswith("cuda") and n_gpus > 1
+        )
         load_kwargs: dict = dict(
             torch_dtype=self.dtype,
             attn_implementation=requested_attn,
             trust_remote_code=True,
         )
         if use_device_map:
+            # Leave a 3 GiB safety margin per GPU to avoid OOM when other
+            # processes share the device.
+            per_gpu_gib = max(
+                8,
+                min(
+                    torch.cuda.get_device_properties(i).total_memory // (1024**3) - 3
+                    for i in range(n_gpus)
+                ),
+            )
             load_kwargs["device_map"] = "auto"
+            load_kwargs["max_memory"] = {i: f"{per_gpu_gib}GiB" for i in range(n_gpus)}
         try:
             self.model = AutoModelForImageTextToText.from_pretrained(
                 self.model_name, **load_kwargs

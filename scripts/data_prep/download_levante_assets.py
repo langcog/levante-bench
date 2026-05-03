@@ -2,7 +2,7 @@
 """
 Download LEVANTE corpus and visual assets from the public GCP bucket.
 Writes to data/assets/<version>/ and builds an item_uid -> local paths index.
-Version defaults to today (YYYY-MM-DD). Idempotent.
+Version defaults to v1 (or LEVANTE_DATA_VERSION, or --version). Idempotent.
 """
 
 import argparse
@@ -486,9 +486,7 @@ def run(
     base_url = base_url or get_assets_base_url()
     env_version = os.environ.get("LEVANTE_DATA_VERSION", "").strip()
     bucket_name, base_prefix = _bucket_and_base_prefix_from_base(base_url)
-    version = version or env_version or _detect_latest_bucket_version(
-        bucket_name, base_prefix=base_prefix
-    )
+    version = version or env_version or "v1"
     version_prefix = f"{base_prefix}/{version}" if base_prefix else version
     # Keys passed to _download_file are relative to base_url, so they should
     # never repeat base_prefix.
@@ -649,8 +647,8 @@ def main() -> None:
         "--version",
         default=None,
         help=(
-            "Asset version prefix (YYYY-MM-DD). "
-            "Default: LEVANTE_DATA_VERSION or latest version prefix in bucket."
+            "Asset version prefix (e.g. v1 or YYYY-MM-DD). "
+            "Default: LEVANTE_DATA_VERSION if set, else v1."
         ),
     )
     p.add_argument("--task", default=None, help="Only download this task (internal_name or benchmark_name)")

@@ -6,6 +6,12 @@ name: tinyllava
 size: 3.1B
 hf_name: ${hf_names.${size}}
 dtype: float16  # upstream config.json saves weights in float16
+# Optional: let Accelerate place layers (single-node Marlowe usually omit this).
+# device_map: auto
+# Extra kwargs forwarded to upstream model.chat() after max_new_tokens is set per trial.
+generation:
+  temperature: 0
+  num_beams: 1
 hf_names:
   2.4B: tinyllava/TinyLLaVA-Gemma-SigLIP-2.4B
   3.1B: tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B

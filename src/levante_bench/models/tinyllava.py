@@ -3,6 +3,11 @@
 Multi-image support is achieved by compositing the option images into a
 labeled 2×2 grid that is passed as a single image to model.chat().
 
+Upstream checkpoints use HuggingFace ``trust_remote_code`` and the project-specific
+``TinyLlavaForConditionalGeneration`` + ``model.chat()`` API — not the generic
+``AutoModelForImageTextToText`` path, so we stay aligned with the reference
+implementation.
+
 Available model IDs:
     tinyllava/TinyLLaVA-Qwen2-0.5B-SigLIP          (0.5 B)
     tinyllava/TinyLLaVA-OpenELM-450M-SigLIP-0.89B   (0.9 B)
@@ -11,10 +16,12 @@ Available model IDs:
     tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B           (3.1 B)
 """
 
+from __future__ import annotations
+
 import re
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
@@ -26,6 +33,22 @@ from levante_bench.models._common import DTYPE_MAP
 _LABELS = ["A", "B", "C", "D"]
 _CELL = 224   # each option image is resized to CELL × CELL pixels
 _FONT_SIZE = 22
+
+# Prefer Linux paths on Marlowe; fall back to macOS then PIL default.
+_FONT_CANDIDATES = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/System/Library/Fonts/Helvetica.ttc",
+)
+
+
+def _load_grid_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    for path in _FONT_CANDIDATES:
+        try:
+            return ImageFont.truetype(path, _FONT_SIZE)
+        except OSError:
+            continue
+    return ImageFont.load_default()
 
 
 @register("tinyllava")
@@ -44,25 +67,60 @@ class TinyLLaVAModel(VLMModel):
         model_name: str = "tinyllava/TinyLLaVA-Phi-2-SigLIP-3.1B",
         device: str = "cpu",
         dtype: str = "bfloat16",
+        generation: dict[str, Any] | None = None,
+        device_map: str | None = None,
+        attn_implementation: str = "eager",
     ) -> None:
         super().__init__(model_name=model_name, device=device)
-        self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
+        self.attn_implementation = str(attn_implementation or "eager")
+        self.dtype = DTYPE_MAP.get(str(dtype), torch.bfloat16)
+        self.device_map = str(device_map).strip() if device_map else None
+        gen = dict(generation) if isinstance(generation, dict) else {}
+        self._chat_generation_defaults: dict[str, Any] = {
+            "temperature": 0,
+            "num_beams": 1,
+            **gen,
+        }
         self._tmp_dir: Optional[str] = None
 
     # ── Loading ─────────────────────────────────────────────────────────────
 
+    def _from_pretrained_causal_lm(self, model_cls=None):
+        """Load with torch_dtype when available; optional device_map (e.g. auto on CUDA)."""
+        from transformers import AutoModelForCausalLM
+
+        kw: dict[str, Any] = {
+            "trust_remote_code": True,
+            "attn_implementation": self.attn_implementation,
+        }
+        if self.device_map:
+            kw["device_map"] = self.device_map
+        try:
+            kw["torch_dtype"] = self.dtype
+            m = (
+                AutoModelForCausalLM.from_pretrained(self.model_name, **kw)
+                if model_cls is None
+                else model_cls.from_pretrained(self.model_name, **kw)
+            )
+        except TypeError:
+            kw.pop("torch_dtype", None)
+            kw["dtype"] = self.dtype
+            m = (
+                AutoModelForCausalLM.from_pretrained(self.model_name, **kw)
+                if model_cls is None
+                else model_cls.from_pretrained(self.model_name, **kw)
+            )
+        if not self.device_map:
+            m = m.to(self.device)
+        return m
+
     def load(self) -> None:
         """Load TinyLLaVA model and tokenizer from HuggingFace."""
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers import AutoTokenizer
         from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
         try:
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-                dtype=self.dtype,
-                attn_implementation="eager",  # legacy model lacks _supports_sdpa
-            ).to(self.device)
+            self.model = self._from_pretrained_causal_lm(model_cls=None)
         except TypeError as exc:
             message = str(exc)
             tie_kwarg_mismatch = (
@@ -95,11 +153,7 @@ class TinyLLaVAModel(VLMModel):
                 model_cls.tie_weights = _patched_tie_weights
                 model_cls._levante_tie_weights_patch = True
 
-            self.model = model_cls.from_pretrained(
-                self.model_name,
-                dtype=self.dtype,
-                attn_implementation="eager",
-            ).to(self.device)
+            self.model = self._from_pretrained_causal_lm(model_cls=model_cls)
         self.model.eval()
 
         cfg = self.model.config
@@ -127,13 +181,13 @@ class TinyLLaVAModel(VLMModel):
 
         image, prompt = self._prepare_inputs(prompt_text, image_paths)
 
+        chat_kw = dict(self._chat_generation_defaults)
+        chat_kw["max_new_tokens"] = max_new_tokens
         output, _ = self.model.chat(
             prompt=prompt,
             image=image,
             tokenizer=self.tokenizer,
-            max_new_tokens=max_new_tokens,
-            temperature=0,
-            num_beams=1,
+            **chat_kw,
         )
         return output
 
@@ -189,11 +243,7 @@ class TinyLLaVAModel(VLMModel):
         grid = Image.new("RGB", (cols * _CELL, rows * _CELL), color=(240, 240, 240))
         draw = ImageDraw.Draw(grid)
 
-        # Try to load a font; fall back to default if not available
-        try:
-            font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", _FONT_SIZE)
-        except OSError:
-            font = ImageFont.load_default()
+        font = _load_grid_font()
 
         for i in range(n):
             img = Image.open(image_paths[i]).convert("RGB").resize(

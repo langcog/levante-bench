@@ -15,8 +15,7 @@ BATCH_SIZE="${BATCH_SIZE:-8}"
 DEVICE="${DEVICE:-cuda}"
 EXPERIMENT="${EXPERIMENT:-configs/experiments/smolvlm2_256m_v1.yaml}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
-
-MARKER_DIR="results/v1/smolvlm2-256M/${RUN_LABEL}/.checkpoints"
+git2-256M/${RUN_LABEL}/.checkpoints"
 mkdir -p "$MARKER_DIR"
 
 check_for_conflicting_runs() {

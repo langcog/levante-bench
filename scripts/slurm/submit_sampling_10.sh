@@ -1,7 +1,7 @@
 #!/bin/bash
 # Submit 10 Slurm launches of 1 true-random runs each (total 10).
 #
-# Default target model is qwen35-4B
+# Default target model is molmo2
 # while still practical for repeated hosted runs.
 #
 # Usage:

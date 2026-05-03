@@ -7,5 +7,5 @@
 
 name: molmo2
 hf_name: allenai/Molmo2-${size}
-size: 8B
+size: O-7B
 trust_remote_code: true

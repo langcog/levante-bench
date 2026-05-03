@@ -137,6 +137,57 @@ class TinyLLaVAModel(VLMModel):
         )
         return output
 
+    def evaluate_trial(self, trial: dict) -> dict:
+        """Evaluate a trial with a label-only retry for parse failures.
+
+        TinyLLaVA can emit verbose/non-label text on image-choice tasks.
+        If first-pass label parsing fails, run one short constrained retry
+        that asks for exactly one label token.
+        """
+        prompt, answer_format, image_paths, max_new_tokens = self._prepare_trial_inputs(trial)
+        if answer_format == "label":
+            # 2.4B often drifts into repetitive text with longer generation.
+            # Keep first-pass decoding short to favor a single label token.
+            max_new_tokens = min(max_new_tokens, 8)
+
+        raw_output = self.generate(
+            prompt_text=prompt,
+            image_paths=image_paths if image_paths else None,
+            max_new_tokens=max_new_tokens,
+        )
+        clean_text = self.parse_response(raw_output)
+        result = self._build_result_from_text(
+            trial=trial,
+            clean_text=clean_text,
+            answer_format=answer_format,
+        )
+
+        # Recovery pass only for categorical-label tasks.
+        if answer_format == "label" and not result.get("predicted_label"):
+            retry_prompt = self._build_label_retry_prompt(
+                option_labels=list(trial.get("option_labels", [])),
+                original_prompt=trial.get("prompt", ""),
+                first_pass_output=clean_text,
+            )
+            retry_raw = self.generate(
+                prompt_text=retry_prompt,
+                image_paths=image_paths if image_paths else None,
+                max_new_tokens=6,
+            )
+            retry_clean = self.parse_response(retry_raw)
+            retry_result = self._build_result_from_text(
+                trial=trial,
+                clean_text=retry_clean,
+                answer_format=answer_format,
+            )
+            if retry_result.get("predicted_label"):
+                retry_result["generated_text"] = retry_clean
+                retry_result["reason"] = retry_clean
+                retry_result["parse_method"] = f"retry_{retry_result.get('parse_method', '')}"
+                return retry_result
+
+        return result
+
     def _get_blank_image_path(self) -> str:
         """Return a persistent local blank image path for text-only trials."""
         if self._tmp_dir is None:
@@ -162,25 +213,53 @@ class TinyLLaVAModel(VLMModel):
         if not image_paths:
             return None, prompt_text
 
-        # Remove all <imageN> placeholders from the original prompt
-        clean_prompt = re.sub(r"<image\d+>", "", prompt_text).strip()
+        # Normalize image placeholders into textual references so prompt
+        # structure remains readable after we collapse multi-image inputs to
+        # a single composite grid image.
+        clean_prompt = prompt_text
+        clean_prompt = clean_prompt.replace("<prompt_image>", "[context image]")
+        if len(image_paths) > 1:
+            for i, label in enumerate(_LABELS, start=1):
+                clean_prompt = clean_prompt.replace(f"<image{i}>", f"[option {label}]")
+            clean_prompt = clean_prompt.replace("<image0>", "[context image]")
+            clean_prompt = re.sub(r"<image\d+>", "[image]", clean_prompt)
+        else:
+            clean_prompt = re.sub(r"<image\d+>", "", clean_prompt)
+        clean_prompt = clean_prompt.strip()
 
         if len(image_paths) == 1:
             return str(Path(image_paths[0]).resolve()), clean_prompt
 
         # Multiple images → compose a labeled grid
         grid_path = self._make_grid(image_paths)
-        # Append a grid-layout hint so the model understands the labeling
+        # Put the grid-layout hint *before* task instructions so the prompt
+        # still ends with answer-format constraints ("Answer with A/B/C/D").
         n = min(len(image_paths), 4)
         layout = ", ".join(
             f"{_LABELS[i]}={'top-left' if i==0 else 'top-right' if i==1 else 'bottom-left' if i==2 else 'bottom-right'}"
             for i in range(n)
         )
         grid_prompt = (
-            f"{clean_prompt} "
-            f"The image is a {2}×{(n+1)//2} grid of options ({layout})."
+            f"The single image contains a {2}x{(n+1)//2} grid of answer options "
+            f"with labels ({layout}). Use these labels when answering.\n\n"
+            f"{clean_prompt}"
         )
         return grid_path, grid_prompt
+
+    def _build_label_retry_prompt(
+        self,
+        option_labels: list[str],
+        original_prompt: str,
+        first_pass_output: str,
+    ) -> str:
+        labels = [str(l).strip().upper() for l in option_labels if str(l).strip()]
+        labels_csv = ", ".join(labels) if labels else "A, B, C, D"
+        return (
+            f"{original_prompt}\n\n"
+            f"Previous answer was not parseable: {first_pass_output!r}\n"
+            f"Return exactly one label from [{labels_csv}]. "
+            "Do not output words, punctuation, or explanation."
+        )
 
     def _make_grid(self, image_paths: list[str]) -> str:
         """Compose up to 4 images into a labeled 2×2 grid; return temp path."""

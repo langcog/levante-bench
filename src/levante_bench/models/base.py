@@ -294,21 +294,92 @@ class VLMModel:
             str(answer_result.value).upper() if answer_result.value is not None else None
         )
         reason = answer_result.reason
+        parse_method = answer_result.parse_method
+        parse_confidence = answer_result.parse_confidence
+        parse_raw_candidate = answer_result.raw_candidate
+
+        # Fallback: some models emit numeric option values (e.g., "8") instead of
+        # labels ("D") on label tasks. Recover by mapping numeric output to the
+        # corresponding option text when it is numeric.
+        if predicted_label is None:
+            numeric_result = self.parse_numeric_result(
+                clean_text,
+                strict_json=False,
+                slider_mode=False,
+            )
+            if numeric_result.value is not None:
+                numeric_label = self._label_from_numeric_option_value(
+                    trial=trial,
+                    numeric_value=float(numeric_result.value),
+                )
+                if numeric_label is None:
+                    numeric_label = self._label_from_numeric_option_index(
+                        trial=trial,
+                        numeric_value=float(numeric_result.value),
+                    )
+                if numeric_label is not None:
+                    predicted_label = numeric_label
+                    reason = clean_text
+                    parse_method = f"numeric_option_match_{numeric_result.parse_method}"
+                    parse_confidence = numeric_result.parse_confidence
+                    parse_raw_candidate = numeric_result.raw_candidate
+
         return {
             "trial_id": trial["trial_id"],
             "item_uid": trial["item_uid"],
             "generated_text": clean_text,
             "predicted_label": predicted_label,
             "reason": reason,
-            "parse_method": answer_result.parse_method,
-            "parse_confidence": answer_result.parse_confidence,
-            "parse_raw_candidate": answer_result.raw_candidate,
+            "parse_method": parse_method,
+            "parse_confidence": parse_confidence,
+            "parse_raw_candidate": parse_raw_candidate,
             "correct_label": trial["correct_label"],
             "is_correct": predicted_label == trial["correct_label"],
             # Carry option context for downstream human-comparison annotation
             "options": trial.get("options", []),
             "option_labels": trial.get("option_labels", []),
         }
+
+    def _label_from_numeric_option_value(
+        self,
+        *,
+        trial: dict,
+        numeric_value: float,
+    ) -> Optional[str]:
+        """Map numeric model output to an option label when options are numeric."""
+        option_labels = [str(v).strip().upper() for v in trial.get("option_labels", [])]
+        option_values = [str(v).strip() for v in trial.get("options", [])]
+        if not option_labels or len(option_labels) != len(option_values):
+            return None
+
+        for label, option in zip(option_labels, option_values):
+            if not re.fullmatch(r"[-+]?\d*\.?\d+", option):
+                continue
+            try:
+                option_value = float(option)
+            except ValueError:
+                continue
+            if abs(option_value - numeric_value) <= 1e-6:
+                return label
+        return None
+
+    def _label_from_numeric_option_index(
+        self,
+        *,
+        trial: dict,
+        numeric_value: float,
+    ) -> Optional[str]:
+        """Map 1-based numeric answer indices to option labels (1->A, 2->B...)."""
+        option_labels = [str(v).strip().upper() for v in trial.get("option_labels", [])]
+        if not option_labels:
+            return None
+        rounded = round(numeric_value)
+        if abs(numeric_value - rounded) > 1e-6:
+            return None
+        index = int(rounded)
+        if 1 <= index <= len(option_labels):
+            return option_labels[index - 1]
+        return None
 
     def evaluate_trials_batch(self, trials: list[dict]) -> list[dict]:
         """Evaluate a batch of trials.
@@ -603,6 +674,21 @@ class VLMModel:
                         parse_confidence="low",
                         raw_candidate=label,
                     )
+
+        # 7. Text starts with punctuation/noise, then a label.
+        # Catches malformed outputs like "[A B B" where the first label is
+        # likely intended as the answer token.
+        m = re.match(r"^[\s\[\(\{<`'\"*_~\-]*([A-Z])\b", text, re.IGNORECASE)
+        if m:
+            answer = m.group(1).upper()
+            if answer in labels_upper:
+                return ParseResult(
+                    value=answer,
+                    reason=text,
+                    parse_method="leading_noisy_label",
+                    parse_confidence="low",
+                    raw_candidate=m.group(1),
+                )
 
         return ParseResult(
             value=None,

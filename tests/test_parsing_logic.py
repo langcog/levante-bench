@@ -65,6 +65,9 @@ from levante_bench.models.base import VLMModel
         ("The shape looks like a circle. B.", ["A", "B", "C", "D"], "B"),
         # Conflict: "Option B is wrong. Therefore A" no longer matches — ambiguous.
         ("Option B is wrong. Therefore A", ["A", "B", "C", "D"], None),
+        # noisy leading punctuation + label
+        ("[A B B", ["A", "B", "C", "D"], "A"),
+        ("(d ???", ["A", "B", "C", "D"], "D"),
     ],
 )
 def test_parse_answer_branches(text: str, labels: list[str], expected: str | None) -> None:
@@ -120,3 +123,59 @@ def test_parse_numeric_v2_includes_provenance() -> None:
     assert result.value == pytest.approx(2.75)
     assert result.parse_method == "strict_json"
     assert result.parse_confidence == "high"
+
+
+def test_build_result_recovers_label_from_numeric_option_value() -> None:
+    model = VLMModel(model_name="dummy")
+    trial = {
+        "trial_id": "t1",
+        "item_uid": "u1",
+        "correct_label": "D",
+        "option_labels": ["A", "B", "C", "D"],
+        "options": ["5", "2", "9", "8"],
+    }
+    result = model._build_result_from_text(
+        trial=trial,
+        clean_text="8",
+        answer_format="label",
+    )
+    assert result["predicted_label"] == "D"
+    assert result["is_correct"] is True
+    assert str(result["parse_method"]).startswith("numeric_option_match_")
+
+
+def test_build_result_numeric_fallback_does_not_trigger_on_non_numeric_options() -> None:
+    model = VLMModel(model_name="dummy")
+    trial = {
+        "trial_id": "t2",
+        "item_uid": "u2",
+        "correct_label": "B",
+        "option_labels": ["A", "B", "C", "D"],
+        "options": ["apple", "pear", "banana", "orange"],
+    }
+    result = model._build_result_from_text(
+        trial=trial,
+        clean_text="8",
+        answer_format="label",
+    )
+    assert result["predicted_label"] is None
+    assert result["is_correct"] is False
+
+
+def test_build_result_recovers_label_from_numeric_option_index() -> None:
+    model = VLMModel(model_name="dummy")
+    trial = {
+        "trial_id": "t3",
+        "item_uid": "u3",
+        "correct_label": "C",
+        "option_labels": ["A", "B", "C", "D"],
+        "options": ["12", "19", "25", "31"],
+    }
+    result = model._build_result_from_text(
+        trial=trial,
+        clean_text="3",
+        answer_format="label",
+    )
+    assert result["predicted_label"] == "C"
+    assert result["is_correct"] is True
+    assert str(result["parse_method"]).startswith("numeric_option_match_")

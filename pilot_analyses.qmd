@@ -36,7 +36,7 @@ MOD_CLS_SCALE <- c(
   "TinyLLaVA" = "#19bf4e",
   "InternVL 3.5" = "#19bcbf",
   "Gemma 4" = "#2e65f0",
-  "Gemini 2.5" = "#712ef0",
+  "Gemini 2.5 Pro" = "#712ef0",
   "GPT 5.3" = "#d92ef0"
 )
 
@@ -60,7 +60,7 @@ MOD_NAM_SCALE <- c(
   "Gemma 4 E4B" = "#2e65f0",
   "Gemma 4 A4B" = "#0a3194",
   "Gemma 4 31B" = "#031b59",
-  "Gemini 2.5" = "#712ef0",
+  "Gemini 2.5 Pro" = "#712ef0",
   "GPT 5.3" = "#d92ef0"
 )
 ```
@@ -104,7 +104,7 @@ all_results <- results_files |>
   filter(!str_detect(trial_id, "synthetic"))
 
 all_results_join_full <- all_results |> 
-  mutate(model = filepath |> str_remove("/.*"),
+  mutate(model = filepath |> str_remove("(-es|-de)?/.*"),
          run_id = filepath |> str_extract("(?<=/).*(?=/)"),
          language = case_when(
                  str_detect(filepath, "-es/") ~ "es",
@@ -146,7 +146,7 @@ all_json <- map(json_files, \(f) {
     `colnames<-`(value = c("trial_unique", json[[1]] |> names())) |> 
     mutate(filepath = f)
 }) |> list_rbind() |> 
-  mutate(model = filepath |> str_remove("/.*"),
+  mutate(model = filepath |> str_remove("(-es|-de)?/.*"),
          run_id = filepath |> str_extract("(?<=/).*(?=/cache)")) |> 
   filter(run_id != "cache")
 
@@ -905,7 +905,7 @@ p_distrib <- kl_summary |>
          ability_bin = glue("[{ability_bin}]") |> 
            factor(levels = c("[-5, -4]", "[-4, -3]", "[-3, -2]",
                              "[-2, -1]", "[-1, 0]", "[0, 1]",
-                             "[1, 2]", "[2, 3]", "[3, 4]", "[4, 5]"))) |> 
+                             "[1, 2]", "[2, 3]", "[3, 4]", "[4, 5]"))) |>
   ggplot(aes(x = ability_bin, y = d_kl, col = model_name)) +
   geom_line(aes(group = model_name)) +
   geom_point() +
@@ -925,3 +925,119 @@ ggsave(here("figs", "distrib.png"), p_distrib,
 
 p_distrib
 ```
+
+```{r}
+kl_summary |> 
+  filter(min_runs >= 10) |> 
+  mutate(task = fct_relevel(task, gpt_results$task),
+         ability_bin = ability_bin |> str_replace("_", ", "),
+         ability_bin = glue("[{ability_bin}]") |> 
+           factor(levels = c("[-5, -4]", "[-4, -3]", "[-3, -2]",
+                             "[-2, -1]", "[-1, 0]", "[0, 1]",
+                             "[1, 2]", "[2, 3]", "[3, 4]", "[4, 5]"))) |> 
+  ggplot(aes(x = log10(n_params_num), y = d_kl, col = ability_bin)) +
+  geom_point() +
+  geom_smooth(method = "loess", formula = y ~ x, 
+              se = F, span = .8) +
+  facet_wrap(~ task,
+             labeller = as_labeller(task_relabel)) +
+  labs(x = "Log parameters", y = "KL divergence", col = "Ability bin")
+```
+
+```{r}
+p_kl_param <- kl_summary |> 
+  filter(min_runs >= 10,
+         task %in% c("egma-math", "trog")) |> 
+  mutate(task = fct_relevel(task, gpt_results$task),
+         ability_bin = ability_bin |> str_replace("_", ", "),
+         ability_bin = glue("[{ability_bin}]") |> 
+           factor(levels = c("[-5, -4]", "[-4, -3]", "[-3, -2]",
+                             "[-2, -1]", "[-1, 0]", "[0, 1]",
+                             "[1, 2]", "[2, 3]", "[3, 4]", "[4, 5]"))) |> 
+  ggplot(aes(x = log10(n_params_num), y = d_kl, col = ability_bin)) +
+  geom_point() +
+  geom_smooth(method = "loess", formula = y ~ x, 
+              se = F, span = .9) +
+  facet_wrap(~ task,
+             labeller = as_labeller(task_relabel)) +
+  labs(x = "Log parameters", y = "KL divergence", col = "Ability bin") +
+  guides(colour = guide_legend(ncol = 2))
+
+p_kl_ability <- kl_summary |> 
+  filter(min_runs >= 10,
+         task %in% c("vocab", "matrix-reasoning")) |> 
+  mutate(task = fct_relevel(task, gpt_results$task),
+         ability_bin = ability_bin |> str_replace("_", ", "),
+         ability_bin = glue("[{ability_bin}]") |> 
+           factor(levels = c("[-5, -4]", "[-4, -3]", "[-3, -2]",
+                             "[-2, -1]", "[-1, 0]", "[0, 1]",
+                             "[1, 2]", "[2, 3]", "[3, 4]", "[4, 5]"))) |>
+  ggplot(aes(x = ability_bin, y = d_kl, col = model_name)) +
+  geom_line(aes(group = model_name)) +
+  geom_point() +
+  facet_wrap(~ task,
+             labeller = as_labeller(task_relabel)) +
+  scale_colour_manual(values = MOD_NAM_SCALE,
+                      limits = intersect(names(MOD_NAM_SCALE), 
+                                         unique(kl_summary |> 
+                                                  filter(min_runs >= 10) |> 
+                                                  pull(model_name)))) +
+  labs(x = "Ability bin", y = "KL divergence", col = "Model") +
+  theme(axis.text.x = element_text(hjust = 1, angle = 45)) +
+  guides(colour = guide_legend(ncol = 2))
+
+p_distrib_out <- (p_kl_param / p_kl_ability) +
+  plot_annotation(tag_levels = "A")
+
+ggsave(here("figs", "distrib_new.png"), p_distrib_out,
+       width = 8, height = 5, units = "in")
+
+p_distrib_out
+```
+
+
+# Other langs
+```{r}
+non_eng_models <- all_results_join_full |> 
+  filter(language != "en") |> 
+  distinct(model_name)
+```
+
+```{r}
+all_results_join_compare <- all_results_join_full |> 
+  filter(model_name %in% non_eng_models$model_name)
+
+all_results_cmp_wide <- all_results_join_compare |> 
+  group_by(task, model_class, model_name, n_params_num, language, run_id) |> 
+  summarise(accuracy = mean(is_correct),
+            chance = mean(chance_level, na.rm = T),
+            .groups = "drop_last") |> 
+  group_by(task, model_class, model_name, n_params_num, language) |> 
+  summarise(accuracy = mean(accuracy),
+            .groups = "drop") |> 
+  pivot_wider(names_from = language, values_from = accuracy) |> 
+  pivot_longer(cols = c(de, es),
+               names_to = "language",
+               values_to = "accuracy")
+```
+
+```{r}
+p_xling <- all_results_cmp_wide |> 
+  mutate(task = fct_relevel(task, gpt_results$task)) |> 
+  ggplot(aes(x = en, y = accuracy, col = model_name, shape = language)) +
+  geom_abline(slope = 1, intercept = 0, lty = "dotted", col = "grey54") +
+  geom_point() +
+  facet_wrap(~ task,
+             labeller = as_labeller(task_relabel)) +
+  scale_colour_manual(values = MOD_NAM_SCALE,
+                      limits = intersect(names(MOD_NAM_SCALE),
+                                         unique(all_results_cmp_wide$model_name))) +
+  scale_shape_discrete(labels = c("German", "Spanish")) +
+  labs(x = "English accuracy", y = "Other language accuracy", col = "Model", shape = "Language")
+
+ggsave(here("figs", "xling.png"), p_xling,
+       width = 7, height = 4, units = "in")
+
+p_xling
+```
+

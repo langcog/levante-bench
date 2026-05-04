@@ -1,5 +1,5 @@
 name: gemini_pro
-hf_name: gemini-3-flash-preview
+hf_name: gemini-3.1-flash-lite-preview
 use_json_format: true
 retry_attempts: 4
 max_output_tokens_cap: 2048

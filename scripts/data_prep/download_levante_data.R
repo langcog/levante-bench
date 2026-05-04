@@ -194,9 +194,15 @@ if (nrow(irt_mapping) == 0L) {
       # Download .rds via stream
       rds_path <- file.path(irt_dir, paste0(safe_name, ".rds"))
       if (!file.exists(rds_path)) {
-        con <- base::file(rds_path, "wb")
-        irt_tbl$file(fid)$stream(callback = function(chunk) writeBin(chunk, con))
-        close(con)
+        # if (tid == "egma-math") {
+        #   download.file(str_c("https://github.com/levante-framework/downex-pilot-analysis/",
+        #                       "raw/refs/heads/main/math/multigroup_site/all_items/math_rasch_f1_scalar.rds"),
+        #                 rds_path)
+        # } else {
+          con <- base::file(rds_path, "wb")
+          irt_tbl$file(fid)$stream(callback = function(chunk) writeBin(chunk, con))
+          close(con)
+        # }
         message("  ", tid, ": downloaded ", rds_path)
       } else {
         message("  ", tid, ": ", rds_path, " already exists")

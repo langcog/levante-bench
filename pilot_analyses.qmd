@@ -11,6 +11,7 @@ library(glue)
 library(redivis)
 library(patchwork)
 library(tidyverse)
+library(ggrepel)
 
 theme_set(theme_bw() +
             theme(panel.grid = element_blank()))
@@ -24,6 +25,43 @@ task_relabel <- c(
   "theory-of-mind" = "Theory of mind",
   "trog" = "Sentence understanding",
   "vocab" = "Vocabulary"
+)
+```
+
+```{r}
+MOD_CLS_SCALE <- c(
+  "Human" = "#fa2828",
+  "SmolVLM 2" = "#dbaa18",
+  "Qwen 3.5" = "#acbf19",
+  "TinyLLaVA" = "#19bf4e",
+  "InternVL 3.5" = "#19bcbf",
+  "Gemma 4" = "#2e65f0",
+  "Gemini 2.5" = "#712ef0",
+  "GPT 5.3" = "#d92ef0"
+)
+
+MOD_NAM_SCALE <- c(
+  "SmolVLM 2 256M" = "#eddba6",
+  "SmolVLM 2 500M" = "#e6c76c",
+  "SmolVLM 2 2.2B" = "#dbaa18",
+  "Qwen 3.5 0.8B" = "#e3ed95",
+  "Qwen 3.5 2B" = "#d3e356",
+  "Qwen 3.5 4B" = "#acbf19",
+  "Qwen 3.5 9B" = "#768509",
+  "Qwen 3.5 27B" = "#4b5403",
+  "TinyLLaVA 3.1B" = "#19bf4e",
+  "InternVL 3.5 1B" = "#96e9eb",
+  "InternVL 3.5 2B" = "#62e1e3",
+  "InternVL 3.5 4B" = "#19bcbf",
+  "InternVL 3.5 8B" = "#0a9294",
+  "InternVL 3.5 14B" = "#036466",
+  "InternVL 3.5 38B" = "#013c3d",
+  "Gemma 4 E2B" = "#799bf2",
+  "Gemma 4 E4B" = "#2e65f0",
+  "Gemma 4 A4B" = "#0a3194",
+  "Gemma 4 31B" = "#031b59",
+  "Gemini 2.5" = "#712ef0",
+  "GPT 5.3" = "#d92ef0"
 )
 ```
 
@@ -46,7 +84,7 @@ models <- googlesheets4::read_sheet(ss = "1T3DZzlBDuSFQrZwmby-IZ4Oi2s_7JBffQeoM1
 results_files <- list.files(here("results", "v1"), 
                             pattern = "*.csv$", 
                             recursive = TRUE) |> 
-  str_subset("(summary|checkpoint|by-type|-de/|-es/)", negate = TRUE)
+  str_subset("(summary|checkpoint|by-type|-tl/)", negate = TRUE)
 
 all_results <- results_files |> 
   map(\(f) {
@@ -62,11 +100,17 @@ all_results <- results_files |>
         item_uid
       ))
     }) |> 
-  list_rbind()
+  list_rbind() |> 
+  filter(!str_detect(trial_id, "synthetic"))
 
-all_results_join <- all_results |> 
+all_results_join_full <- all_results |> 
   mutate(model = filepath |> str_remove("/.*"),
-         run_id = filepath |> str_extract("(?<=/).*(?=/)")) |> 
+         run_id = filepath |> str_extract("(?<=/).*(?=/)"),
+         language = case_when(
+                 str_detect(filepath, "-es/") ~ "es",
+                 str_detect(filepath, "-de/") ~ "de",
+                 .default = "en"
+               )) |> 
   left_join(manifest, by = join_by(item_uid)) |> 
   left_join(models, by = join_by(model)) |> 
   mutate(n_params_num = map_dbl(n_params, \(n) {
@@ -78,17 +122,25 @@ all_results_join <- all_results |>
     ))
   })) |> 
   filter(!is.na(model_name),
-         !is.na(run_id))
+         !is.na(run_id),
+         !str_detect(model_class, "Molmo"),
+         model_name != "TinyLLaVA 2.4B")
+
+all_results_join <- all_results_join_full |> 
+  filter(language == "en")
 ```
 
 ```{r}
 json_files <- list.files(here("results", "v1"), 
                             pattern = "*responses.json$", 
-                            recursive = TRUE)
+                            recursive = TRUE) |> 
+  str_subset("-tl/", negate = TRUE)
 
 all_json <- map(json_files, \(f) {
   json <- read_json(here("results", "v1", f), simplifyVector = TRUE)
-  df <- json |> as_tibble() |> t() |> 
+  synthetic <- map_lgl(json, \(j) str_detect(j$trial_id, "synthetic"))
+  df <- json[!synthetic] |> 
+    as_tibble() |> t() |> 
     as_tibble(rownames = "trial_unique",
               .name_repair = "universal_quiet") |> 
     `colnames<-`(value = c("trial_unique", json[[1]] |> names())) |> 
@@ -98,13 +150,18 @@ all_json <- map(json_files, \(f) {
          run_id = filepath |> str_extract("(?<=/).*(?=/cache)")) |> 
   filter(run_id != "cache")
 
-all_json_opt <- all_json |> 
+all_json_opt_full <- all_json |> 
   mutate(chosen_option = map2_chr(options, predicted_label, \(opts, l) {
     if (is.null(l)) return(NA)
     idx <- str_locate("ABCD", l)[1]
     opts[idx]
   })) |> 
   unnest(where(is.list) & !starts_with("option")) |> 
+  mutate(language = case_when(
+                 str_detect(filepath, "-es/") ~ "es",
+                 str_detect(filepath, "-de/") ~ "de",
+                 .default = "en"
+               )) |> 
   left_join(manifest, by = join_by(item_uid)) |> 
   left_join(models, by = join_by(model)) |> 
   mutate(n_params_num = map_dbl(n_params, \(n) {
@@ -116,9 +173,14 @@ all_json_opt <- all_json |>
     ))
   })) |> 
   filter(!is.na(model_name),
-         !is.na(run_id)) |> 
+         !is.na(run_id),
+         !str_detect(model_class, "Molmo"),
+         model_name != "TinyLLaVA 2.4B") |> 
   mutate(item_uid = ifelse(item_uid == "math_compare_7_5" & map_lgl(options, \(o) 8 %in% o),
                            "math_compare_7_5b", item_uid))
+
+all_json_opt <- all_json_opt_full |> 
+  filter(language == "en")
 ```
 
 ```{r}
@@ -131,7 +193,22 @@ clean_uid <- function(item_uid, task_id) {
   item_uid <- replace_values(
     item_uid,
     "tom_moral_reasoning_reality_check_1" ~ "tom_moral_reasoning_reality_check",
-    "tom_moral_reasoning_false_belief_3" ~ "tom_moral_reasoning_false_belief"
+    "tom_moral_reasoning_false_belief_3" ~ "tom_moral_reasoning_false_belief",
+    "math_fraction_14_24_34" ~ "math_fraction_14_24",
+    "math_fraction_13_23_1" ~ "math_fraction_13_23",
+    "math_fraction_16_13_12" ~ "math_fraction_16_13",
+    "math_fraction_17_314_514" ~ "math_fraction_17_314",
+    "math_fraction_512_16_712" ~ "math_fraction_512_16",
+    "math_fraction_39_13_23" ~ "math_fraction_39_13",
+    "math_fraction_48_18_38" ~ "math_fraction_48_18",
+    "math_fraction_710_25_310" ~ "math_fraction_710_25",
+    "math_fraction_13_17_421" ~ "math_fraction_13_17",
+    "math_fraction_512_16_14" ~ "math_fraction_512_16s",
+    "math_fraction_19_110_190" ~ "math_fraction_19_110",
+    "math_fraction_178_54_78" ~ "math_fraction_178_54",
+    "math_fraction_12_13_16" ~ "math_fraction_12_13",
+    "math_fraction_34_716_516" ~ "math_fraction_34_7_16",
+    "math_fraction_28_39_712" ~ "math_fraction_28_39"
   )
   item_uid
 }
@@ -171,9 +248,12 @@ all_results_summary <- all_results_join |>
 
 ```{r}
 all_results_total <- all_results_join |> 
-  group_by(model_class, model_name, n_params_num) |> 
+  group_by(model_class, model_name, n_params_num, task) |> 
   summarise(accuracy = mean(is_correct),
             chance = mean(chance_level, na.rm = T),
+            .groups = "drop_last") |> 
+  summarise(accuracy = mean(accuracy),
+            chance = mean(chance, na.rm = T),
             .groups = "drop")
 ```
 
@@ -187,6 +267,8 @@ all_results_total |>
 ```{r}
 gpt_results <- all_results_summary |> 
   filter(model_name == "GPT 5.3") |> 
+  group_by(task) |> 
+  summarise(accuracy = mean(accuracy)) |> 
   arrange(desc(accuracy))
 
 all_results_bymodel <- all_results_summary |> 
@@ -196,7 +278,7 @@ all_results_bymodel <- all_results_summary |>
             .groups = "drop") |> 
   mutate(task = fct_relevel(task, gpt_results$task))
 
-all_results_summary |> 
+p_acc <- all_results_summary |> 
   mutate(task = fct_relevel(task, gpt_results$task)) |> 
   ggplot(aes(x = log10(n_params_num), y = accuracy)) +
   geom_smooth(aes(group = "none"), 
@@ -213,9 +295,16 @@ all_results_summary |>
   facet_wrap(~ task,
              labeller = as_labeller(task_relabel)) +
   coord_cartesian(ylim = c(0, 1)) +
+  scale_colour_manual(values = MOD_CLS_SCALE,
+                      limits = setdiff(names(MOD_CLS_SCALE), "Human")) +
   labs(x = "Log parameters",
        y = "Accuracy",
        col = "Model class")
+
+ggsave(here("figs", "accuracy.png"), p_acc,
+       width = 7, height = 4, units = "in")
+
+p_acc
 ```
 
 # Item parameters
@@ -241,7 +330,7 @@ item_params <- list.files(here("data", "responses", "v1", "irt_models"),
   }) |> 
   list_rbind() |> 
   mutate(task_id = str_remove(item_uid, "_.*"),
-         item_uid = clean_uid(item_uid, task_id)) |> 
+         item_uid = map2_chr(item_uid, task_id, clean_uid)) |> 
   distinct()
 ```
 
@@ -268,27 +357,44 @@ all_results_difficulty |>
 
 ```{r}
 cor_results <- all_results_difficulty |> 
-  group_by(task, model_name, model_class, n_params_num) |> 
+  group_by(task, model_name, model_class, n_params_num, run_id) |> 
   summarise(cor = cor(is_correct, difficulty, use = "pairwise.complete.obs"),
-            .groups = "drop")
+            .groups = "drop") |> 
+  mutate(task = fct_relevel(task, gpt_results$task))
+
+cor_summary <- cor_results |> 
+  group_by(task, model_name, model_class, n_params_num) |> 
+  summarise(cor = mean(cor),
+            .groups = "drop") |> 
+  mutate(task = fct_relevel(task, gpt_results$task))
 ```
 
 ```{r}
-cor_results |> 
-  mutate(task = fct_relevel(task, gpt_results$task)) |> 
+p_corr <- cor_results |> 
   ggplot(aes(x = log10(n_params_num), y = cor)) +
   geom_hline(yintercept = 0, lty = "dotted", col = "grey54") +
   geom_smooth(aes(group = "none"), 
               method = "lm", formula = y ~ x,
+              data = cor_summary,
               lty = "dashed", se = F, col = "black") +
-  geom_line(aes(col = model_class)) +
-  geom_point(aes(col = model_class)) +
+  geom_line(aes(col = model_class),
+            data = cor_summary) +
+  # geom_point(aes(col = model_class)) +
+  stat_summary(aes(col = model_class, group = model_name),
+               fun.data = mean_cl_boot, size = 0.2) +
   facet_wrap(~ task,
              labeller = as_labeller(task_relabel)) +
   # coord_cartesian(ylim = c(-.5, .5)) +
+  scale_colour_manual(values = MOD_CLS_SCALE,
+                      limits = setdiff(names(MOD_CLS_SCALE), "Human")) +
   labs(x = "Log parameters",
-       y = "Accuracy-item difficulty correlation",
+       y = "Accuracy-item easiness correlation",
        col = "Model class")
+
+ggsave(here("figs", "item_cor.png"), p_corr,
+       width = 7, height = 4, units = "in")
+
+p_corr
 ```
 
 # Task difficulty
@@ -299,7 +405,7 @@ id_link <- list.files(here("data", "responses", "v1", "tasks"),
                              full.names = T) |> 
   map(\(f) {
     read_csv(f, show_col_types = F) |> 
-      select(task = task_id, user_id, run_id, site) |> 
+      select(task = task_id, user_id, run_id, age, site) |> 
       distinct()
   }) |> 
   list_rbind()
@@ -336,8 +442,11 @@ full_item_params <- list.files(here("data", "responses", "v1", "irt_models"),
          item_uid = str_replace(item_uid, "_word_", "__"),
          item_uid = ifelse(task_id == "mrot", str_remove(item_uid, "-.*"), item_uid),
          item_uid = ifelse(task_id == "tom", str_remove(item_uid, "story[0-9]_"), item_uid),
-         item_uid = ifelse(task_id == "tom", str_replace(item_uid, "-2", "_"), item_uid)) |> 
-  distinct()
+         item_uid = ifelse(task_id == "tom", str_replace(item_uid, "-2", "_"), item_uid),
+         #task = str_replace(task, "downex", "egma")
+         ) |> 
+  distinct() |> 
+  filter(!str_detect(task, "downex"))
 ```
 
 ```{r}
@@ -442,16 +551,24 @@ human_splithalf <- tibble(run = 1:1000) |>
   })) |> 
   unnest(corr)
 
-mh_cors <- all_results_summary |> 
+all_summary <- all_results_join |> 
+  filter(item_uid %in% (all_results_difficulty |> filter(!is.na(difficulty)) |> pull(item_uid))) |> 
+  group_by(task, model_class, model_name, n_params_num, run_id) |> 
+  summarise(accuracy = mean(is_correct),
+            chance = mean(chance_level, na.rm = T),
+            .groups = "drop")
+
+mh_cors <- all_summary |> 
   left_join(human_est |> rename(human_accuracy = accuracy), by = join_by(task)) |> 
-  group_by(model_name) |> 
+  group_by(model_class, model_name, n_params_num, run_id) |> 
   summarise(model_human_r = cor(accuracy, human_accuracy, use = "pairwise.complete.obs"),
             model_human_rho = cor(accuracy, human_accuracy, 
-                                  use = "pairwise.complete.obs", method = "spearman")) |> 
-  bind_rows(human_splithalf |> 
-              summarise(model_human_r = mean(human_sh_r),
-                        model_human_rho = mean(human_sh_rho)) |> 
-              mutate(model_name = "Human"))
+                                  use = "pairwise.complete.obs", method = "spearman"),
+            .groups = "drop") # |> 
+  # bind_rows(human_splithalf |> 
+  #             summarise(model_human_r = mean(human_sh_r),
+  #                       model_human_rho = mean(human_sh_rho)) |> 
+  #             mutate(model_class = "Human", model_name = "Human"))
 ```
 
 
@@ -484,7 +601,7 @@ p_task_rank <- df_task_rank |>
 
 p_cors <- mh_cors |> 
   mutate(model_name = factor(model_name, levels = levels(df_task_rank$model_name))) |> 
-  pivot_longer(cols = -model_name,
+  pivot_longer(cols = c(model_human_r, model_human_rho),
                names_to = "corr_type",
                values_to = "corr") |> 
   mutate(corr_type = recode_values(corr_type,
@@ -505,6 +622,187 @@ p_cors <- mh_cors |>
   # plot_layout(widths = c(6,2))
 ```
 
+```{r}
+human_sh_ci <- mean_cl_boot(human_splithalf$human_sh_r)
+
+# mod_task_param <- nls(model_human_r ~ SSlogis(log10(n_params_num), Asym, xmid, scal),
+#                       data = mh_cors)
+# pred_task_param <- tibble(
+#   log_n_params_num = seq(log10(min(mh_cors$n_params_num)),
+#                          log10(max(mh_cors$n_params_num)),
+#                          0.1)
+# ) |> mutate(n_params_num = 10^(log_n_params_num))
+# pred_task_param <- pred_task_param |> 
+#   mutate(model_human_r = predict(fit, newdata = tibble(x = pred_task_param$log_n_params_num)))
+# 
+# x <- pred_task_param$log_n_params_num
+# y <- pred_task_param$model_human_r
+# 
+# # crude but stable starts from data
+# U0  <- quantile(y, 0.95, na.rm=TRUE)   # ~ top plateau
+# L0  <- quantile(y, 0.05, na.rm=TRUE)   # ~ bottom plateau
+# x00 <- x[which.min(abs(y - (L0 + (U0-L0)/2)))]  # x near half-height
+# s0  <- 0.3  # adjust if needed (bigger = less steep)
+# 
+# log4 <- function(x, L, U, x0, s) L + (U - L) / (1 + exp((x - x0)/s))
+# 
+# fit <- nls(y ~ log4(x, L, U, x0, s),
+#            start = list(L=-0.5, U=1, x0=x00, s=1),
+#            algorithm = "port",
+#            lower = c(L=-1.5, U= 1, x0=min(x), s=1e-6),
+#            upper = c(L= 0.5, U= 1.5, x0=max(x), s=100))
+# 
+# coef(fit)
+```
+
+
+```{r}
+mh_cors_summary <- mh_cors |> 
+  group_by(model_class, model_name, n_params_num) |> 
+  summarise(model_human_r = mean(model_human_r, na.rm = T),
+            model_human_rho = mean(model_human_rho, na.rm = T),
+            .groups = "drop") |> 
+  left_join(all_summary |> 
+              group_by(model_name, run_id) |> 
+              summarise(accuracy = mean(accuracy), .groups = "drop_last") |> 
+              summarise(accuracy = mean(accuracy)),
+            by = join_by(model_name))
+
+p_tasks <- mh_cors |> 
+  ggplot(aes(x = log10(n_params_num))) +
+  geom_hline(yintercept = 0, lty = "dotted", col = "grey54") +
+  annotate(geom = "rect",
+           ymin = human_sh_ci$ymin, ymax = human_sh_ci$ymax, 
+           xmin = 7, xmax = 13, col = "#f5b3b3") +
+  geom_hline(yintercept = mean(human_splithalf$human_sh_r), lty = "dashed", col = "#fa2828") +
+  annotate(geom = "text",
+           x = 12.2, y = 0.9, label = "Human split-half", hjust = 1,
+           col = "#fa2828") +
+  # geom_dotplot(col = "white", binwidth = .05, method = "histodot",
+  #              stackgroups = T)
+  # geom_line(aes(y = model_human_r), data = pred_task_param,
+  #           lty = "dashed") +
+  stat_summary(aes(y = model_human_r, col = model_class, group = model_name),
+               fun.data = mean_cl_boot, size = 0.2) +
+  # geom_point(aes(y = model_human_r, col = model_class)) +
+  geom_line(aes(y = model_human_r, col = model_class),
+            data = mh_cors_summary) +
+  coord_cartesian(xlim = c(8.2, 12.4)) +
+  scale_colour_manual(values = MOD_CLS_SCALE,
+                      limits = setdiff(names(MOD_CLS_SCALE), "Human")) +
+  labs(x = "Log parameters", y = "Model-human\ntask accuracy correlation", col = "Model class") +
+  theme(legend.position = "none")
+
+mh_acc <- mh_cors |> 
+  left_join(all_summary |> 
+              group_by(model_name, run_id) |> 
+              summarise(accuracy = mean(accuracy), .groups = "drop"),
+            by = join_by(model_name, run_id))
+
+p_task_acc <- mh_acc |> 
+  ggplot(aes(x = accuracy)) +
+  geom_hline(yintercept = 0, lty = "dotted", col = "grey54") +
+  annotate(geom = "rect",
+           ymin = human_sh_ci$ymin, ymax = human_sh_ci$ymax, 
+           xmin = -0.8, xmax = 1.2, col = "#f5b3b3") +
+  geom_hline(yintercept = mean(human_splithalf$human_sh_r), lty = "dashed", col = "#fa2828") +
+  annotate(geom = "text",
+           x = 0.86, y = 0.9, label = "Human split-half", hjust = 1,
+           col = "#fa2828") +
+  # geom_dotplot(col = "white", binwidth = .05, method = "histodot",
+  #              stackgroups = T)
+  stat_summary(aes(y = model_human_r, col = model_class, group = model_name),
+               geom = "errorbar", orientation = "x",
+               fun.data = mean_cl_boot,
+               data = mh_acc |> 
+                 group_by(model_class, model_name) |> 
+                 mutate(accuracy = mean(accuracy))) +
+  stat_summary(aes(y = model_human_r, col = model_class, group = model_name),
+               geom = "errorbar", orientation = "y",
+               fun.data = mean_cl_boot,
+               data = mh_acc |> 
+                 group_by(model_class, model_name) |> 
+                 mutate(model_human_r = mean(model_human_r))) +
+  geom_point(aes(y = model_human_r, col = model_class),
+             data = mh_cors_summary) +
+  # geom_point(aes(y = model_human_r, col = model_class)) +
+  geom_line(aes(y = model_human_r, col = model_class),
+            data = mh_cors_summary) +
+  coord_cartesian(xlim = c(0.24, 0.89)) +
+  scale_colour_manual(values = MOD_CLS_SCALE,
+                      limits = setdiff(names(MOD_CLS_SCALE), "Human")) +
+  labs(x = "Accuracy", y = "Model-human\ntask accuracy correlation", col = "Model class")
+
+p_task_out <- (p_tasks | p_task_acc) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A")
+
+ggsave(here("figs", "task_cor.png"), p_task_out,
+       width = 7, height = 2.8, units = "in")
+
+p_task_out
+```
+
+
+# Leaderboard
+```{r}
+grand_summary <- est_sumscores |> 
+  mutate(age_bin = floor(age)) |> 
+  group_by(age_bin, task) |> 
+  summarise(accuracy = mean(accuracy, na.rm = T),
+            .groups = "drop_last") |> 
+  summarise(accuracy = mean(accuracy, na.rm = T),
+            .groups = "drop") |> 
+  filter(!is.na(age_bin),
+         age_bin <= 12)
+```
+
+```{r}
+all_accuracy <- bind_rows(
+  all_results_total,
+  grand_summary |> 
+    mutate(model_class = "Human",
+           model_name = str_c(age_bin, "-year-olds")) |> 
+    select(-age_bin)
+) |> 
+  arrange(desc(accuracy)) |> 
+  mutate(model_name = fct_reorder(model_name, accuracy),
+         model_class = fct_relevel(model_class, "Human"))
+```
+
+```{r}
+all_accuracy |> 
+  ggplot(aes(x = accuracy, y = model_name, fill = model_class)) +
+  geom_col() +
+  labs(x = "Accuracy", y = "", fill = "")
+```
+
+```{r}
+p_leader <- all_accuracy |> 
+  ggplot(aes(x = 1, y = accuracy, col = model_class)) +
+  geom_point() +
+  geom_text_repel(aes(label = model_name), 
+                  size = 2.5,
+                  xlim = c(1.01, NA),
+                  hjust = 0,
+                  force = 2,
+                  direction = "y",
+                  min.segment.length = 0) +
+  coord_cartesian(xlim = c(0.999, 1.021)) +
+  labs(x = "", y = "Accuracy") +
+  scale_colour_manual(values = MOD_CLS_SCALE,
+                      limits = names(MOD_CLS_SCALE)) +
+  theme(legend.position = "none",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+ggsave(here("figs", "leaderboard.png"), p_leader,
+       width = 2.5, height = 5, units = "in")
+
+p_leader
+```
+
+
 # Response distributions
 ```{r}
 option_keys <- list.files(here("data", "responses", "v1", "responses_by_ability"), 
@@ -515,7 +813,7 @@ option_keys <- list.files(here("data", "responses", "v1", "responses_by_ability"
       mutate(task_id = f |> str_remove("_.*"))
     }) |> 
   list_rbind() |> 
-  mutate(item_uid = clean_uid(item_uid, task_id)) |> 
+  mutate(item_uid = map2_chr(item_uid, task_id, clean_uid)) |> 
   pivot_longer(cols = starts_with("image"),
                names_to = "image",
                values_to = "chosen_option") |> 
@@ -600,20 +898,30 @@ kl_summary <- model_human_kl |>
 ```
 
 ```{r}
-kl_summary |> 
+p_distrib <- kl_summary |> 
   filter(min_runs >= 10) |> 
-  mutate(ability_bin = ability_bin |> str_replace("_", ", "),
+  mutate(task = fct_relevel(task, gpt_results$task),
+         ability_bin = ability_bin |> str_replace("_", ", "),
          ability_bin = glue("[{ability_bin}]") |> 
            factor(levels = c("[-5, -4]", "[-4, -3]", "[-3, -2]",
                              "[-2, -1]", "[-1, 0]", "[0, 1]",
-                             "[1, 2]", "[2, 3]", "[3, 4]"))) |> 
+                             "[1, 2]", "[2, 3]", "[3, 4]", "[4, 5]"))) |> 
   ggplot(aes(x = ability_bin, y = d_kl, col = model_name)) +
-  geom_point() +
   geom_line(aes(group = model_name)) +
+  geom_point() +
   facet_wrap(~ task,
              labeller = as_labeller(task_relabel)) +
+  scale_colour_manual(values = MOD_NAM_SCALE,
+                      limits = intersect(names(MOD_NAM_SCALE), 
+                                         unique(kl_summary |> 
+                                                  filter(min_runs >= 10) |> 
+                                                  pull(model_name)))) +
+  labs(x = "Ability bin", y = "KL divergence", col = "Model") +
   theme(axis.text.x = element_text(hjust = 1, angle = 45)) +
-  labs(x = "Ability bin", y = "KL divergence", col = "Model")
+  guides(colour = guide_legend(ncol = 2))
+
+ggsave(here("figs", "distrib.png"), p_distrib,
+       width = 8, height = 4, units = "in")
+
+p_distrib
 ```
-
-

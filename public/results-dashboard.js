@@ -1224,7 +1224,8 @@
     const ageEqMeta = ageEqFeatureEnabled
       ? `AgeEq source: ${metaBase.ageEqSource} | AgeEq rows: ${metaBase.ageEqRows} | AgeEqAcc source: ${metaBase.ageEqAccSource} | AgeEqAcc rows: ${metaBase.ageEqAccRows}`
       : "AgeEq metrics: disabled (enable with ?enable_age_eq=1)";
-    metaEl.textContent = `Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | KL source: ${metaBase.klSource} | KL rows: ${metaBase.klRows} | ${ageEqMeta} | Note: Age Eq is task-specific and approximate.`;
+    const summariesMeta = metaBase.resultsRoot ? `Summaries: ${metaBase.resultsRoot} | ` : "";
+    metaEl.textContent = `${summariesMeta}Model source: ${metaBase.modelSource} | Models generated: ${metaBase.modelsGenerated} | KL source: ${metaBase.klSource} | KL rows: ${metaBase.klRows} | ${ageEqMeta} | Note: Age Eq is task-specific and approximate.`;
   }
 
   async function loadReportData({ preserveSelection = false } = {}) {
@@ -1291,6 +1292,7 @@
       ageEqModelRecords = filterToAllowedModels(ageEqModelRecords);
       ageEqAccModelRecords = filterToAllowedModels(ageEqAccModelRecords);
       metaBase = {
+        resultsRoot: (payload.report && payload.report.results_root) || null,
         modelSource: payload.source || "unknown",
         modelsGenerated: (payload.report && payload.report.generated_at) || "n/a",
         klSource: klPayload.source || "unknown",

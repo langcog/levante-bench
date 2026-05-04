@@ -53,7 +53,7 @@ function parseCsv(csvText) {
 }
 
 async function readBucketCsv(bucketName, bucketPrefix, objectName) {
-  const cleanPrefix = String(bucketPrefix || "results/comparison").replace(/^\/+|\/+$/g, "");
+  const cleanPrefix = String(bucketPrefix || "").replace(/^\/+|\/+$/g, "");
   const objectPath = cleanPrefix ? `${cleanPrefix}/${objectName}` : objectName;
   const url = `https://storage.googleapis.com/${bucketName}/${objectPath}?t=${Date.now()}`;
   const response = await fetch(url, {
@@ -76,9 +76,11 @@ module.exports = async function handler(_req, res) {
   res.setHeader("Cache-Control", "no-store");
 
   const sourceMode = process.env.MODEL_AGE_EQ_ACC_SOURCE_MODE || "bucket";
-  // Pin this endpoint to the canonical production artifact location.
-  const bucketName = "levante-bench";
-  const bucketPrefix = "results/comparison";
+  const bucketName = process.env.RESULTS_BUCKET_NAME || "levante-bench";
+  const bucketPrefix =
+    process.env.MODEL_AGE_EQ_ACC_BUCKET_PREFIX ||
+    process.env.MODEL_AGE_EQ_BUCKET_PREFIX ||
+    "results/comparison";
   const bucketObjectName = "model_age_equivalency_accuracy.csv";
   const localCsvPath =
     process.env.MODEL_AGE_EQ_ACC_LOCAL_CSV ||

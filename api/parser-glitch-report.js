@@ -2,7 +2,7 @@ const fs = require("fs/promises");
 const path = require("path");
 
 async function readBucketMarkdown(bucketName, bucketPrefix) {
-  const cleanPrefix = String(bucketPrefix || "results").replace(/^\/+|\/+$/g, "");
+  const cleanPrefix = String(bucketPrefix || "").replace(/^\/+|\/+$/g, "");
   const objectPath = cleanPrefix ? `${cleanPrefix}/parser-glitch-report.md` : "parser-glitch-report.md";
   const url = `https://storage.googleapis.com/${bucketName}/${objectPath}`;
   const response = await fetch(url, {
@@ -25,7 +25,7 @@ module.exports = async function handler(_req, res) {
 
   const sourceMode = process.env.PARSER_GLITCH_REPORT_SOURCE || "bucket";
   const bucketName = process.env.RESULTS_BUCKET_NAME || "levante-bench";
-  const bucketPrefix = process.env.RESULTS_BUCKET_PREFIX || "results";
+  const bucketPrefix = process.env.PARSER_GLITCH_BUCKET_PREFIX || "results";
 
   try {
     let markdown = null;

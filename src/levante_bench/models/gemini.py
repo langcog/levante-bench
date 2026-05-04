@@ -4,6 +4,7 @@ import base64
 import mimetypes
 import os
 import re
+import time
 from pathlib import Path
 
 import requests
@@ -17,6 +18,7 @@ class GeminiProModel(VLMModel):
     """Gemini Pro via Google Generative Language REST API."""
 
     API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+    RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
     def __init__(
         self,
@@ -71,13 +73,28 @@ class GeminiProModel(VLMModel):
         retry_reasons: list[str] = []
         self.last_generation_metadata = {}
         for attempt in range(self.retry_attempts):
-            response = requests.post(
-                url,
-                params={"key": self.api_key},
-                json=payload,
-                timeout=self.timeout_s,
-            )
+            try:
+                response = requests.post(
+                    url,
+                    params={"key": self.api_key},
+                    json=payload,
+                    timeout=self.timeout_s,
+                )
+            except requests.RequestException as exc:
+                if attempt < self.retry_attempts - 1:
+                    retry_reasons.append("REQUEST_EXCEPTION")
+                    time.sleep(min(2 ** attempt, 20))
+                    continue
+                raise RuntimeError(f"Gemini request error: {exc}") from exc
+
             if response.status_code != 200:
+                if (
+                    response.status_code in self.RETRYABLE_STATUS_CODES
+                    and attempt < self.retry_attempts - 1
+                ):
+                    retry_reasons.append(f"HTTP_{response.status_code}")
+                    time.sleep(min(2 ** attempt, 20))
+                    continue
                 raise RuntimeError(
                     f"Gemini API error {response.status_code}: {response.text[:500]}"
                 )

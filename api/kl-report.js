@@ -208,7 +208,8 @@ async function readBucketText(url) {
 
 async function readBucketRecords(bucketName, prefix) {
   const cleanPrefix = String(prefix || "").replace(/^\/+|\/+$/g, "");
-  const objects = await listBucketObjects(bucketName, cleanPrefix);
+  const listingPrefix = cleanPrefix ? `${cleanPrefix}/` : "";
+  const objects = await listBucketObjects(bucketName, listingPrefix);
   const csvObjects = objects.filter((obj) => obj.name.endsWith("_d_kl.csv"));
   const records = [];
   for (const obj of csvObjects) {

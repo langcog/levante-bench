@@ -131,8 +131,14 @@ run_label: ""             # optional parent folder override; runs stay 0001, 000
   1. live bucket aggregation (`RESULTS_SOURCE_MODE=bucket_compute`, default),
   2. remote prebuilt JSON (`RESULTS_SOURCE_MODE=remote` + `RESULTS_REPORT_URL`), or
   3. local JSON fallback (`RESULTS_SOURCE_MODE=local`).
-- API endpoint `/api/human-age-accuracy` serves aggregated child accuracy lines from
-  `results/human-accuracy-by-age-lines.csv` (bucket or local mode).
+- For production, point **`RESULTS_BUCKET_PREFIX`** at the tree that holds model **`summary.csv`** files (typically **`results/v1`**). The dashboard footer shows **`Summaries: gs://…`** from the computed report.
+- Other endpoints use **separate** prefixes so they are not tied to `RESULTS_BUCKET_PREFIX`:
+  - **`/api/kl-report`** — `KL_REPORT_BUCKET_PREFIX` (default **`results/comparison`**, `*_d_kl.csv`),
+  - **`/api/model-age-equivalency`** — `MODEL_AGE_EQ_BUCKET_PREFIX`,
+  - **`/api/model-age-equivalency-accuracy`** — `MODEL_AGE_EQ_ACC_BUCKET_PREFIX` or `MODEL_AGE_EQ_BUCKET_PREFIX`,
+  - **`/api/human-age-accuracy`** — `HUMAN_AGE_BUCKET_PREFIX` (default **`results`**),
+  - **`/api/parser-glitch-report`** — `PARSER_GLITCH_BUCKET_PREFIX` (default **`results`**).
+- See **`.env.example`** for the full set of variables.
 - The dashboard supports model-vs-children comparison with:
   - tabbed series selection (`Models` / `Children`),
   - shared task and language filters across both tabs,

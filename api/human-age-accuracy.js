@@ -41,7 +41,7 @@ function parseCsv(csvText) {
 }
 
 async function readBucketCsv(bucketName, bucketPrefix, objectName) {
-  const cleanPrefix = String(bucketPrefix || "results").replace(/^\/+|\/+$/g, "");
+  const cleanPrefix = String(bucketPrefix || "").replace(/^\/+|\/+$/g, "");
   const objectPath = cleanPrefix ? `${cleanPrefix}/${objectName}` : objectName;
   const url = `https://storage.googleapis.com/${bucketName}/${objectPath}`;
   const response = await fetch(url, {
@@ -64,7 +64,7 @@ module.exports = async function handler(_req, res) {
 
   const sourceMode = process.env.HUMAN_AGE_SOURCE_MODE || "bucket";
   const bucketName = process.env.RESULTS_BUCKET_NAME || "levante-bench";
-  const bucketPrefix = process.env.RESULTS_BUCKET_PREFIX || "results";
+  const bucketPrefix = process.env.HUMAN_AGE_BUCKET_PREFIX || "results";
   const bucketObjectName = process.env.HUMAN_AGE_BUCKET_OBJECT || "human-accuracy-by-age-lines.csv";
   const localCsvPath = process.env.HUMAN_AGE_LOCAL_CSV || "results/human-accuracy-by-age-lines.csv";
 

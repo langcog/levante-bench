@@ -19,6 +19,7 @@ from levante_bench.models import molmo2  # noqa: F401
 from levante_bench.models import hf_hosted  # noqa: F401
 from levante_bench.models import gemini  # noqa: F401
 from levante_bench.models import gpt  # noqa: F401
+from levante_bench.models import clip  # noqa: F401
 
 __all__ = [
     "VLMModel",

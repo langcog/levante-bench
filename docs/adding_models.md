@@ -2,15 +2,15 @@
 
 To add a new vision–language model to the benchmark:
 
-1. **Model adapter:** Create a new module under `src/levante_bench/models/` that implements the same interface as the base classes in `models/base.py`:
-   - For **similarity models** (CLIP-style): subclass `EvalModel` and provide the model and processor; the base class exposes `get_all_image_feats`, `get_all_text_feats`, `get_all_sim_scores`.
-   - For **generative models** (LLaVA-style): subclass `GenEvalModel` and implement `get_ntp_logits` (and optionally `get_ll_logits`) and ensure `get_all_sim_scores` returns scores compatible with the R comparison scripts (e.g. per-option logits or probabilities).
+1. **Model adapter:** Create a new module under `src/levante_bench/models/` that subclasses `VLMModel` from `models/base.py`. Most adapters implement `load()` plus `generate(prompt_text, image_paths, max_new_tokens) -> str`; the base class then handles answer parsing via `evaluate_trial()` / `parse_answer_result()`.
+   - For **similarity models** (CLIP-style) that have no text decoder, override `evaluate_trial(trial)` directly and return the canonical result dict (`predicted_label`, `is_correct`, etc.). See `models/clip.py` for the reference pattern: image-image scoring when the trial has a context image, text-image scoring otherwise, and skipped results for numeric / slider tasks.
+   - For **generative models** (LLaVA-style), implementing `generate()` is sufficient; optionally override `score_choices()` for logit-forced two-alternative scoring.
 
-2. **Registration:** Register the model in the package’s model registry (e.g. in `models/__init__.py`) so the runner and CLI can select it by name (e.g. `--model clip_base`). No change to the evaluation runner beyond the registry.
+2. **Registration:** Add `@register("<model_id>")` in your adapter and import the module in `src/levante_bench/models/__init__.py` so the decorator runs at package import time. The runner and CLI then accept `--model <model_id>`.
 
-3. **R comparison:** No change to R comparison scripts is required; they read model outputs (e.g. .npy per task/model) and expect a consistent shape. Ensure your adapter writes outputs in the same format (e.g. trial × options) as existing models.
+3. **Outputs:** No changes needed to `evaluation/runner.py` or the CSV/NPY writers; they read the canonical result fields populated by `evaluate_trial()`.
 
-4. **Dependencies:** Add any new Python dependencies (e.g. `transformers`, model-specific packages) to `pyproject.toml` or `requirements.txt` and document in the README.
+4. **Dependencies:** Add any new Python dependencies (e.g. `transformers`, model-specific packages) to `pyproject.toml`, `requirements.txt`, or `requirements-transformers.txt` and document in the README.
 
 ## Hosted API-backed models
 

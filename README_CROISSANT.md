@@ -16,7 +16,18 @@ This repository now includes a validated Croissant metadata scaffold for LEVANTE
   - `responses_by_ability` (optional aggregate-style RecordSet)
 - Distribution entries with `contentUrl`, `encodingFormat`, and `sha256`.
 - RAI/provenance-style metadata fields for collection context and limitations.
+- NeurIPS-targeted RAI fields included in JSON-LD: `rai:dataBiases`,
+  `rai:dataSocialImpact`, and `rai:hasSyntheticData`.
 - Validation workflow using `mlcroissant` (currently passes with 0 errors / 0 warnings).
+
+## Licensing split (code vs data)
+
+- Repository code/docs are licensed under MIT (see `LICENSE`).
+- LEVANTE benchmark assets/data referenced by Croissant are noncommercial-use
+  only unless a file-specific notice states otherwise.
+- `datasets/v1/levante_v1.croissant.json` sets dataset license to
+  `https://creativecommons.org/licenses/by-nc/4.0/` for the distributed data
+  artifacts.
 
 ## How to keep Croissant up to date
 

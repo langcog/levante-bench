@@ -1,0 +1,36 @@
+# CLIP image-text similarity model.
+#
+# Scores label-format multiple-choice trials whose options are images by
+# computing cosine similarity in CLIP's shared embedding space:
+#   * if the trial has a context/stem image (mental-rotation, TROG, theory-of-
+#     mind manifest), the context image is the query and option images are
+#     scored against it;
+#   * otherwise (vocab, synthetic-vocab, matrix-reasoning without stem) the
+#     trial's text prompt is the query.
+#
+# Numeric and slider-position tasks are reported as unscored (predicted_label
+# null) because CLIP has no text decoder.
+#
+# Note: stock OpenAI CLIP is English-only with a 77-token text limit. For
+# Spanish/German vocab runs swap `hf_name` to a multilingual checkpoint
+# (e.g. M-CLIP / SigLIP) once you confirm it's API-compatible.
+
+name: clip_base
+hf_name: openai/clip-vit-base-patch32
+
+# Use raw prompt strings; the JSON answer-format prefix is meaningless to CLIP.
+use_json_format: false
+
+# When a trial has a context/stem image, prefer image-image similarity over
+# text-image similarity. Set to false to always score against the text prompt.
+prefer_context_image: true
+
+# CLIP outputs cover only the image-options tasks; advertise capabilities
+# accordingly so the runner skips text-only or context-text-only tasks.
+capabilities:
+  - single_image
+  - multi_image
+
+# Float32 keeps numerics stable on CPU; switch to float16 / bfloat16 for GPU
+# runs if you want to halve memory.
+dtype: float32

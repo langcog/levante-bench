@@ -15,6 +15,8 @@ from levante_bench.models.registry import register
 @register("gpt52")
 @register("gpt53")
 @register("gpt55")
+@register("gpt4o")
+@register("gpt41")
 class GPT53Model(VLMModel):
     """GPT-5.3 via OpenAI Responses REST API."""
 

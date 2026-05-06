@@ -1,0 +1,6 @@
+name: gemini20_flash
+hf_name: gemini-2.0-flash
+use_json_format: true
+retry_attempts: 4
+max_output_tokens_cap: 2048
+thinking_budget: 128

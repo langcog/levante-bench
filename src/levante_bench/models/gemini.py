@@ -14,6 +14,9 @@ from levante_bench.models.registry import register
 
 
 @register("gemini_pro")
+@register("gemini20_flash")
+@register("gemini25_pro")
+@register("gemini3_flash")
 class GeminiProModel(VLMModel):
     """Gemini Pro via Google Generative Language REST API."""
 

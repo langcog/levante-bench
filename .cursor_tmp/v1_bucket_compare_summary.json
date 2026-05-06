@@ -1,0 +1,30 @@
+{
+  "local": "/home/david/levante/levante-bench/results/v1",
+  "remote": "gs://levante-bench/results/v1",
+  "results": {
+    "local_to_bucket": {
+      "exit_code": 0,
+      "copy_count": 0,
+      "delete_count": 0,
+      "zone_count": 0,
+      "sample_copy": [],
+      "sample_delete": []
+    },
+    "local_to_bucket_with_delete": {
+      "exit_code": 0,
+      "copy_count": 0,
+      "delete_count": 0,
+      "zone_count": 0,
+      "sample_copy": [],
+      "sample_delete": []
+    },
+    "bucket_to_local": {
+      "exit_code": 0,
+      "copy_count": 0,
+      "delete_count": 0,
+      "zone_count": 0,
+      "sample_copy": [],
+      "sample_delete": []
+    }
+  }
+}

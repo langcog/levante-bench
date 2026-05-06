@@ -1,0 +1,11 @@
+name: gpt55
+hf_name: gpt-5.5
+use_json_format: true
+api_key_env: OPENAI_API_KEY
+timeout_s: 120
+retry_attempts: 5
+retry_on_5xx: true
+max_output_tokens_min: 512
+max_output_tokens_cap: 8192
+reasoning_effort: low
+text_verbosity: low

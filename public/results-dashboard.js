@@ -60,17 +60,32 @@
     "vocab",
   ];
   const levantePalette = [
-    "#ff6f00",
-    "#00a0de",
-    "#ff9d2d",
-    "#00bafc",
-    "#f59e0b",
-    "#38bdf8",
-    "#fb923c",
-    "#22d3ee",
-    "#f97316",
-    "#0ea5e9",
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+    "#393b79",
+    "#637939",
+    "#8c6d31",
+    "#843c39",
+    "#7b4173",
+    "#3182bd",
+    "#e6550d",
+    "#31a354",
+    "#756bb1",
+    "#636363",
+    "#fdae6b",
+    "#9ecae1",
+    "#74c476",
+    "#bcbddc",
   ];
+  const excludedLanguages = new Set(["tl", "tlh", "klingon"]);
   const MODEL_SIZE_UNDERSCORE_RE = /^(?<model>[A-Za-z0-9.-]+)_(?<size>[0-9]+(?:\.[0-9]+)?[A-Za-z]+)$/;
   const MODEL_SIZE_DASH_RE =
     /^(?<model>[A-Za-z0-9._-]+)-(?<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$/;
@@ -341,9 +356,13 @@
       en: "English",
       de: "German",
       es: "Spanish",
-      tl: "Klingon",
     };
     return labels[normalized] || normalized.toUpperCase();
+  }
+
+  function isExcludedLanguage(language) {
+    const normalized = String(language || "").trim().toLowerCase();
+    return excludedLanguages.has(normalized);
   }
 
   function languageChartStyle(language) {
@@ -352,7 +371,6 @@
       en: { borderDash: [], pointStyle: "circle" },
       de: { borderDash: [7, 4], pointStyle: "rectRot" },
       es: { borderDash: [2, 4], pointStyle: "triangle" },
-      tl: { borderDash: [10, 3, 2, 3], pointStyle: "star" },
     };
     return styles[normalized] || { borderDash: [5, 3, 1, 3], pointStyle: "rect" };
   }
@@ -1253,9 +1271,7 @@
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
       }
-      if (!klResponse.ok) {
-        throw new Error(`KL report HTTP ${klResponse.status}`);
-      }
+      const klUnavailable = !klResponse.ok;
       if (ageEqFeatureEnabled && ageEqResponse && !ageEqResponse.ok) {
         throw new Error(`Age-equivalency report HTTP ${ageEqResponse.status}`);
       }
@@ -1263,24 +1279,35 @@
         throw new Error(`Age-equivalency-accuracy report HTTP ${ageEqAccResponse.status}`);
       }
       const payload = await modelResponse.json();
-      const klPayload = await klResponse.json();
+      const klPayload = klUnavailable ? { source: "unavailable", records: [] } : await klResponse.json();
       const ageEqPayload = ageEqFeatureEnabled && ageEqResponse ? await ageEqResponse.json() : null;
       const ageEqAccPayload =
         ageEqFeatureEnabled && ageEqAccResponse ? await ageEqAccResponse.json() : null;
-      accuracyModelRecords = parseModelRecords(payload.report || {});
-      accuracyRunRecords = parseRunRecords(payload.report || {});
+      accuracyModelRecords = parseModelRecords(payload.report || {}).filter(
+        (row) => !isExcludedLanguage(row.language),
+      );
+      accuracyRunRecords = parseRunRecords(payload.report || {}).filter(
+        (row) => !isExcludedLanguage(row.language),
+      );
       ageEquivalencyIndex = ageEqFeatureEnabled
         ? parseAgeEquivalencyIndex((ageEqPayload && ageEqPayload.records) || [])
         : new Map();
-      klModelRecords = attachAgeEquivalency(parseKlModelRecords(klPayload || {}), ageEquivalencyIndex);
+      klModelRecords = attachAgeEquivalency(
+        parseKlModelRecords(klPayload || {}),
+        ageEquivalencyIndex,
+      ).filter((row) => !isExcludedLanguage(row.language));
       ageEqModelRecords = ageEqFeatureEnabled
-        ? parseAgeEquivalencyModelRecords((ageEqPayload && ageEqPayload.records) || [])
+        ? parseAgeEquivalencyModelRecords((ageEqPayload && ageEqPayload.records) || []).filter(
+            (row) => !isExcludedLanguage(row.language),
+          )
         : [];
       ageEquivalencyAccuracyIndex = ageEqFeatureEnabled
         ? parseAgeEquivalencyAccuracyIndex((ageEqAccPayload && ageEqAccPayload.records) || [])
         : new Map();
       ageEqAccModelRecords = ageEqFeatureEnabled
-        ? parseAgeEquivalencyAccuracyModelRecords((ageEqAccPayload && ageEqAccPayload.records) || [])
+        ? parseAgeEquivalencyAccuracyModelRecords(
+            (ageEqAccPayload && ageEqAccPayload.records) || [],
+          ).filter((row) => !isExcludedLanguage(row.language))
         : [];
 
       // Keep all metric tabs aligned to the canonical v1 model set loaded from
@@ -1295,7 +1322,7 @@
         resultsRoot: (payload.report && payload.report.results_root) || null,
         modelSource: payload.source || "unknown",
         modelsGenerated: (payload.report && payload.report.generated_at) || "n/a",
-        klSource: klPayload.source || "unknown",
+        klSource: klUnavailable ? "unavailable" : klPayload.source || "unknown",
         klRows: Array.isArray(klPayload.records) ? klPayload.records.length : 0,
         ageEqSource: ageEqFeatureEnabled
           ? (ageEqPayload && ageEqPayload.source) || "unknown"
@@ -1317,6 +1344,9 @@
       updateMetaText();
       renderSelectors({ preserveSelection });
       rerender();
+      if (klUnavailable) {
+        statusEl.textContent = "KL data unavailable; showing model data only.";
+      }
     } catch (error) {
       const message = String(error && error.message ? error.message : error);
       if (message.includes("Children report HTTP")) {

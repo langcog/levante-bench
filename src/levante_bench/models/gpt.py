@@ -14,6 +14,7 @@ from levante_bench.models.registry import register
 
 @register("gpt52")
 @register("gpt53")
+@register("gpt55")
 class GPT53Model(VLMModel):
     """GPT-5.3 via OpenAI Responses REST API."""
 
@@ -92,6 +93,7 @@ class GPT53Model(VLMModel):
         # reasoning and no final text is emitted.
         initial_budget = int(payload["max_output_tokens"])
         retry_reasons: list[str] = []
+        adaptive_retry_used = False
         self.last_generation_metadata = {}
         for attempt in range(self.retry_attempts):
             response = requests.post(
@@ -122,6 +124,7 @@ class GPT53Model(VLMModel):
                     "api_final_max_output_tokens": int(payload["max_output_tokens"]),
                     "api_retried_with_larger_limit": int(payload["max_output_tokens"])
                     > initial_budget,
+                    "api_adaptive_retry_used": adaptive_retry_used,
                     "api_retry_reasons": ";".join(retry_reasons),
                     "api_finish_reason": str(
                         (data.get("incomplete_details") or {}).get("reason") or ""
@@ -137,6 +140,22 @@ class GPT53Model(VLMModel):
                 retry_reasons.append("max_output_tokens")
                 payload["max_output_tokens"] = min(
                     self.max_output_tokens_cap, int(payload["max_output_tokens"]) * 2
+                )
+                continue
+
+            # GPT-5.5 can spend the entire output budget on reasoning tokens and
+            # return no final text. Retry once with reduced reasoning effort and
+            # a larger budget to encourage answer emission.
+            if (
+                incomplete.get("reason") == "max_output_tokens"
+                and not adaptive_retry_used
+            ):
+                adaptive_retry_used = True
+                retry_reasons.append("max_output_tokens_adaptive")
+                payload["reasoning"] = {"effort": "low"}
+                payload["max_output_tokens"] = min(
+                    max(self.max_output_tokens_cap, int(payload["max_output_tokens"]) * 2),
+                    16384,
                 )
                 continue
 

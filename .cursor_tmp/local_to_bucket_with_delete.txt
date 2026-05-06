@@ -1,0 +1,825 @@
+
+At file:///home/david/levante/levante-bench/results/v1/**, worker process 410124 thread 139860682893120 listed 9726...
+At gs://levante-bench/results/v1/**, worker process 410124 thread 139860682893120 listed 9816...
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0002/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0002/cache/responses.json#1777909372903446
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0002/summary.csv to gs://levante-bench/results/v1/gemini_pro/0002/summary.csv#1777909363482166
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0002/trog.csv to gs://levante-bench/results/v1/gemini_pro/0002/trog.csv#1777909362858785
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0002/trog.npy to gs://levante-bench/results/v1/gemini_pro/0002/trog.npy#1777909363169867
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0002/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0002/vocab.csv#1777909362582039
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0002/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0002/vocab.npy#1777909363141029
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0003/cache/responses.json#1777909372409875
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0003/egma-math-by-type.csv#1777909362888686
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0003/egma-math.csv#1777909369631324
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0003/egma-math.npy#1777909371236125
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0003/matrix-reasoning.csv#1777909366901389
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0003/matrix-reasoning.npy#1777909370108279
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0003/mental-rotation.csv#1777909371088402
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0003/mental-rotation.npy#1777909370913084
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/metadata.json to gs://levante-bench/results/v1/gemini_pro/0003/metadata.json#1777909363388485
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/summary.csv to gs://levante-bench/results/v1/gemini_pro/0003/summary.csv#1777909370671225
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/synthetic-vocab.csv to gs://levante-bench/results/v1/gemini_pro/0003/synthetic-vocab.csv#1777909364059085
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/synthetic-vocab.npy to gs://levante-bench/results/v1/gemini_pro/0003/synthetic-vocab.npy#1777909369924806
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0003/theory-of-mind-by-type.csv#1777909362584873
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0003/theory-of-mind.csv#1777909362863638
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0003/theory-of-mind.npy#1777909370840910
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/trog.csv to gs://levante-bench/results/v1/gemini_pro/0003/trog.csv#1777909366371454
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/trog.npy to gs://levante-bench/results/v1/gemini_pro/0003/trog.npy#1777909370508985
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0003/vocab.csv#1777909363213441
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0003/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0003/vocab.npy#1777909366585543
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0005/cache/responses.json#1777909374756225
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0005/egma-math-by-type.csv#1777909363155180
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0005/egma-math.csv#1777909369517144
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0005/egma-math.npy#1777909372034942
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0005/matrix-reasoning.csv#1777909364282649
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0005/matrix-reasoning.npy#1777909369785177
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0005/mental-rotation.csv#1777909371712361
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0005/mental-rotation.npy#1777909370493963
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/metadata.json to gs://levante-bench/results/v1/gemini_pro/0005/metadata.json#1777909363493941
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/summary.csv to gs://levante-bench/results/v1/gemini_pro/0005/summary.csv#1777909370402461
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/synthetic-vocab.csv to gs://levante-bench/results/v1/gemini_pro/0005/synthetic-vocab.csv#1777909363741553
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/synthetic-vocab.npy to gs://levante-bench/results/v1/gemini_pro/0005/synthetic-vocab.npy#1777909369525644
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0005/theory-of-mind-by-type.csv#1777909362872790
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0005/theory-of-mind.csv#1777909363124019
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0005/theory-of-mind.npy#1777909371608055
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/trog.csv to gs://levante-bench/results/v1/gemini_pro/0005/trog.csv#1777909363754551
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/trog.npy to gs://levante-bench/results/v1/gemini_pro/0005/trog.npy#1777909370208613
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0005/vocab.csv#1777909363436183
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0005/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0005/vocab.npy#1777909364008656
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0006/cache/responses.json#1777909375098257
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0006/egma-math-by-type.csv#1777909363782350
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0006/egma-math.csv#1777909365021752
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0006/egma-math.npy#1777909365872934
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0006/matrix-reasoning.csv#1777909364891005
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0006/matrix-reasoning.npy#1777909365142233
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0006/mental-rotation.csv#1777909365654740
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0006/mental-rotation.npy#1777909365479184
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/metadata.json to gs://levante-bench/results/v1/gemini_pro/0006/metadata.json#1777909364367309
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/summary.csv to gs://levante-bench/results/v1/gemini_pro/0006/summary.csv#1777909365370139
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0006/theory-of-mind-by-type.csv#1777909363692696
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0006/theory-of-mind.csv#1777909363795092
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0006/theory-of-mind.npy#1777909365572879
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/trog.csv to gs://levante-bench/results/v1/gemini_pro/0006/trog.csv#1777909364408602
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/trog.npy to gs://levante-bench/results/v1/gemini_pro/0006/trog.npy#1777909365291090
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0006/vocab.csv#1777909364106759
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0006/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0006/vocab.npy#1777909364590723
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0007/cache/responses.json#1777909375151079
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0007/egma-math-by-type.csv#1777909364680571
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0007/egma-math.csv#1777909366198363
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0007/egma-math.npy#1777909367777533
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0007/matrix-reasoning.csv#1777909366030402
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0007/matrix-reasoning.npy#1777909366311702
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0007/mental-rotation.csv#1777909367520807
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0007/mental-rotation.npy#1777909367355415
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/metadata.json to gs://levante-bench/results/v1/gemini_pro/0007/metadata.json#1777909365090574
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/summary.csv to gs://levante-bench/results/v1/gemini_pro/0007/summary.csv#1777909367224492
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0007/theory-of-mind-by-type.csv#1777909363949068
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0007/theory-of-mind.csv#1777909364226933
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0007/theory-of-mind.npy#1777909367483412
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/trog.csv to gs://levante-bench/results/v1/gemini_pro/0007/trog.csv#1777909365749401
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/trog.npy to gs://levante-bench/results/v1/gemini_pro/0007/trog.npy#1777909366302235
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0007/vocab.csv#1777909364727545
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0007/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0007/vocab.npy#1777909366019056
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0008/cache/responses.json#1777909375248190
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0008/egma-math-by-type.csv#1777909364531096
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0008/egma-math.csv#1777909365444788
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0008/egma-math.npy#1777909366586700
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0008/matrix-reasoning.csv#1777909365303429
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0008/matrix-reasoning.npy#1777909365570422
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0008/mental-rotation.csv#1777909366477780
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0008/mental-rotation.npy#1777909366006015
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/metadata.json to gs://levante-bench/results/v1/gemini_pro/0008/metadata.json#1777909364864331
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/summary.csv to gs://levante-bench/results/v1/gemini_pro/0008/summary.csv#1777909365908550
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0008/theory-of-mind-by-type.csv#1777909364081434
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0008/theory-of-mind.csv#1777909364452003
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0008/theory-of-mind.npy#1777909366216283
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/trog.csv to gs://levante-bench/results/v1/gemini_pro/0008/trog.csv#1777909365009586
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/trog.npy to gs://levante-bench/results/v1/gemini_pro/0008/trog.npy#1777909365721698
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0008/vocab.csv#1777909364742504
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0008/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0008/vocab.npy#1777909365170849
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0009/cache/responses.json#1777909375238720
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0009/egma-math-by-type.csv#1777909366795098
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0009/egma-math.csv#1777909367626427
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0009/egma-math.npy#1777909368684975
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0009/matrix-reasoning.csv#1777909367473087
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0009/matrix-reasoning.npy#1777909367792793
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0009/mental-rotation.csv#1777909368509579
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0009/mental-rotation.npy#1777909368089365
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/metadata.json to gs://levante-bench/results/v1/gemini_pro/0009/metadata.json#1777909366927557
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/summary.csv to gs://levante-bench/results/v1/gemini_pro/0009/summary.csv#1777909368053027
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0009/theory-of-mind-by-type.csv#1777909366489845
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0009/theory-of-mind.csv#1777909366639097
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0009/theory-of-mind.npy#1777909368339982
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/trog.csv to gs://levante-bench/results/v1/gemini_pro/0009/trog.csv#1777909367072570
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/trog.npy to gs://levante-bench/results/v1/gemini_pro/0009/trog.npy#1777909367884164
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0009/vocab.csv#1777909366890882
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0009/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0009/vocab.npy#1777909367179684
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0010/cache/responses.json#1777909375475027
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0010/egma-math-by-type.csv#1777909367208693
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0010/egma-math.csv#1777909369206020
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0010/egma-math.npy#1777909370485445
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0010/matrix-reasoning.csv#1777909368969563
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0010/matrix-reasoning.npy#1777909369255436
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0010/mental-rotation.csv#1777909370371930
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0010/mental-rotation.npy#1777909369808678
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/metadata.json to gs://levante-bench/results/v1/gemini_pro/0010/metadata.json#1777909367769157
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/summary.csv to gs://levante-bench/results/v1/gemini_pro/0010/summary.csv#1777909369561544
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0010/theory-of-mind-by-type.csv#1777909366932968
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0010/theory-of-mind.csv#1777909367196980
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0010/theory-of-mind.npy#1777909370019886
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/trog.csv to gs://levante-bench/results/v1/gemini_pro/0010/trog.csv#1777909367806640
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/trog.npy to gs://levante-bench/results/v1/gemini_pro/0010/trog.npy#1777909369424868
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0010/vocab.csv#1777909367538471
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0010/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0010/vocab.npy#1777909368762092
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0011/cache/responses.json#1777909375819772
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0011/egma-math-by-type.csv#1777909368174382
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0011/egma-math.csv#1777909368863148
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0011/egma-math.npy#1777909371746427
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0011/matrix-reasoning.csv#1777909368646307
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0011/matrix-reasoning.npy#1777909368932651
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0011/mental-rotation.csv#1777909371523092
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0011/mental-rotation.npy#1777909369276156
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/metadata.json to gs://levante-bench/results/v1/gemini_pro/0011/metadata.json#1777909368389796
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/summary.csv to gs://levante-bench/results/v1/gemini_pro/0011/summary.csv#1777909369357240
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0011/theory-of-mind-by-type.csv#1777909368065871
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0011/theory-of-mind.csv#1777909368068838
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0011/theory-of-mind.npy#1777909371352667
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/trog.csv to gs://levante-bench/results/v1/gemini_pro/0011/trog.csv#1777909368473981
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/trog.npy to gs://levante-bench/results/v1/gemini_pro/0011/trog.npy#1777909368985442
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0011/vocab.csv#1777909368349796
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0011/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0011/vocab.npy#1777909368642504
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0012/cache/responses.json#1777909375805565
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0012/egma-math-by-type.csv#1777909370122147
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0012/egma-math.csv#1777909371129448
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0012/egma-math.npy#1777909371938233
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0012/matrix-reasoning.csv#1777909371050000
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0012/matrix-reasoning.npy#1777909371192738
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0012/mental-rotation.csv#1777909371813344
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0012/mental-rotation.npy#1777909371472384
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/metadata.json to gs://levante-bench/results/v1/gemini_pro/0012/metadata.json#1777909370698015
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/summary.csv to gs://levante-bench/results/v1/gemini_pro/0012/summary.csv#1777909371416746
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0012/theory-of-mind-by-type.csv#1777909369743424
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0012/theory-of-mind.csv#1777909369922707
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0012/theory-of-mind.npy#1777909371669546
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/trog.csv to gs://levante-bench/results/v1/gemini_pro/0012/trog.csv#1777909370807351
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/trog.npy to gs://levante-bench/results/v1/gemini_pro/0012/trog.npy#1777909371388855
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0012/vocab.csv#1777909370194777
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0012/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0012/vocab.npy#1777909370936065
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0013/cache/responses.json#1777909376128512
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0013/egma-math-by-type.csv#1777909372247972
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0013/egma-math.csv#1777909372807171
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0013/egma-math.npy#1777909373461837
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0013/matrix-reasoning.csv#1777909372796333
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0013/matrix-reasoning.npy#1777909372957492
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0013/mental-rotation.csv#1777909373337046
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0013/mental-rotation.npy#1777909373092995
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/metadata.json to gs://levante-bench/results/v1/gemini_pro/0013/metadata.json#1777909372361679
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/summary.csv to gs://levante-bench/results/v1/gemini_pro/0013/summary.csv#1777909373108874
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0013/theory-of-mind-by-type.csv#1777909371987415
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0013/theory-of-mind.csv#1777909372008417
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0013/theory-of-mind.npy#1777909373176692
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/trog.csv to gs://levante-bench/results/v1/gemini_pro/0013/trog.csv#1777909372663864
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/trog.npy to gs://levante-bench/results/v1/gemini_pro/0013/trog.npy#1777909372983417
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0013/vocab.csv#1777909372353010
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0013/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0013/vocab.npy#1777909372699615
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0014/cache/responses.json#1777909376077607
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0014/egma-math-by-type.csv#1777909373447820
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/0014/egma-math.csv#1777909373943981
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/0014/egma-math.npy#1777909374410598
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/0014/matrix-reasoning.csv#1777909373844446
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/0014/matrix-reasoning.npy#1777909373954292
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/0014/mental-rotation.csv#1777909374259354
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/0014/mental-rotation.npy#1777909374168468
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/metadata.json to gs://levante-bench/results/v1/gemini_pro/0014/metadata.json#1777909373629722
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/summary.csv to gs://levante-bench/results/v1/gemini_pro/0014/summary.csv#1777909374092450
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/0014/theory-of-mind-by-type.csv#1777909373266854
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/0014/theory-of-mind.csv#1777909373409865
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/0014/theory-of-mind.npy#1777909374236795
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/trog.csv to gs://levante-bench/results/v1/gemini_pro/0014/trog.csv#1777909373713065
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/trog.npy to gs://levante-bench/results/v1/gemini_pro/0014/trog.npy#1777909374012752
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/vocab.csv to gs://levante-bench/results/v1/gemini_pro/0014/vocab.csv#1777909373577662
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0014/vocab.npy to gs://levante-bench/results/v1/gemini_pro/0014/vocab.npy#1777909373790663
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0015/metadata.json to gs://levante-bench/results/v1/gemini_pro/0015/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0016/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/0016/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/0016/metadata.json to gs://levante-bench/results/v1/gemini_pro/0016/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0005/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0006/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0006/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0006/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0006/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0007/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0007/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0007/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0007/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0008/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0009/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0010/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0011/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0012/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0013/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0014/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/summary.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/trog.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/trog.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/vocab.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/vocab.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0015/vocab.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/cache/responses.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/cache/responses.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/egma-math-by-type.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/egma-math-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/egma-math.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/egma-math.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/egma-math.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/egma-math.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/metadata.json to gs://levante-bench/results/v1/gemini_pro/gemini-3-flash-preview-1x/0016/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/matrix-reasoning.csv to gs://levante-bench/results/v1/gemini_pro/matrix-reasoning.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/matrix-reasoning.npy to gs://levante-bench/results/v1/gemini_pro/matrix-reasoning.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/mental-rotation.csv to gs://levante-bench/results/v1/gemini_pro/mental-rotation.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/mental-rotation.npy to gs://levante-bench/results/v1/gemini_pro/mental-rotation.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/metadata.json to gs://levante-bench/results/v1/gemini_pro/metadata.json
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/summary.csv to gs://levante-bench/results/v1/gemini_pro/summary.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gemini_pro/theory-of-mind-by-type.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/theory-of-mind.csv to gs://levante-bench/results/v1/gemini_pro/theory-of-mind.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/theory-of-mind.npy to gs://levante-bench/results/v1/gemini_pro/theory-of-mind.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/trog.csv to gs://levante-bench/results/v1/gemini_pro/trog.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/trog.npy to gs://levante-bench/results/v1/gemini_pro/trog.npy
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/vocab.csv to gs://levante-bench/results/v1/gemini_pro/vocab.csv
+Would copy file:///home/david/levante/levante-bench/results/v1/gemini_pro/vocab.npy to gs://levante-bench/results/v1/gemini_pro/vocab.npy
+Would remove gs://levante-bench/results/v1/gemma4-31B/cache/responses.json#1777587463571909
+Would remove gs://levante-bench/results/v1/gemma4-31B/metadata.json#1777587458685658
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/cache/responses.json to gs://levante-bench/results/v1/gpt53/0001/cache/responses.json#1777876440773356
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0001/egma-math-by-type.csv#1777876437541888
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/egma-math.csv to gs://levante-bench/results/v1/gpt53/0001/egma-math.csv#1777876438242275
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/egma-math.npy to gs://levante-bench/results/v1/gpt53/0001/egma-math.npy#1777876439669385
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0001/matrix-reasoning.csv#1777876438168042
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0001/matrix-reasoning.npy#1777876438694826
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0001/mental-rotation.csv#1777876439524758
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0001/mental-rotation.npy#1777876439075605
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/metadata.json to gs://levante-bench/results/v1/gpt53/0001/metadata.json#1777876437534955
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/summary.csv to gs://levante-bench/results/v1/gpt53/0001/summary.csv#1777876438995995
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/synthetic-vocab.csv to gs://levante-bench/results/v1/gpt53/0001/synthetic-vocab.csv#1777876437786000
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/synthetic-vocab.npy to gs://levante-bench/results/v1/gpt53/0001/synthetic-vocab.npy#1777876438465797
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0001/theory-of-mind-by-type.csv#1777876437534855
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0001/theory-of-mind.csv#1777876437565025
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0001/theory-of-mind.npy#1777876439374626
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/trog.csv to gs://levante-bench/results/v1/gpt53/0001/trog.csv#1777876437874943
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/trog.npy to gs://levante-bench/results/v1/gpt53/0001/trog.npy#1777876438761274
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/vocab.csv to gs://levante-bench/results/v1/gpt53/0001/vocab.csv#1777876437626539
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0001/vocab.npy to gs://levante-bench/results/v1/gpt53/0001/vocab.npy#1777876438022775
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/cache/responses.json to gs://levante-bench/results/v1/gpt53/0002/cache/responses.json#1777876446335409
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0002/egma-math-by-type.csv#1777876437881008
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/egma-math.csv to gs://levante-bench/results/v1/gpt53/0002/egma-math.csv#1777876438813540
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/egma-math.npy to gs://levante-bench/results/v1/gpt53/0002/egma-math.npy#1777876440048941
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0002/matrix-reasoning.csv#1777876438746482
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0002/matrix-reasoning.npy#1777876439265747
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0002/mental-rotation.csv#1777876439981782
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0002/mental-rotation.npy#1777876439685012
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/metadata.json to gs://levante-bench/results/v1/gpt53/0002/metadata.json#1777876438193977
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/summary.csv to gs://levante-bench/results/v1/gpt53/0002/summary.csv#1777876439520364
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/synthetic-vocab.csv to gs://levante-bench/results/v1/gpt53/0002/synthetic-vocab.csv#1777876438298373
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/synthetic-vocab.npy to gs://levante-bench/results/v1/gpt53/0002/synthetic-vocab.npy#1777876439021934
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0002/theory-of-mind-by-type.csv#1777876437789544
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0002/theory-of-mind.csv#1777876437770797
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0002/theory-of-mind.npy#1777876439791103
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/trog.csv to gs://levante-bench/results/v1/gpt53/0002/trog.csv#1777876438452427
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/trog.npy to gs://levante-bench/results/v1/gpt53/0002/trog.npy#1777876439378338
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/vocab.csv to gs://levante-bench/results/v1/gpt53/0002/vocab.csv#1777876438176121
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0002/vocab.npy to gs://levante-bench/results/v1/gpt53/0002/vocab.npy#1777876438537438
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/cache/responses.json to gs://levante-bench/results/v1/gpt53/0003/cache/responses.json#1777876446766554
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0003/egma-math-by-type.csv#1777876440222004
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/egma-math.csv to gs://levante-bench/results/v1/gpt53/0003/egma-math.csv#1777876445030363
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/egma-math.npy to gs://levante-bench/results/v1/gpt53/0003/egma-math.npy#1777876445839613
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0003/matrix-reasoning.csv#1777876445052420
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0003/matrix-reasoning.npy#1777876445253639
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0003/mental-rotation.csv#1777876445850521
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0003/mental-rotation.npy#1777876445575769
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/metadata.json to gs://levante-bench/results/v1/gpt53/0003/metadata.json#1777876440315555
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/summary.csv to gs://levante-bench/results/v1/gpt53/0003/summary.csv#1777876445548468
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/synthetic-vocab.csv to gs://levante-bench/results/v1/gpt53/0003/synthetic-vocab.csv#1777876440608063
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/synthetic-vocab.npy to gs://levante-bench/results/v1/gpt53/0003/synthetic-vocab.npy#1777876445098571
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0003/theory-of-mind-by-type.csv#1777876439033949
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0003/theory-of-mind.csv#1777876439971175
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0003/theory-of-mind.npy#1777876445770172
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/trog.csv to gs://levante-bench/results/v1/gpt53/0003/trog.csv#1777876444741845
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/trog.npy to gs://levante-bench/results/v1/gpt53/0003/trog.npy#1777876445326816
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/vocab.csv to gs://levante-bench/results/v1/gpt53/0003/vocab.csv#1777876440372632
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0003/vocab.npy to gs://levante-bench/results/v1/gpt53/0003/vocab.npy#1777876444836908
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/cache/responses.json to gs://levante-bench/results/v1/gpt53/0004/cache/responses.json#1777876446607924
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0004/egma-math-by-type.csv#1777876442549902
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/egma-math.csv to gs://levante-bench/results/v1/gpt53/0004/egma-math.csv#1777876443792428
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/egma-math.npy to gs://levante-bench/results/v1/gpt53/0004/egma-math.npy#1777876444183743
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0004/matrix-reasoning.csv#1777876443711042
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0004/matrix-reasoning.npy#1777876443885050
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0004/mental-rotation.csv#1777876444154729
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0004/mental-rotation.npy#1777876444037447
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/metadata.json to gs://levante-bench/results/v1/gpt53/0004/metadata.json#1777876442955983
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/summary.csv to gs://levante-bench/results/v1/gpt53/0004/summary.csv#1777876443951645
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/synthetic-vocab.csv to gs://levante-bench/results/v1/gpt53/0004/synthetic-vocab.csv#1777876443047838
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/synthetic-vocab.npy to gs://levante-bench/results/v1/gpt53/0004/synthetic-vocab.npy#1777876443835283
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0004/theory-of-mind-by-type.csv#1777876438457408
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0004/theory-of-mind.csv#1777876438486443
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0004/theory-of-mind.npy#1777876444115773
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/trog.csv to gs://levante-bench/results/v1/gpt53/0004/trog.csv#1777876443222599
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/trog.npy to gs://levante-bench/results/v1/gpt53/0004/trog.npy#1777876443995171
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/vocab.csv to gs://levante-bench/results/v1/gpt53/0004/vocab.csv#1777876442845328
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0004/vocab.npy to gs://levante-bench/results/v1/gpt53/0004/vocab.npy#1777876443485144
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/cache/responses.json to gs://levante-bench/results/v1/gpt53/0005/cache/responses.json#1777876446427636
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0005/egma-math-by-type.csv#1777876439251795
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/egma-math.csv to gs://levante-bench/results/v1/gpt53/0005/egma-math.csv#1777876440746304
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/egma-math.npy to gs://levante-bench/results/v1/gpt53/0005/egma-math.npy#1777876441697283
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0005/matrix-reasoning.csv#1777876440242946
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0005/matrix-reasoning.npy#1777876440952777
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0005/mental-rotation.csv#1777876441560972
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0005/mental-rotation.npy#1777876441296378
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/metadata.json to gs://levante-bench/results/v1/gpt53/0005/metadata.json#1777876439692586
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/summary.csv to gs://levante-bench/results/v1/gpt53/0005/summary.csv#1777876441278435
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/synthetic-vocab.csv to gs://levante-bench/results/v1/gpt53/0005/synthetic-vocab.csv#1777876439754714
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/synthetic-vocab.npy to gs://levante-bench/results/v1/gpt53/0005/synthetic-vocab.npy#1777876440752998
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0005/theory-of-mind-by-type.csv#1777876438769644
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0005/theory-of-mind.csv#1777876438946830
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0005/theory-of-mind.npy#1777876441545378
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/trog.csv to gs://levante-bench/results/v1/gpt53/0005/trog.csv#1777876439954976
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/trog.npy to gs://levante-bench/results/v1/gpt53/0005/trog.npy#1777876441042907
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/vocab.csv to gs://levante-bench/results/v1/gpt53/0005/vocab.csv#1777876439371238
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0005/vocab.npy to gs://levante-bench/results/v1/gpt53/0005/vocab.npy#1777876440066499
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/cache/responses.json to gs://levante-bench/results/v1/gpt53/0006/cache/responses.json#1777876447021214
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0006/egma-math-by-type.csv#1777876440705079
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/egma-math.csv to gs://levante-bench/results/v1/gpt53/0006/egma-math.csv#1777876442624409
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/egma-math.npy to gs://levante-bench/results/v1/gpt53/0006/egma-math.npy#1777876443586617
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0006/matrix-reasoning.csv#1777876442393315
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0006/matrix-reasoning.npy#1777876443002571
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0006/mental-rotation.csv#1777876443496246
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0006/mental-rotation.npy#1777876443240997
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/metadata.json to gs://levante-bench/results/v1/gpt53/0006/metadata.json#1777876440983815
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/summary.csv to gs://levante-bench/results/v1/gpt53/0006/summary.csv#1777876443153387
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/synthetic-vocab.csv to gs://levante-bench/results/v1/gpt53/0006/synthetic-vocab.csv#1777876441267100
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/synthetic-vocab.npy to gs://levante-bench/results/v1/gpt53/0006/synthetic-vocab.npy#1777876442761151
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0006/theory-of-mind-by-type.csv#1777876440412695
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0006/theory-of-mind.csv#1777876440479703
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0006/theory-of-mind.npy#1777876443315224
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/trog.csv to gs://levante-bench/results/v1/gpt53/0006/trog.csv#1777876442314710
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/trog.npy to gs://levante-bench/results/v1/gpt53/0006/trog.npy#1777876443083113
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/vocab.csv to gs://levante-bench/results/v1/gpt53/0006/vocab.csv#1777876440896296
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0006/vocab.npy to gs://levante-bench/results/v1/gpt53/0006/vocab.npy#1777876442346039
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/cache/responses.json to gs://levante-bench/results/v1/gpt53/0008/cache/responses.json#1777876447097615
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0008/egma-math-by-type.csv#1777876441297050
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/egma-math.csv to gs://levante-bench/results/v1/gpt53/0008/egma-math.csv#1777876441849153
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/egma-math.npy to gs://levante-bench/results/v1/gpt53/0008/egma-math.npy#1777876442224094
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0008/matrix-reasoning.csv#1777876441817797
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0008/matrix-reasoning.npy#1777876441897905
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0008/mental-rotation.csv#1777876442164717
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0008/mental-rotation.npy#1777876442102312
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/metadata.json to gs://levante-bench/results/v1/gpt53/0008/metadata.json#1777876441528283
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/summary.csv to gs://levante-bench/results/v1/gpt53/0008/summary.csv#1777876442030053
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0008/theory-of-mind-by-type.csv#1777876441014588
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0008/theory-of-mind.csv#1777876441194357
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0008/theory-of-mind.npy#1777876442093490
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/trog.csv to gs://levante-bench/results/v1/gpt53/0008/trog.csv#1777876441631161
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/trog.npy to gs://levante-bench/results/v1/gpt53/0008/trog.npy#1777876441942194
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/vocab.csv to gs://levante-bench/results/v1/gpt53/0008/vocab.csv#1777876441445391
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0008/vocab.npy to gs://levante-bench/results/v1/gpt53/0008/vocab.npy#1777876441782474
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/cache/responses.json to gs://levante-bench/results/v1/gpt53/0009/cache/responses.json#1777876447246864
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0009/egma-math-by-type.csv#1777876442609092
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/egma-math.csv to gs://levante-bench/results/v1/gpt53/0009/egma-math.csv#1777876443617333
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/egma-math.npy to gs://levante-bench/results/v1/gpt53/0009/egma-math.npy#1777876444583331
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0009/matrix-reasoning.csv#1777876443434731
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0009/matrix-reasoning.npy#1777876443709361
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0009/mental-rotation.csv#1777876444441169
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0009/mental-rotation.npy#1777876444351992
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/metadata.json to gs://levante-bench/results/v1/gpt53/0009/metadata.json#1777876442780017
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/summary.csv to gs://levante-bench/results/v1/gpt53/0009/summary.csv#1777876444322695
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0009/theory-of-mind-by-type.csv#1777876442343418
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0009/theory-of-mind.csv#1777876442481235
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0009/theory-of-mind.npy#1777876444434689
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/trog.csv to gs://levante-bench/results/v1/gpt53/0009/trog.csv#1777876442888089
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/trog.npy to gs://levante-bench/results/v1/gpt53/0009/trog.npy#1777876444240245
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/vocab.csv to gs://levante-bench/results/v1/gpt53/0009/vocab.csv#1777876442740950
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0009/vocab.npy to gs://levante-bench/results/v1/gpt53/0009/vocab.npy#1777876443343732
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/cache/responses.json to gs://levante-bench/results/v1/gpt53/0010/cache/responses.json#1777876447285356
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/egma-math-by-type.csv to gs://levante-bench/results/v1/gpt53/0010/egma-math-by-type.csv#1777876444787143
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/egma-math.csv to gs://levante-bench/results/v1/gpt53/0010/egma-math.csv#1777876445303947
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/egma-math.npy to gs://levante-bench/results/v1/gpt53/0010/egma-math.npy#1777876446045045
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/matrix-reasoning.csv to gs://levante-bench/results/v1/gpt53/0010/matrix-reasoning.csv#1777876445275371
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/matrix-reasoning.npy to gs://levante-bench/results/v1/gpt53/0010/matrix-reasoning.npy#1777876445333653
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/mental-rotation.csv to gs://levante-bench/results/v1/gpt53/0010/mental-rotation.csv#1777876445847283
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/mental-rotation.npy to gs://levante-bench/results/v1/gpt53/0010/mental-rotation.npy#1777876445589433
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/metadata.json to gs://levante-bench/results/v1/gpt53/0010/metadata.json#1777876444826004
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/summary.csv to gs://levante-bench/results/v1/gpt53/0010/summary.csv#1777876445548558
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/theory-of-mind-by-type.csv to gs://levante-bench/results/v1/gpt53/0010/theory-of-mind-by-type.csv#1777876444497390
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/theory-of-mind.csv to gs://levante-bench/results/v1/gpt53/0010/theory-of-mind.csv#1777876444592484
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/theory-of-mind.npy to gs://levante-bench/results/v1/gpt53/0010/theory-of-mind.npy#1777876445779692
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/trog.csv to gs://levante-bench/results/v1/gpt53/0010/trog.csv#1777876445025407
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/trog.npy to gs://levante-bench/results/v1/gpt53/0010/trog.npy#1777876445531182
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/vocab.csv to gs://levante-bench/results/v1/gpt53/0010/vocab.csv#1777876444751911
+Would copy file:///home/david/levante/levante-bench/results/v1/gpt53/0010/vocab.npy to gs://levante-bench/results/v1/gpt53/0010/vocab.npy#1777876445081932
+Would remove gs://levante-bench/results/v1/internvl35-14B/egma-math-by-type.csv#1777835435836528
+Would remove gs://levante-bench/results/v1/internvl35-14B/egma-math.csv#1777835436001982
+Would remove gs://levante-bench/results/v1/internvl35-14B/egma-math.npy#1777835435840368
+Would remove gs://levante-bench/results/v1/internvl35-14B/matrix-reasoning.csv#1777835436243547
+Would remove gs://levante-bench/results/v1/internvl35-14B/matrix-reasoning.npy#1777835435883698
+Would remove gs://levante-bench/results/v1/internvl35-14B/mental-rotation.csv#1777835435913439
+Would remove gs://levante-bench/results/v1/internvl35-14B/mental-rotation.npy#1777835435913556
+Would remove gs://levante-bench/results/v1/internvl35-14B/metadata.json#1777835435885389
+Would remove gs://levante-bench/results/v1/internvl35-14B/summary.csv#1777835435878155
+Would remove gs://levante-bench/results/v1/internvl35-14B/theory-of-mind-by-type.csv#1777835435913468
+Would remove gs://levante-bench/results/v1/internvl35-14B/theory-of-mind.csv#1777835436039854
+Would remove gs://levante-bench/results/v1/internvl35-14B/theory-of-mind.npy#1777835435916342
+Would remove gs://levante-bench/results/v1/internvl35-14B/trog.csv#1777835437273762
+Would remove gs://levante-bench/results/v1/internvl35-14B/trog.npy#1777835435913505
+Would remove gs://levante-bench/results/v1/internvl35-14B/vocab.csv#1777835435930257
+Would remove gs://levante-bench/results/v1/internvl35-14B/vocab.npy#1777835435922257
+Would remove gs://levante-bench/results/v1/internvl35-2B/egma-math-by-type.csv#1777835438097096
+Would remove gs://levante-bench/results/v1/internvl35-2B/egma-math.csv#1777835440241835
+Would remove gs://levante-bench/results/v1/internvl35-2B/egma-math.npy#1777835438205787
+Would remove gs://levante-bench/results/v1/internvl35-2B/matrix-reasoning.csv#1777835438449782
+Would remove gs://levante-bench/results/v1/internvl35-2B/matrix-reasoning.npy#1777835438221763
+Would remove gs://levante-bench/results/v1/internvl35-2B/mental-rotation.csv#1777835438614706
+Would remove gs://levante-bench/results/v1/internvl35-2B/mental-rotation.npy#1777835438243108
+Would remove gs://levante-bench/results/v1/internvl35-2B/metadata.json#1777835438170347
+Would remove gs://levante-bench/results/v1/internvl35-2B/summary.csv#1777835438262198
+Would remove gs://levante-bench/results/v1/internvl35-2B/theory-of-mind-by-type.csv#1777835438192004
+Would remove gs://levante-bench/results/v1/internvl35-2B/theory-of-mind.csv#1777835438403021
+Would remove gs://levante-bench/results/v1/internvl35-2B/theory-of-mind.npy#1777835438182315
+Would remove gs://levante-bench/results/v1/internvl35-2B/trog.csv#1777835438318132
+Would remove gs://levante-bench/results/v1/internvl35-2B/trog.npy#1777835438192895
+Would remove gs://levante-bench/results/v1/internvl35-2B/vocab.csv#1777835438706640
+Would remove gs://levante-bench/results/v1/internvl35-2B/vocab.npy#1777835438243951
+Would remove gs://levante-bench/results/v1/qwen35-0.8B-es/rtx3090-2026-05-04-qwen35-0.8B-es-10x/0002/cache/responses.json#1777943172229341
+Would remove gs://levante-bench/results/v1/qwen35-0.8B-es/rtx3090-2026-05-04-qwen35-0.8B-es-10x/0002/egma-math-by-type.csv#1777943172067044
+Would remove gs://levante-bench/results/v1/qwen35-0.8B-es/rtx3090-2026-05-04-qwen35-0.8B-es-10x/0002/egma-math.csv#1777943172284870
+Would remove gs://levante-bench/results/v1/qwen35-0.8B-es/rtx3090-2026-05-04-qwen35-0.8B-es-10x/0002/egma-math.npy#1777943172016203
+Would remove gs://levante-bench/results/v1/qwen35-0.8B-es/rtx3090-2026-05-04-qwen35-0.8B-es-10x/0002/metadata.json#1777943171956346
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/egma-math-by-type.csv#1777835442528968
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/egma-math.csv#1777835443294092
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/egma-math.npy#1777835442557174
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/matrix-reasoning.csv#1777835443338257
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/matrix-reasoning.npy#1777835442557115
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/mental-rotation.csv#1777835443107533
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/mental-rotation.npy#1777835442712689
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/metadata.json#1777835442580342
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/summary.csv#1777835442680785
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/theory-of-mind-by-type.csv#1777835442771486
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/theory-of-mind.csv#1777835443158935
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/theory-of-mind.npy#1777835442689047
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/trog.csv#1777835443639212
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/trog.npy#1777835442690480
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/vocab.csv#1777835443069324
+Would remove gs://levante-bench/results/v1/qwen35-0.8B/vocab.npy#1777835442810437
+Would remove gs://levante-bench/results/v1/qwen35-2B/egma-math-by-type.csv#1777835444583385
+Would remove gs://levante-bench/results/v1/qwen35-2B/egma-math.csv#1777835445059921
+Would remove gs://levante-bench/results/v1/qwen35-2B/egma-math.npy#1777835445120999
+Would remove gs://levante-bench/results/v1/qwen35-2B/matrix-reasoning.csv#1777835444951946
+Would remove gs://levante-bench/results/v1/qwen35-2B/matrix-reasoning.npy#1777835444601230
+Would remove gs://levante-bench/results/v1/qwen35-2B/mental-rotation.csv#1777835444886032
+Would remove gs://levante-bench/results/v1/qwen35-2B/mental-rotation.npy#1777835444634711
+Would remove gs://levante-bench/results/v1/qwen35-2B/metadata.json#1777835444658144
+Would remove gs://levante-bench/results/v1/qwen35-2B/summary.csv#1777835444678413
+Would remove gs://levante-bench/results/v1/qwen35-2B/theory-of-mind-by-type.csv#1777835444671772
+Would remove gs://levante-bench/results/v1/qwen35-2B/theory-of-mind.csv#1777835444802284
+Would remove gs://levante-bench/results/v1/qwen35-2B/theory-of-mind.npy#1777835444669711
+Would remove gs://levante-bench/results/v1/qwen35-2B/trog.csv#1777835444837373
+Would remove gs://levante-bench/results/v1/qwen35-2B/trog.npy#1777835444683579
+Would remove gs://levante-bench/results/v1/qwen35-2B/vocab.csv#1777835445324773
+Would remove gs://levante-bench/results/v1/qwen35-2B/vocab.npy#1777835444723750
+Would remove gs://levante-bench/results/v1/qwen35-4B/append_resampling_manifest_0022_0069.csv#1777587452436680
+Would remove gs://levante-bench/results/v1/qwen35-4B/egma-math-by-type.csv#1777835503209878
+Would remove gs://levante-bench/results/v1/qwen35-4B/egma-math.csv#1777835508189674
+Would remove gs://levante-bench/results/v1/qwen35-4B/egma-math.npy#1777835503404022
+Would remove gs://levante-bench/results/v1/qwen35-4B/matrix-reasoning.csv#1777835511225592
+Would remove gs://levante-bench/results/v1/qwen35-4B/matrix-reasoning.npy#1777835503598395
+Would remove gs://levante-bench/results/v1/qwen35-4B/mental-rotation.csv#1777835511188251
+Would remove gs://levante-bench/results/v1/qwen35-4B/mental-rotation.npy#1777835503738744
+Would remove gs://levante-bench/results/v1/qwen35-4B/metadata.json#1777835503868403
+Would remove gs://levante-bench/results/v1/qwen35-4B/summary.csv#1777835504004226
+Would remove gs://levante-bench/results/v1/qwen35-4B/theory-of-mind-by-type.csv#1777835504158732
+Would remove gs://levante-bench/results/v1/qwen35-4B/theory-of-mind.csv#1777835505763869
+Would remove gs://levante-bench/results/v1/qwen35-4B/theory-of-mind.npy#1777835504345583
+Would remove gs://levante-bench/results/v1/qwen35-4B/trog.csv#1777835508210857
+Would remove gs://levante-bench/results/v1/qwen35-4B/trog.npy#1777835504809318
+Would remove gs://levante-bench/results/v1/qwen35-4B/vocab.csv#1777835507261591
+Would remove gs://levante-bench/results/v1/qwen35-4B/vocab.npy#1777835505128815
+Would remove gs://levante-bench/results/v1/qwen35-9B/egma-math-by-type.csv#1777835516680259
+Would remove gs://levante-bench/results/v1/qwen35-9B/egma-math.csv#1777835520882905
+Would remove gs://levante-bench/results/v1/qwen35-9B/egma-math.npy#1777835516843327
+Would remove gs://levante-bench/results/v1/qwen35-9B/matrix-reasoning.csv#1777835519237464
+Would remove gs://levante-bench/results/v1/qwen35-9B/matrix-reasoning.npy#1777835516861643
+Would remove gs://levante-bench/results/v1/qwen35-9B/mental-rotation.csv#1777835519966652
+Would remove gs://levante-bench/results/v1/qwen35-9B/mental-rotation.npy#1777835517229679
+Would remove gs://levante-bench/results/v1/qwen35-9B/metadata.json#1777835516966933
+Would remove gs://levante-bench/results/v1/qwen35-9B/summary.csv#1777835516991294
+Would remove gs://levante-bench/results/v1/qwen35-9B/theory-of-mind-by-type.csv#1777835517109439
+Would remove gs://levante-bench/results/v1/qwen35-9B/theory-of-mind.csv#1777835517881826
+Would remove gs://levante-bench/results/v1/qwen35-9B/theory-of-mind.npy#1777835517187431
+Would remove gs://levante-bench/results/v1/qwen35-9B/trog.csv#1777835518871016
+Would remove gs://levante-bench/results/v1/qwen35-9B/trog.npy#1777835517393434
+Would remove gs://levante-bench/results/v1/qwen35-9B/vocab.csv#1777835521332058
+Would remove gs://levante-bench/results/v1/qwen35-9B/vocab.npy#1777835517377844
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/cache/responses.json#1777914869102075
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/egma-math-by-type.csv#1777914868902768
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/egma-math.csv#1777914870040624
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/egma-math.npy#1777914868723959
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/matrix-reasoning.csv#1777914868927988
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/matrix-reasoning.npy#1777914869896113
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/mental-rotation.csv#1777914868909638
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/mental-rotation.npy#1777914869896253
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/metadata.json#1777914869888389
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/summary.csv#1777914869889855
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/theory-of-mind-by-type.csv#1777914869854435
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/theory-of-mind.csv#1777914869887674
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/theory-of-mind.npy#1777914869879479
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/trog.csv#1777914868829696
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/trog.npy#1777914869863992
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/vocab.csv#1777914869861499
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0001/vocab.npy#1777914869883491
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/cache/responses.json#1777914870246828
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/egma-math-by-type.csv#1777914869837972
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/egma-math.csv#1777914869902287
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/egma-math.npy#1777914869816375
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/matrix-reasoning.csv#1777914869840421
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/matrix-reasoning.npy#1777914869820945
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/mental-rotation.csv#1777914869890706
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/mental-rotation.npy#1777914868948673
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/metadata.json#1777914869814538
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/summary.csv#1777914869823789
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/theory-of-mind-by-type.csv#1777914869798364
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/theory-of-mind.csv#1777914869810284
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/theory-of-mind.npy#1777914869797453
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/trog.csv#1777914868902623
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/trog.npy#1777914869762431
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/vocab.csv#1777914869847816
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0002/vocab.npy#1777914869751367
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/cache/responses.json#1777914870060549
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/egma-math-by-type.csv#1777914869746047
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/egma-math.csv#1777914869194755
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/egma-math.npy#1777914868814751
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/matrix-reasoning.csv#1777914869003435
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/matrix-reasoning.npy#1777914868826930
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/mental-rotation.csv#1777914869017719
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/mental-rotation.npy#1777914868947047
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/metadata.json#1777914868941439
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/summary.csv#1777914868902249
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/theory-of-mind-by-type.csv#1777914868943073
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/theory-of-mind.csv#1777914868934511
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/theory-of-mind.npy#1777914868903941
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/trog.csv#1777914868997457
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/trog.npy#1777914868904347
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/vocab.csv#1777914869009320
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0003/vocab.npy#1777914868905177
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/cache/responses.json#1777914869431722
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/egma-math-by-type.csv#1777914868922112
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/egma-math.csv#1777914868938119
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/egma-math.npy#1777914868940882
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/matrix-reasoning.csv#1777914868946488
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/matrix-reasoning.npy#1777914868952034
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/mental-rotation.csv#1777914868846466
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/mental-rotation.npy#1777914868890865
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/metadata.json#1777914868891730
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/summary.csv#1777914868897264
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/theory-of-mind-by-type.csv#1777914868921743
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/theory-of-mind.csv#1777914868946983
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/theory-of-mind.npy#1777914868877665
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/trog.csv#1777914869022625
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/trog.npy#1777914868954365
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/vocab.csv#1777914868993775
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0004/vocab.npy#1777914868993189
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/cache/responses.json#1777914869560386
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/egma-math-by-type.csv#1777914869079644
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/egma-math.csv#1777914869114145
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/egma-math.npy#1777914869064738
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/matrix-reasoning.csv#1777914869122506
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/matrix-reasoning.npy#1777914869057841
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/mental-rotation.csv#1777914869166684
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/mental-rotation.npy#1777914869126043
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/metadata.json#1777914869090140
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/summary.csv#1777914869095489
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/theory-of-mind-by-type.csv#1777914869087032
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/theory-of-mind.csv#1777914869106565
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/theory-of-mind.npy#1777914869094328
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/trog.csv#1777914869159890
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/trog.npy#1777914869105140
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/vocab.csv#1777914869184861
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0005/vocab.npy#1777914869101292
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/cache/responses.json#1777914869526846
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/egma-math-by-type.csv#1777914869153074
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/egma-math.csv#1777914869162818
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/egma-math.npy#1777914869164484
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/matrix-reasoning.csv#1777914869262070
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/matrix-reasoning.npy#1777914869243008
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/mental-rotation.csv#1777914869208750
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/mental-rotation.npy#1777914869128748
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/metadata.json#1777914869177623
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/summary.csv#1777914869171803
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/theory-of-mind-by-type.csv#1777914869179177
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/theory-of-mind.csv#1777914869172142
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/theory-of-mind.npy#1777914869162161
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/trog.csv#1777914869273823
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/trog.npy#1777914869208825
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/vocab.csv#1777914869374560
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0006/vocab.npy#1777914869221079
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/cache/responses.json#1777914869769953
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/egma-math-by-type.csv#1777914869234994
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/egma-math.csv#1777914869318272
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/egma-math.npy#1777914869252058
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/matrix-reasoning.csv#1777914869318069
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/matrix-reasoning.npy#1777914869257893
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/mental-rotation.csv#1777914869344750
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/mental-rotation.npy#1777914869293986
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/metadata.json#1777914869289666
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/summary.csv#1777914869301572
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/theory-of-mind-by-type.csv#1777914869288811
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/theory-of-mind.csv#1777914869329827
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/theory-of-mind.npy#1777914869303594
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/trog.csv#1777914869408974
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/trog.npy#1777914869311144
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/vocab.csv#1777914869342291
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0007/vocab.npy#1777914869358936
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/cache/responses.json#1777914869959977
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/egma-math-by-type.csv#1777914869372906
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/egma-math.csv#1777914869771277
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/egma-math.npy#1777914869495814
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/matrix-reasoning.csv#1777914869451662
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/matrix-reasoning.npy#1777914869389877
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/mental-rotation.csv#1777914869411632
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/mental-rotation.npy#1777914869443595
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/metadata.json#1777914869428925
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/summary.csv#1777914869480851
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/theory-of-mind-by-type.csv#1777914869646602
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/theory-of-mind.csv#1777914869435936
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/theory-of-mind.npy#1777914869436153
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/trog.csv#1777914869550066
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/trog.npy#1777914869445884
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/vocab.csv#1777914869622852
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0008/vocab.npy#1777914869475531
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/cache/responses.json#1777914870124526
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/egma-math-by-type.csv#1777914869489094
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/egma-math.csv#1777914869474386
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/egma-math.npy#1777914869548895
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/matrix-reasoning.csv#1777914869516171
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/matrix-reasoning.npy#1777914869534755
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/mental-rotation.csv#1777914869631032
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/mental-rotation.npy#1777914869535703
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/metadata.json#1777914869543758
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/summary.csv#1777914869566874
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/theory-of-mind-by-type.csv#1777914869530809
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/theory-of-mind.csv#1777914869548896
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/theory-of-mind.npy#1777914869563654
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/trog.csv#1777914869574361
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/trog.npy#1777914869563893
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/vocab.csv#1777914869819058
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0009/vocab.npy#1777914869597133
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/cache/responses.json#1777914869990565
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/egma-math-by-type.csv#1777914869623358
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/egma-math.csv#1777914869667189
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/egma-math.npy#1777914869632255
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/matrix-reasoning.csv#1777914869698619
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/matrix-reasoning.npy#1777914869631606
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/mental-rotation.csv#1777914869720460
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/mental-rotation.npy#1777914869689933
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/metadata.json#1777914869633453
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/summary.csv#1777914869663554
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/theory-of-mind-by-type.csv#1777914869658105
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/theory-of-mind.csv#1777914869718263
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/theory-of-mind.npy#1777914869716539
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/trog.csv#1777914869687342
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/trog.npy#1777914869691838
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/vocab.csv#1777914869706421
+Would remove gs://levante-bench/results/v1/tinyllava-2.4B/0010/vocab.npy#1777914869698181
+  
+

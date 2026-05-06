@@ -47,11 +47,11 @@
     }
   },
   "@type": "sc:Dataset",
-  "@id": "https://github.com/langcog/levante-bench/blob/main/datasets/v1/levante_v1.croissant.json",
+  "@id": "https://raw.githubusercontent.com/langcog/levante-bench/main/datasets/v1/levante_v1.croissant.json",
   "name": "LEVANTE Benchmark v1",
   "description": "Croissant metadata for LEVANTE v1 benchmark assets and response tables, covering multimodal forced-choice tasks used for model-human comparison.",
   "version": "1.0.0",
-  "citeAs": "https://github.com/langcog/levante-bench/blob/main/datasets/v1/levante_v1.croissant.json",
+  "citeAs": "https://raw.githubusercontent.com/langcog/levante-bench/main/datasets/v1/levante_v1.croissant.json",
   "datePublished": "2026-04-19",
   "license": "https://spdx.org/licenses/NOASSERTION.html",
   "url": "https://github.com/langcog/levante-bench",

@@ -53,7 +53,7 @@
   "version": "1.0.0",
   "citeAs": "https://raw.githubusercontent.com/langcog/levante-bench/main/datasets/v1/levante_v1.croissant.json",
   "datePublished": "2026-04-19",
-  "license": "https://spdx.org/licenses/NOASSERTION.html",
+  "license": "https://creativecommons.org/licenses/by-nc/4.0/",
   "url": "https://github.com/langcog/levante-bench",
   "conformsTo": "http://mlcommons.org/croissant/1.1",
   "keywords": [
@@ -431,6 +431,9 @@
     "Model-human benchmark comparison on forced-choice multimodal tasks.",
     "Age-binned behavior alignment analyses."
   ],
+  "rai:dataBiases": "We use human response data from the LEVANTE 2026.1 data release, which contains data collected from 5-12-year-old children in Colombia (N = 1020), Canada (N = 188), and Germany (N = 339) for a total of 309,108 trial-level responses across all tasks. Data in Colombia were collected in schools; data in Canada were collected in a laboratory setting; and data in Germany were collected remotely at participants' homes. See Kachergis et al. (2025) for more details on data collection. These differences in country, language, age, and collection setting introduce sampling biases that should be considered when interpreting human-model alignment results.",
+  "rai:dataSocialImpact": "By design, the LEVANTE framework does not support human cross-site comparisons of cognitive ability due to differences in sampling and administration across sites. Evaluations using LEVANTE-bench can help identify ways in which models and humans are or are not aligned, providing a more comprehensive manner to assess progress toward models of the human mind.",
+  "rai:hasSyntheticData": false,
   "rai:dataLimitations": [
     "Participant-level demographics are limited in exported benchmark tables.",
     "Some derived benchmark metrics are not raw columns in source manifests."

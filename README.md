@@ -396,6 +396,13 @@ PYTHONPATH=src .venv/bin/python -m levante_bench.cli run-eval \
 
 Cite the LEVANTE manuscript and the DevBench (NeurIPS 2024) paper when using this benchmark.
 
+## Licensing
+
+- **Code and documentation:** MIT (see `LICENSE`).
+- **LEVANTE benchmark assets/data:** noncommercial use only unless a file-specific
+  license notice states otherwise. This includes dataset artifacts and published
+  manifests referenced by Croissant metadata.
+
 ## Dataset manifests (Croissant prep)
 
 Canonical benchmark manifests are available under `datasets/`:

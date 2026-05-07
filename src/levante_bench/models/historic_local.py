@@ -46,6 +46,7 @@ class HistoricLocalVLMModel(VLMModel):
         self.device_map = str(device_map).strip() if device_map else None
         self.max_image_edge = int(max_image_edge) if max_image_edge else None
         self.generation_defaults = dict(generation) if isinstance(generation, dict) else {}
+        self.tokenizer = None
 
     def _load_processor(self) -> Any:
         from transformers import AutoProcessor
@@ -56,6 +57,16 @@ class HistoricLocalVLMModel(VLMModel):
         except TypeError:
             kwargs.pop("trust_remote_code", None)
             return AutoProcessor.from_pretrained(self.model_name, **kwargs)
+
+    def _load_tokenizer(self) -> Any:
+        from transformers import AutoTokenizer
+
+        kwargs = {"trust_remote_code": self.trust_remote_code}
+        try:
+            return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
+        except TypeError:
+            kwargs.pop("trust_remote_code", None)
+            return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
 
     def _load_with_model_cls(self, model_cls: Any, attn_impl: str) -> Any:
         kwargs: dict[str, Any] = {
@@ -75,18 +86,17 @@ class HistoricLocalVLMModel(VLMModel):
         return model if self.device_map else model.to(self.device)
 
     def _load_model(self, attn_impl: str) -> Any:
-        from transformers import (
-            AutoModelForCausalLM,
-            AutoModelForImageTextToText,
-            AutoModelForVision2Seq,
-        )
+        from transformers import AutoModelForCausalLM, AutoModelForImageTextToText
+        import transformers as tfm
 
         last_exc: Exception | None = None
-        for model_cls in (
-            AutoModelForImageTextToText,
-            AutoModelForVision2Seq,
-            AutoModelForCausalLM,
-        ):
+        model_classes: list[Any] = [AutoModelForImageTextToText]
+        vision2seq_cls = getattr(tfm, "AutoModelForVision2Seq", None)
+        if vision2seq_cls is not None:
+            model_classes.append(vision2seq_cls)
+        model_classes.append(AutoModelForCausalLM)
+
+        for model_cls in model_classes:
             try:
                 return self._load_with_model_cls(model_cls, attn_impl)
             except Exception as exc:  # noqa: PERF203 - keep concrete failures for fallback ladder
@@ -96,7 +106,15 @@ class HistoricLocalVLMModel(VLMModel):
         raise last_exc
 
     def load(self) -> None:
-        self.processor = self._load_processor()
+        processor_exc: Exception | None = None
+        try:
+            self.processor = self._load_processor()
+        except Exception as exc:
+            # CogVLM chat checkpoints often ship custom model code without an
+            # AutoProcessor class. In that case we fall back to tokenizer-only.
+            self.processor = None
+            processor_exc = exc
+        self.tokenizer = self._load_tokenizer()
         requested_attn = self.attn_implementation
         try:
             self.model = self._load_model(requested_attn)
@@ -107,6 +125,11 @@ class HistoricLocalVLMModel(VLMModel):
             self.attn_implementation = "sdpa"
             self.model = self._load_model("sdpa")
         self.model.eval()
+        if self.processor is None and processor_exc is not None:
+            print(
+                f"[{self.model_name}] processor unavailable ({type(processor_exc).__name__}); "
+                "using tokenizer/build_conversation_input_ids fallback."
+            )
 
     def _build_messages(
         self,
@@ -126,8 +149,45 @@ class HistoricLocalVLMModel(VLMModel):
         max_new_tokens: int = 128,
     ) -> str:
         pil_images = load_pil_images(image_paths, max_image_edge=self.max_image_edge)
+        tokenizer = self.tokenizer or getattr(self.processor, "tokenizer", None)
 
-        apply_template = getattr(self.processor, "apply_chat_template", None)
+        if (
+            self.processor is None
+            and tokenizer is not None
+            and hasattr(self.model, "build_conversation_input_ids")
+        ):
+            # CogVLM-style remote code path.
+            inputs = self.model.build_conversation_input_ids(
+                tokenizer=tokenizer,
+                query=prompt_text,
+                history=[],
+                images=pil_images or [],
+            )
+            model_inputs: dict[str, Any] = {}
+            for k, v in inputs.items():
+                if torch.is_tensor(v):
+                    model_inputs[k] = v.unsqueeze(0).to(self.device)
+                elif isinstance(v, list) and v and torch.is_tensor(v[0]):
+                    model_inputs[k] = [[item.to(self.device) for item in v]]
+                else:
+                    model_inputs[k] = v
+
+            gen_kwargs = {
+                "do_sample": False,
+                "max_new_tokens": int(max_new_tokens),
+                **self.generation_defaults,
+            }
+            with torch.no_grad():
+                output_ids = self.model.generate(**model_inputs, **gen_kwargs)
+
+            input_ids = model_inputs.get("input_ids")
+            if input_ids is not None:
+                generated_ids = output_ids[:, input_ids.shape[1]:]
+            else:
+                generated_ids = output_ids
+            return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+
+        apply_template = getattr(self.processor, "apply_chat_template", None) if self.processor else None
         if callable(apply_template):
             messages = self._build_messages(prompt_text, pil_images)
             text = self.processor.apply_chat_template(
@@ -171,7 +231,6 @@ class HistoricLocalVLMModel(VLMModel):
             decoded = self.processor.batch_decode(generated_ids, skip_special_tokens=True)
             return decoded[0] if decoded else ""
 
-        tokenizer = getattr(self.processor, "tokenizer", None)
         if tokenizer is not None:
             return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
         return str(generated_ids)

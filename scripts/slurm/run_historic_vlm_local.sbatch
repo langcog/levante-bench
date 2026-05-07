@@ -27,11 +27,11 @@ TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-min
 
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CODE_DIR="${CODE_DIR:-${PROJECT_ROOT}/code/levante-bench}"
-# Backward compatible: if CONDA_ENV_PATH is provided, treat it as runtime env path.
-RUNTIME_ENV_PATH="${RUNTIME_ENV_PATH:-${CONDA_ENV_PATH:-$CODE_DIR/.venv}}"
+CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 CUDA_MODULE="${CUDA_MODULE:-stockcuda/12.6.2}"
 SLURM_LOG_DIR="${SLURM_LOG_DIR:-$PROJECT_ROOT/outputs/slurm}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/v1_additional_models}"
+USE_JOB_OUTPUT_ROOT="${USE_JOB_OUTPUT_ROOT:-0}"
 
 if [[ ! -d "$CODE_DIR" ]]; then
   echo "ERROR: CODE_DIR not found: $CODE_DIR" >&2
@@ -40,66 +40,41 @@ fi
 
 mkdir -p "$SLURM_LOG_DIR" "$OUTPUT_ROOT"
 
-module purge
-module load conda
-module load "$CUDA_MODULE"
-source "$(conda info --base)/etc/profile.d/conda.sh"
+EXPERIMENT_CONFIG="$(mktemp "/tmp/levante-historic-${MODEL_ID}-${SLURM_JOB_ID:-manual}-XXXX.yaml")"
+trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
 
-# Support either a conda env (path/name) or a Python venv path.
-if [[ "$RUNTIME_ENV_PATH" == */* ]]; then
-  if [[ -d "$RUNTIME_ENV_PATH/conda-meta" ]]; then
-    conda activate "$RUNTIME_ENV_PATH"
-    ENV_KIND="conda:path"
-  elif [[ -f "$RUNTIME_ENV_PATH/bin/activate" ]]; then
-    # shellcheck disable=SC1090
-    source "$RUNTIME_ENV_PATH/bin/activate"
-    ENV_KIND="venv:path"
-  else
-    echo "ERROR: RUNTIME_ENV_PATH not found or not activatable: $RUNTIME_ENV_PATH" >&2
-    echo "Expected either <env>/conda-meta (conda) or <env>/bin/activate (venv)." >&2
-    exit 1
-  fi
-else
-  conda activate "$RUNTIME_ENV_PATH"
-  ENV_KIND="conda:name"
-fi
+{
+  echo "models:"
+  echo "  - name: ${MODEL_ID}"
+  echo ""
+  echo "tasks:"
+  tasks_normalized="${TASKS_CSV//;/,}"
+  IFS=',' read -r -a TASK_LIST <<< "$tasks_normalized"
+  for task in "${TASK_LIST[@]}"; do
+    task_trimmed="$(echo "$task" | xargs)"
+    if [[ -n "$task_trimmed" ]]; then
+      echo "  - ${task_trimmed}"
+    fi
+  done
+  echo ""
+  echo "data_root: data"
+  echo "output_dir: results"
+  echo "version: ${VERSION}"
+  echo "device: ${DEVICE}"
+  echo "batch_size: ${BATCH_SIZE}"
+  echo "true_random_option_order: ${TRUE_RANDOM_OPTION_ORDER}"
+  echo "num_runs: ${NUM_RUNS}"
+} > "$EXPERIMENT_CONFIG"
 
-export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
-export PYTHONPATH="${PYTHONPATH:-src}"
+echo "Generated experiment config: $EXPERIMENT_CONFIG"
+sed -n '1,120p' "$EXPERIMENT_CONFIG"
 
-cd "$CODE_DIR"
+export PROJECT_ROOT
+export CONDA_ENV_PATH
+export USE_JOB_OUTPUT_ROOT
+export EXPERIMENT_CONFIG
+export RESULTS_ROOT="$OUTPUT_ROOT"
+export CUDA_MODULE
 
-# Build --task flags from TASKS_CSV
-tasks_normalized="${TASKS_CSV//;/,}"
-IFS=',' read -r -a TASK_LIST <<< "$tasks_normalized"
-TASK_ARGS=()
-for task in "${TASK_LIST[@]}"; do
-  t="$(echo "$task" | xargs)"
-  [[ -n "$t" ]] && TASK_ARGS+=(--task "$t")
-done
-
-CMD=(
-  python -m levante_bench.cli run-eval
-  --model "$MODEL_ID"
-  --version "$VERSION"
-  --device "$DEVICE"
-  --output-dir "$OUTPUT_ROOT"
-  --batch-size "$BATCH_SIZE"
-  --num-runs "$NUM_RUNS"
-)
-
-if [[ "$TRUE_RANDOM_OPTION_ORDER" == "true" ]]; then
-  CMD+=(--true-random-option-order)
-fi
-
-CMD+=("${TASK_ARGS[@]}")
-
-echo "Starting historic local VLM job on $(hostname) at $(date)"
-echo "Job ID: ${SLURM_JOB_ID:-manual}"
-echo "Model: $MODEL_ID"
-echo "Runtime env ($ENV_KIND): $RUNTIME_ENV_PATH"
-echo "Python: $(command -v python)"
-echo "Command: ${CMD[*]}"
-
-"${CMD[@]}"
+source "$CODE_DIR/scripts/slurm/_levante_common.sh"
 

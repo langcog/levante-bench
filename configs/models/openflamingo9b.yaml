@@ -1,0 +1,9 @@
+name: openflamingo9b
+hf_name: openflamingo/OpenFlamingo-9B-vitl-mpt7b
+dtype: float16
+attn_implementation: sdpa
+trust_remote_code: true
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

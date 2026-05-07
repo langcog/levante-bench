@@ -1,0 +1,9 @@
+name: llava15_13b
+hf_name: llava-hf/llava-1.5-13b-hf
+dtype: float16
+attn_implementation: sdpa
+trust_remote_code: true
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

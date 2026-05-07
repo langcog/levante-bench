@@ -20,8 +20,8 @@ theme_set(theme_bw() +
 ```{r}
 task_relabel <- c(
   "egma-math" = "Math",
-  "matrix-reasoning" = "Pattern matching",
-  "mental-rotation" = "Shape rotation",
+  "matrix-reasoning" = "Matrix reasoning",
+  "mental-rotation" = "Mental rotation",
   "theory-of-mind" = "Theory of mind",
   "trog" = "Sentence understanding",
   "vocab" = "Vocabulary"
@@ -37,7 +37,8 @@ MOD_CLS_SCALE <- c(
   "InternVL 3.5" = "#19bcbf",
   "Gemma 4" = "#2e65f0",
   "Gemini 2.5 Pro" = "#712ef0",
-  "GPT 5.3" = "#d92ef0"
+  "Gemini 3 Flash" = "#a62ef0",
+  "GPT 5.3" = "#f02eea"
 )
 
 MOD_NAM_SCALE <- c(
@@ -61,6 +62,7 @@ MOD_NAM_SCALE <- c(
   "Gemma 4 A4B" = "#0a3194",
   "Gemma 4 31B" = "#031b59",
   "Gemini 2.5 Pro" = "#712ef0",
+  "Gemini 3 Flash" = "#a62ef0",
   "GPT 5.3" = "#d92ef0"
 )
 ```
@@ -124,7 +126,8 @@ all_results_join_full <- all_results |>
   filter(!is.na(model_name),
          !is.na(run_id),
          !str_detect(model_class, "Molmo"),
-         model_name != "TinyLLaVA 2.4B")
+         model_name != "TinyLLaVA 2.4B",
+         !str_detect(item_uid, "^ha_"))
 
 all_results_join <- all_results_join_full |> 
   filter(language == "en")
@@ -140,6 +143,10 @@ all_json <- map(json_files, \(f) {
   json <- read_json(here("results", "v1", f), simplifyVector = TRUE)
   synthetic <- map_lgl(json, \(j) str_detect(j$trial_id, "synthetic"))
   df <- json[!synthetic] |> 
+    map(\(j) {
+      j$api_adaptive_retry_used <- NULL
+      j
+    }) |> 
     as_tibble() |> t() |> 
     as_tibble(rownames = "trial_unique",
               .name_repair = "universal_quiet") |> 
@@ -175,7 +182,8 @@ all_json_opt_full <- all_json |>
   filter(!is.na(model_name),
          !is.na(run_id),
          !str_detect(model_class, "Molmo"),
-         model_name != "TinyLLaVA 2.4B") |> 
+         model_name != "TinyLLaVA 2.4B",
+         !str_detect(item_uid, "^ha_")) |> 
   mutate(item_uid = ifelse(item_uid == "math_compare_7_5" & map_lgl(options, \(o) 8 %in% o),
                            "math_compare_7_5b", item_uid))
 
@@ -187,11 +195,12 @@ all_json_opt <- all_json_opt_full |>
 clean_uid <- function(item_uid, task_id) {
   item_uid <- str_replace(item_uid, "_word_", "__")
   if (is.na(task_id)) return(item_uid)
-  item_uid <- ifelse(task_id == "mrot", str_remove(item_uid, "-.*"), item_uid)
-  item_uid <- ifelse(task_id == "tom", str_remove(item_uid, "story[0-9]_"), item_uid)
-  item_uid <- ifelse(task_id == "tom", str_replace(item_uid, "-2", "_"), item_uid)
-  item_uid <- replace_values(
+  item_uid <- replace_when(
     item_uid,
+    task_id %in% c("mrot", "mental-rotation") ~ str_remove(item_uid, "-.*"),
+    task_id %in% c("tom", "theory-of-mind") ~ str_remove(item_uid, "story[1-6]_") |> 
+      str_replace("-2", "_")
+  ) |> replace_values(
     "tom_moral_reasoning_reality_check_1" ~ "tom_moral_reasoning_reality_check",
     "tom_moral_reasoning_false_belief_3" ~ "tom_moral_reasoning_false_belief",
     "math_fraction_14_24_34" ~ "math_fraction_14_24",
@@ -439,12 +448,7 @@ full_item_params <- list.files(here("data", "responses", "v1", "irt_models"),
               values_from = "value",
               values_fn = unique) |> 
   mutate(task_id = str_remove(item_uid, "_.*"),
-         item_uid = str_replace(item_uid, "_word_", "__"),
-         item_uid = ifelse(task_id == "mrot", str_remove(item_uid, "-.*"), item_uid),
-         item_uid = ifelse(task_id == "tom", str_remove(item_uid, "story[0-9]_"), item_uid),
-         item_uid = ifelse(task_id == "tom", str_replace(item_uid, "-2", "_"), item_uid),
-         #task = str_replace(task, "downex", "egma")
-         ) |> 
+         item_uid = map2_chr(item_uid, task_id, clean_uid)) |> 
   distinct() |> 
   filter(!str_detect(task, "downex"))
 ```
@@ -460,10 +464,17 @@ item_by_group <- full_item_params |>
 ```{r}
 calc_prob_4pl <- function(theta, a1, d, g, u) {
   b <- d / a1
-  g + (u - g) / (1 + exp(-a1 * (theta - b)))
+  g + (u - g) / (1 + exp(-a1 * (theta + b)))
 }
 
 included_items <- all_results_difficulty |> 
+  mutate(item_uid = str_replace_all(item_uid, c(
+    "320" = "040",
+    "280" = "080",
+    "240" = "120",
+    "340" = "020",
+    "200" = "160"
+  ))) |> 
   distinct(item_uid) |> 
   pull(item_uid)
 
@@ -676,18 +687,23 @@ p_tasks <- mh_cors |>
            xmin = 7, xmax = 13, col = "#f5b3b3") +
   geom_hline(yintercept = mean(human_splithalf$human_sh_r), lty = "dashed", col = "#fa2828") +
   annotate(geom = "text",
-           x = 12.2, y = 0.9, label = "Human split-half", hjust = 1,
+           x = 12.2, y = 1.06, label = "Human split-half", hjust = 1,
            col = "#fa2828") +
   # geom_dotplot(col = "white", binwidth = .05, method = "histodot",
   #              stackgroups = T)
   # geom_line(aes(y = model_human_r), data = pred_task_param,
   #           lty = "dashed") +
+  geom_smooth(aes(y = model_human_r), 
+              data = mh_cors_summary,
+              method = "nls", 
+              formula = y ~ SSlogis(x, Asym, xmid, scal), 
+              se = FALSE, col = "black", lty = "dashed") +
   stat_summary(aes(y = model_human_r, col = model_class, group = model_name),
                fun.data = mean_cl_boot, size = 0.2) +
   # geom_point(aes(y = model_human_r, col = model_class)) +
   geom_line(aes(y = model_human_r, col = model_class),
             data = mh_cors_summary) +
-  coord_cartesian(xlim = c(8.2, 12.4)) +
+  coord_cartesian(xlim = c(8.2, 12.4), ylim = c(-.05, 1.08)) +
   scale_colour_manual(values = MOD_CLS_SCALE,
                       limits = setdiff(names(MOD_CLS_SCALE), "Human")) +
   labs(x = "Log parameters", y = "Model-human\ntask accuracy correlation", col = "Model class") +
@@ -707,10 +723,15 @@ p_task_acc <- mh_acc |>
            xmin = -0.8, xmax = 1.2, col = "#f5b3b3") +
   geom_hline(yintercept = mean(human_splithalf$human_sh_r), lty = "dashed", col = "#fa2828") +
   annotate(geom = "text",
-           x = 0.86, y = 0.9, label = "Human split-half", hjust = 1,
+           x = 0.91, y = 1.06, label = "Human split-half", hjust = 1,
            col = "#fa2828") +
   # geom_dotplot(col = "white", binwidth = .05, method = "histodot",
   #              stackgroups = T)
+  geom_smooth(aes(y = model_human_r), 
+              data = mh_cors_summary,
+              method = "nls", 
+              formula = y ~ SSlogis(x, Asym, xmid, scal), 
+              se = FALSE, col = "black", lty = "dashed") +
   stat_summary(aes(y = model_human_r, col = model_class, group = model_name),
                geom = "errorbar", orientation = "x",
                fun.data = mean_cl_boot,
@@ -728,14 +749,15 @@ p_task_acc <- mh_acc |>
   # geom_point(aes(y = model_human_r, col = model_class)) +
   geom_line(aes(y = model_human_r, col = model_class),
             data = mh_cors_summary) +
-  coord_cartesian(xlim = c(0.24, 0.89)) +
+  coord_cartesian(xlim = c(0.24, 0.95), ylim = c(-.05, 1.08)) +
   scale_colour_manual(values = MOD_CLS_SCALE,
                       limits = setdiff(names(MOD_CLS_SCALE), "Human")) +
   labs(x = "Accuracy", y = "Model-human\ntask accuracy correlation", col = "Model class")
 
 p_task_out <- (p_tasks | p_task_acc) +
   plot_layout(guides = "collect") +
-  plot_annotation(tag_levels = "A")
+  plot_annotation(tag_levels = "A") &
+  scale_y_continuous(breaks = c(0, .25, .5, .75, 1))
 
 ggsave(here("figs", "task_cor.png"), p_task_out,
        width = 7, height = 2.8, units = "in")
@@ -747,14 +769,14 @@ p_task_out
 # Leaderboard
 ```{r}
 grand_summary <- est_sumscores |> 
-  mutate(age_bin = floor(age)) |> 
+  mutate(age_bin = floor(age),
+         age_bin = ifelse(age_bin >= 12, 12, age_bin)) |> 
   group_by(age_bin, task) |> 
   summarise(accuracy = mean(accuracy, na.rm = T),
             .groups = "drop_last") |> 
   summarise(accuracy = mean(accuracy, na.rm = T),
             .groups = "drop") |> 
-  filter(!is.na(age_bin),
-         age_bin <= 12)
+  filter(!is.na(age_bin))
 ```
 
 ```{r}
@@ -762,7 +784,8 @@ all_accuracy <- bind_rows(
   all_results_total,
   grand_summary |> 
     mutate(model_class = "Human",
-           model_name = str_c(age_bin, "-year-olds")) |> 
+           model_name = str_c(age_bin, "-year-olds") |> 
+             str_replace("12", "12–14")) |> 
     select(-age_bin)
 ) |> 
   arrange(desc(accuracy)) |> 
@@ -780,7 +803,6 @@ all_accuracy |>
 ```{r}
 p_leader <- all_accuracy |> 
   ggplot(aes(x = 1, y = accuracy, col = model_class)) +
-  geom_point() +
   geom_text_repel(aes(label = model_name), 
                   size = 2.5,
                   xlim = c(1.01, NA),
@@ -788,6 +810,7 @@ p_leader <- all_accuracy |>
                   force = 2,
                   direction = "y",
                   min.segment.length = 0) +
+  geom_point() +
   coord_cartesian(xlim = c(0.999, 1.021)) +
   labs(x = "", y = "Accuracy") +
   scale_colour_manual(values = MOD_CLS_SCALE,
@@ -818,11 +841,17 @@ option_keys <- list.files(here("data", "responses", "v1", "responses_by_ability"
                names_to = "image",
                values_to = "chosen_option") |> 
   mutate(chosen_option = normalise_options(chosen_option),
-         item_uid = ifelse(task_id == "mental-rotation", 
-                           glue("{item_uid}_{item_original}"), 
-                           item_uid)) |> 
+         item_uid = replace_when(
+           item_uid,
+           task_id == "mental-rotation" ~ glue("{item_uid}_{item_original}"),
+           item_uid == "tom_second_order_false_belief_2" & item_original == "6d_new2" ~ 
+             "tom_second_order_false_belief_2_",
+           item_uid == "tom_second_order_false_belief_1" & item_original == "6c_new2" ~ 
+             "tom_second_order_false_belief_1_"
+         )) |> 
   filter(!is.na(chosen_option),
-         item_original != "rubberband") |> 
+         item_original != "rubberband",
+         !str_detect(item_uid, "_story[0-9]")) |> 
   distinct()
 
 distribs <- list.files(here("data", "responses", "v1", "responses_by_ability"), 
@@ -839,6 +868,13 @@ distribs <- list.files(here("data", "responses", "v1", "responses_by_ability"),
 
 ```{r}
 model_distribs <- all_json_opt |> 
+  mutate(item_uid = str_replace_all(item_uid, c(
+    "_320" = "_040",
+    "_280" = "_080",
+    "_240" = "_120",
+    "_340" = "_020",
+    "_200" = "_160"
+  ))) |> 
   group_by(task, item_uid, model_class, model_name, n_params_num, chosen_option) |> 
   summarise(n = n(),
             .groups = "drop_last") |> 
@@ -851,7 +887,15 @@ model_distribs <- all_json_opt |>
          item_uid = map2_chr(item_uid, task, \(u, t) clean_uid(u, t)))
 
 model_distribs_opts <- model_distribs |> 
-  left_join(option_keys, by = join_by(task == task_id, item_uid, chosen_option))
+  left_join(option_keys |> group_by(item_uid, task_id, image, chosen_option) |> slice(1), 
+            by = join_by(task == task_id, item_uid, chosen_option)) |> 
+  mutate(item_uid = ifelse(str_detect(item_uid, "tom_second_order_false_belief_"),
+                           str_remove(item_uid, "_$"), item_uid)) |> 
+  group_by(task, item_uid, model_class, model_name, n_params_num, image) |> 
+  summarise(n = sum(n, na.rm = T),
+            runs = sum(runs, na.rm = T),
+            .groups = "drop") |> 
+  mutate(prop = n / runs)
 ```
 
 ```{r}
@@ -927,7 +971,7 @@ p_distrib
 ```
 
 ```{r}
-kl_summary |> 
+p_dist_ability <- kl_summary |> 
   filter(min_runs >= 10) |> 
   mutate(task = fct_relevel(task, gpt_results$task),
          ability_bin = ability_bin |> str_replace("_", ", "),
@@ -942,6 +986,11 @@ kl_summary |>
   facet_wrap(~ task,
              labeller = as_labeller(task_relabel)) +
   labs(x = "Log parameters", y = "KL divergence", col = "Ability bin")
+
+ggsave(here("figs", "ability.png"), p_dist_ability,
+       width = 8, height = 4, units = "in")
+
+p_dist_ability
 ```
 
 ```{r}
@@ -1036,8 +1085,120 @@ p_xling <- all_results_cmp_wide |>
   labs(x = "English accuracy", y = "Other language accuracy", col = "Model", shape = "Language")
 
 ggsave(here("figs", "xling.png"), p_xling,
-       width = 7, height = 4, units = "in")
+       width = 8, height = 4.5, units = "in")
 
 p_xling
+```
+
+# By trial type
+```{r}
+trog_tt <- read_csv(here("data", "assets", "trog_type.csv"))
+```
+
+```{r}
+results_tt <- all_results_join |> 
+  left_join(trog_tt |> select(item_uid, trial_class), by = join_by(item_uid)) |> 
+  mutate(trial_type = coalesce(trial_class, trial_type)) |> 
+  group_by(model_class, model_name, n_params_num, run_id, task, trial_type) |> 
+  summarise(accuracy = mean(is_correct, na.rm = T),
+            n_trials = n(),
+            .groups = "drop") |> 
+  filter(task %in% c("egma-math", "theory-of-mind", "mental-rotation", "trog"))
+
+results_tt_summary <- results_tt |> 
+  group_by(model_class, model_name, n_params_num, task, trial_type) |> 
+  summarise(accuracy = mean(accuracy),
+            .groups = "drop") |> 
+  left_join(all_results_bymodel |> rename(task_accuracy = accuracy), 
+            by = join_by(model_class, model_name, n_params_num, task)) |> 
+  mutate(accuracy_delta = accuracy - task_accuracy,
+         trial_type = trial_type |> 
+           str_remove_all("_question$") |> 
+           str_replace_all("_", " ") |> 
+           str_to_sentence() |> 
+           replace_values(
+             "2" ~ "2D shape",
+             "3" ~ "3D shape",
+             "Counting afc" ~ "Counting AFC"
+           ))
+```
+
+```{r}
+human_tt <- item_by_group_cross |> 
+  select(task, est_scores) |> 
+  unnest(est_scores) |> 
+  group_by(item_uid) |> 
+  summarise(accuracy = mean(prob),
+            .groups = "drop") |> 
+  left_join(manifest |> select(item_uid, trial_type, task), by = join_by(item_uid)) |> 
+  left_join(trog_tt |> select(item_uid, trial_class), by = join_by(item_uid)) |> 
+  mutate(trial_type = coalesce(trial_class, trial_type) |> 
+           replace_when(
+             str_detect(item_uid, "_2d_") ~ "2",
+             str_detect(item_uid, "_3d_") ~ "3"
+           ),
+         task = replace_when(
+           task,
+           str_detect(item_uid, "^mrot_") ~ "mental-rotation"
+         )) |> 
+  group_by(task, trial_type) |> 
+  summarise(accuracy = mean(accuracy, na.rm = T),
+            n_trials = n(),
+            .groups = "drop") |> 
+  filter(task %in% c("egma-math", "theory-of-mind", "mental-rotation", "trog"))
+
+human_tt_summary <- human_tt |> 
+  left_join(human_est |> rename(task_accuracy = accuracy), by = join_by(task)) |> 
+  mutate(accuracy_delta = accuracy - task_accuracy,
+         trial_type = trial_type |> 
+           str_remove_all("_question$") |> 
+           str_replace_all("_", " ") |> 
+           str_to_sentence() |> 
+           replace_values(
+             "2" ~ "2D shape",
+             "3" ~ "3D shape",
+             "Counting afc" ~ "Counting AFC"
+           ),
+         model_class = "Human")
+```
+
+
+```{r}
+results_tt_total <- results_tt_summary |> 
+  group_by(task, trial_type) |> 
+  summarise(accuracy_delta = mean(accuracy_delta, na.rm = T),
+            .groups = "drop") |> 
+  arrange(accuracy_delta)
+```
+
+
+```{r}
+p_tt_rank <- results_tt_summary |> 
+  mutate(trial_type = fct_relevel(trial_type, results_tt_total$trial_type)) |> 
+  ggplot(aes(y = trial_type, x = accuracy_delta, col = model_class)) +
+  geom_vline(xintercept = 0, lty = "dotted", col = "grey54") +
+  # stat_summary(aes(col = model_class, group = model_name),
+  #              fun.data = mean_cl_boot, size = 0.2) +
+  # geom_line(aes(group = model_name), orientation = "y") +
+  geom_point(alpha = .5, position = position_jitter(height = .2)) +
+  stat_summary(aes(group = 1), fun.data = mean_cl_boot) +
+  geom_point(data = human_tt_summary, size = 2) +
+  facet_grid(task ~ ., scales = "free_y", space = "free_y",
+             labeller = as_labeller(c(
+               "egma-math" = "Math",
+               "mental-rotation" = "MR",
+               "theory-of-mind" = "ToM",
+               "trog" = "Sentence understanding"
+             ))) +
+  scale_colour_manual(values = MOD_CLS_SCALE,
+                      limits = names(MOD_CLS_SCALE)) +
+  labs(x = "Δ accuracy", y = "", col = "Model class") +
+  guides(colour = guide_legend(nrow = 3)) +
+  theme(legend.position = "bottom")
+
+ggsave(here("figs", "trial_type.png"), p_tt_rank,
+       width = 6.3, height = 7, units = "in")
+
+p_tt_rank
 ```
 

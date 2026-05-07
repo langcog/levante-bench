@@ -1,26 +1,19 @@
-"""CLIP image-text similarity adapter.
+"""CLIP similarity adapter for LEVANTE benchmark evaluation.
 
-CLIP has no text decoder, so it cannot use the generate-then-parse path used by
-generative VLMs. Instead, for label-format trials whose options are images we
-score each option image against either:
+This adapter uses CLIP's shared embedding space for multiple-choice selection:
 
-  * the trial's context image (image-image similarity), when one is provided
-    (e.g. mental-rotation, TROG with a stem image), or
-  * the trial's text prompt (text-image similarity), otherwise (e.g. vocab,
-    synthetic-vocab).
+- image options: score prompt text (or context image) against option images
+- text options: score prompt text (or context image) against option texts
 
-The argmax option is returned as ``predicted_label``. Numeric / slider tasks
-and tasks without ``option_image_paths`` are reported as unscored
-(``predicted_label=None``, ``is_correct=False``) with a clear ``parse_method``
-tag so downstream summaries can distinguish "wrong" from "not applicable".
+CLIP remains a retrieval-style model (no generative decode), so the adapter
+returns direct argmax labels from similarity scores.
 """
 
 from __future__ import annotations
 
 import re
-import sys
 import time
-from typing import Optional
+from typing import Any
 
 import torch
 
@@ -28,32 +21,37 @@ from levante_bench.models._common import DTYPE_MAP, load_pil_images
 from levante_bench.models.base import VLMModel
 from levante_bench.models.registry import register
 
-
 _IMAGE_PLACEHOLDER_RE = re.compile(r"<image\d+>")
+_OPTION_LINE_RE = re.compile(r"^[A-H]\s*[\)\.:]\s*")
 
 
 def _clean_text_for_clip(prompt: str) -> str:
-    """Strip ``<imageN>`` placeholders and collapse whitespace.
-
-    The benchmark's prompt templates interleave ``<imageN>`` markers that bind
-    option images to labels. CLIP's text encoder has no concept of images in
-    text, so we drop the markers and let the model see only the natural-
-    language portion of the prompt.
-    """
+    """Drop image placeholders and collapse whitespace."""
     cleaned = _IMAGE_PLACEHOLDER_RE.sub(" ", str(prompt or ""))
     return re.sub(r"\s+", " ", cleaned).strip()
 
 
+def _query_text_from_prompt(prompt: str) -> str:
+    """Extract query-like text from benchmark prompt.
+
+    Many prompts include enumerated answer options (A/B/C/...) inline. For
+    text-option similarity we strip those lines so query text does not simply
+    echo candidate choices.
+    """
+    text = _clean_text_for_clip(prompt)
+    if not text:
+        return ""
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return text
+    keep = [ln for ln in lines if not _OPTION_LINE_RE.match(ln)]
+    # If filtering removed everything, fall back to original cleaned text.
+    return " ".join(keep).strip() or text
+
+
 @register("clip_base")
 class CLIPSimilarityModel(VLMModel):
-    """CLIP-style zero-shot multiple-choice via image-text similarity.
-
-    Defaults to ``openai/clip-vit-base-patch32``; pass a different ``hf_name``
-    in the model config (e.g. ``openai/clip-vit-large-patch14`` or
-    ``laion/CLIP-ViT-H-14-laion2B-s32B-b79K``) to swap backbones. The text
-    encoder of stock OpenAI CLIP is English-only with a 77-token limit, both
-    of which are documented limitations rather than bugs of this adapter.
-    """
+    """CLIP similarity-based evaluator with text-option fallback."""
 
     def __init__(
         self,
@@ -61,41 +59,35 @@ class CLIPSimilarityModel(VLMModel):
         device: str = "cpu",
         dtype: str = "float32",
         prefer_context_image: bool = True,
-        **_: object,
+        enable_text_option_fallback: bool = True,
+        **_: Any,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(str(dtype).lower(), torch.float32)
         self.prefer_context_image = bool(prefer_context_image)
-        self.use_json_format = False  # CLIP does not consume format prefixes
-        self.last_generation_metadata: dict = {}
+        self.enable_text_option_fallback = bool(enable_text_option_fallback)
+        self.use_json_format = False
+        self.last_generation_metadata: dict[str, Any] = {}
 
     def load(self) -> None:
         try:
             from transformers import CLIPModel, CLIPProcessor
-        except ImportError as exc:  # pragma: no cover - exercised only if deps missing
+        except ImportError as exc:
             raise ImportError(
-                "CLIP requires `transformers`. Install with "
-                "`pip install -r requirements-transformers.txt`."
+                "CLIP requires transformers; install requirements-transformers.txt"
             ) from exc
 
         self.processor = CLIPProcessor.from_pretrained(self.model_name)
         try:
             self.model = CLIPModel.from_pretrained(self.model_name, dtype=self.dtype)
         except TypeError:
-            # Older transformers versions still expect torch_dtype.
+            # Backward compatibility with older transformers argument naming.
             self.model = CLIPModel.from_pretrained(
                 self.model_name, torch_dtype=self.dtype
             )
         self.model = self.model.to(self.device)
         self.model.eval()
-        print(
-            f"[clip] loaded {self.model_name!r} on {self.device!r} dtype={self.dtype}",
-            file=sys.stderr,
-        )
 
-    # CLIP cannot generate text. The benchmark runner invokes
-    # ``evaluate_trial`` (overridden below), so ``generate`` is never reached
-    # on the standard path; we keep an explicit error to surface misuse.
     def generate(
         self,
         prompt_text: str,
@@ -103,84 +95,127 @@ class CLIPSimilarityModel(VLMModel):
         max_new_tokens: int = 64,
     ) -> str:
         raise NotImplementedError(
-            "CLIPSimilarityModel scores choices via similarity; "
-            "use evaluate_trial(...) instead of generate(...)."
+            "CLIPSimilarityModel uses evaluate_trial similarity scoring, not generate()."
         )
 
     def evaluate_trial(self, trial: dict) -> dict:
-        """Score the trial's option images and pick the argmax label.
-
-        Returns a result dict whose schema matches generative models so
-        downstream CSV / NPY writers and human-comparison annotators do not
-        need to special-case CLIP.
-        """
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
-        option_labels = [str(l).upper() for l in trial.get("option_labels", [])]
-        option_image_paths = list(trial.get("option_image_paths") or [])
-        context_image_paths = list(trial.get("context_image_paths") or [])
-        correct_label = trial.get("correct_label")
-
         if answer_format != "label":
-            return self._unscored_result(
+            return self._unscored_result(trial, reason=f"clip_unsupported_format:{answer_format}")
+
+        option_labels = [str(x).upper() for x in (trial.get("option_labels") or [])]
+        if not option_labels:
+            return self._unscored_result(trial, reason="clip_missing_option_labels")
+
+        option_image_paths = list(trial.get("option_image_paths") or [])
+        option_texts = [str(x).strip() for x in (trial.get("options") or [])]
+        context_image_paths = list(trial.get("context_image_paths") or [])
+
+        if option_image_paths:
+            return self._score_image_options(
                 trial=trial,
-                reason=f"clip_unsupported_format:{answer_format}",
-                answer_format=answer_format,
-            )
-        if not option_image_paths or not option_labels:
-            return self._unscored_result(
-                trial=trial,
-                reason="clip_no_option_images",
-                answer_format=answer_format,
+                option_labels=option_labels,
+                option_image_paths=option_image_paths,
+                context_image_paths=context_image_paths,
             )
 
+        if self.enable_text_option_fallback and option_texts:
+            return self._score_text_options(
+                trial=trial,
+                option_labels=option_labels,
+                option_texts=option_texts,
+                context_image_paths=context_image_paths,
+            )
+
+        return self._unscored_result(trial, reason="clip_no_option_images")
+
+    def _score_image_options(
+        self,
+        *,
+        trial: dict,
+        option_labels: list[str],
+        option_image_paths: list[str],
+        context_image_paths: list[str],
+    ) -> dict:
         option_images = load_pil_images(option_image_paths)
         if not option_images:
-            return self._unscored_result(
-                trial=trial,
-                reason="clip_failed_to_load_option_images",
-                answer_format=answer_format,
-            )
+            return self._unscored_result(trial, reason="clip_failed_to_load_option_images")
 
         use_context = self.prefer_context_image and bool(context_image_paths)
-        context_images = (
-            load_pil_images(context_image_paths) if use_context else None
-        )
+        context_images = load_pil_images(context_image_paths) if use_context else None
 
         start = time.perf_counter()
         with torch.no_grad():
             option_feats = self._encode_images(option_images)
             if use_context and context_images:
-                # Image-image scoring: average context-image features as the
-                # query (handles single- or multi-image stems uniformly).
-                query_feats = self._encode_images(context_images).mean(
-                    dim=0, keepdim=True
-                )
+                query_feats = self._encode_images(context_images).mean(dim=0, keepdim=True)
                 query_kind = "context_image"
-                clip_query_text = ""
             else:
-                clip_query_text = _clean_text_for_clip(trial.get("prompt", ""))
-                if not clip_query_text:
-                    return self._unscored_result(
-                        trial=trial,
-                        reason="clip_empty_text_query",
-                        answer_format=answer_format,
-                    )
-                query_feats = self._encode_text(clip_query_text)
+                query_text = _query_text_from_prompt(trial.get("prompt", ""))
+                if not query_text:
+                    return self._unscored_result(trial, reason="clip_empty_text_query")
+                query_feats = self._encode_text([query_text])
                 query_kind = "prompt_text"
-
-            # Cosine similarity in shared CLIP space.
             sims = (query_feats @ option_feats.T).squeeze(0)
         elapsed = time.perf_counter() - start
-
-        sims_list = [float(x) for x in sims.detach().cpu().tolist()]
-        best_idx = int(max(range(len(sims_list)), key=lambda i: sims_list[i]))
-        predicted_label = option_labels[best_idx] if best_idx < len(option_labels) else None
-        is_correct = bool(predicted_label is not None and predicted_label == correct_label)
-
-        scores_payload = ", ".join(
-            f"{label}={score:.4f}"
-            for label, score in zip(option_labels, sims_list)
+        return self._build_label_result(
+            trial=trial,
+            option_labels=option_labels,
+            sims=sims,
+            query_kind=query_kind,
+            elapsed=elapsed,
+            parse_method="clip_similarity_image_options",
         )
+
+    def _score_text_options(
+        self,
+        *,
+        trial: dict,
+        option_labels: list[str],
+        option_texts: list[str],
+        context_image_paths: list[str],
+    ) -> dict:
+        use_context = self.prefer_context_image and bool(context_image_paths)
+        context_images = load_pil_images(context_image_paths) if use_context else None
+
+        start = time.perf_counter()
+        with torch.no_grad():
+            option_feats = self._encode_text(option_texts)
+            if use_context and context_images:
+                query_feats = self._encode_images(context_images).mean(dim=0, keepdim=True)
+                query_kind = "context_image_to_text_options"
+            else:
+                query_text = _query_text_from_prompt(trial.get("prompt", ""))
+                if not query_text:
+                    return self._unscored_result(trial, reason="clip_empty_text_query")
+                query_feats = self._encode_text([query_text])
+                query_kind = "prompt_text_to_text_options"
+            sims = (query_feats @ option_feats.T).squeeze(0)
+        elapsed = time.perf_counter() - start
+        return self._build_label_result(
+            trial=trial,
+            option_labels=option_labels,
+            sims=sims,
+            query_kind=query_kind,
+            elapsed=elapsed,
+            parse_method="clip_similarity_text_options",
+        )
+
+    def _build_label_result(
+        self,
+        *,
+        trial: dict,
+        option_labels: list[str],
+        sims: torch.Tensor,
+        query_kind: str,
+        elapsed: float,
+        parse_method: str,
+    ) -> dict:
+        scores = [float(v) for v in sims.detach().cpu().tolist()]
+        best_idx = int(max(range(len(scores)), key=lambda i: scores[i])) if scores else -1
+        predicted_label = option_labels[best_idx] if (0 <= best_idx < len(option_labels)) else None
+        correct_label = trial.get("correct_label")
+        is_correct = bool(predicted_label and predicted_label == correct_label)
 
         self.last_generation_metadata = {
             "api_provider": "clip_similarity",
@@ -189,23 +224,23 @@ class CLIPSimilarityModel(VLMModel):
             "api_finish_reason": query_kind,
         }
 
+        generated = ", ".join(f"{lab}={score:.4f}" for lab, score in zip(option_labels, scores))
         return {
             "trial_id": trial["trial_id"],
             "item_uid": trial["item_uid"],
-            "generated_text": scores_payload,
+            "generated_text": generated,
             "predicted_label": predicted_label,
             "reason": f"clip_argmax({query_kind})",
-            "parse_method": "clip_similarity",
+            "parse_method": parse_method,
             "parse_confidence": "high",
             "parse_raw_candidate": predicted_label or "",
             "correct_label": correct_label,
             "is_correct": is_correct,
             "options": trial.get("options", []),
             "option_labels": trial.get("option_labels", []),
-            "clip_query_kind": query_kind,
-            "clip_query_text": clip_query_text,
-            "clip_scores": sims_list,
+            "clip_scores": scores,
             "generation_time_s": elapsed,
+            **self.last_generation_metadata,
         }
 
     def _encode_images(self, pil_images: list) -> torch.Tensor:
@@ -213,9 +248,9 @@ class CLIPSimilarityModel(VLMModel):
         feats = self._unwrap_feats(self.model.get_image_features(**inputs))
         return self._l2_normalize(feats)
 
-    def _encode_text(self, text: str) -> torch.Tensor:
+    def _encode_text(self, texts: list[str]) -> torch.Tensor:
         inputs = self.processor(
-            text=[text],
+            text=texts,
             return_tensors="pt",
             padding=True,
             truncation=True,
@@ -226,41 +261,26 @@ class CLIPSimilarityModel(VLMModel):
 
     @staticmethod
     def _unwrap_feats(output) -> torch.Tensor:
-        """Return a tensor from CLIP feature outputs across transformers versions.
-
-        transformers <5 returned a plain tensor from
-        ``get_image_features`` / ``get_text_features``; v5+ returns a
-        ``BaseModelOutputWithPooling`` whose ``pooler_output`` holds the
-        projected embedding.
-        """
         if isinstance(output, torch.Tensor):
             return output
         for attr in ("pooler_output", "image_embeds", "text_embeds", "last_hidden_state"):
-            value = getattr(output, attr, None)
-            if isinstance(value, torch.Tensor):
-                return value
-        raise TypeError(
-            f"Unexpected CLIP feature output type: {type(output).__name__}"
-        )
+            val = getattr(output, attr, None)
+            if isinstance(val, torch.Tensor):
+                return val
+        raise TypeError(f"Unexpected CLIP feature output type: {type(output).__name__}")
 
     @staticmethod
     def _l2_normalize(feats: torch.Tensor) -> torch.Tensor:
         return feats / feats.norm(dim=-1, keepdim=True).clamp_min(1e-12)
 
-    def _unscored_result(
-        self,
-        trial: dict,
-        reason: str,
-        answer_format: str,
-    ) -> dict:
-        """Skeleton result for trials CLIP cannot score (e.g. numeric tasks)."""
+    def _unscored_result(self, trial: dict, *, reason: str) -> dict:
         self.last_generation_metadata = {
             "api_provider": "clip_similarity",
             "api_attempts": 0,
             "api_response_status": "skipped",
             "api_finish_reason": reason,
         }
-        base: dict = {
+        return {
             "trial_id": trial["trial_id"],
             "item_uid": trial["item_uid"],
             "generated_text": "",
@@ -277,5 +297,5 @@ class CLIPSimilarityModel(VLMModel):
             "is_correct": False,
             "options": trial.get("options", []),
             "option_labels": trial.get("option_labels", []),
+            **self.last_generation_metadata,
         }
-        return base

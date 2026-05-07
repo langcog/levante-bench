@@ -20,6 +20,7 @@ hf_name: openai/clip-vit-base-patch32
 
 # Use raw prompt strings; the JSON answer-format prefix is meaningless to CLIP.
 use_json_format: false
+enable_text_option_fallback: true
 
 # When a trial has a context/stem image, prefer image-image similarity over
 # text-image similarity. Set to false to always score against the text prompt.
@@ -28,6 +29,7 @@ prefer_context_image: true
 # CLIP outputs cover only the image-options tasks; advertise capabilities
 # accordingly so the runner skips text-only or context-text-only tasks.
 capabilities:
+  - text_only
   - single_image
   - multi_image
 

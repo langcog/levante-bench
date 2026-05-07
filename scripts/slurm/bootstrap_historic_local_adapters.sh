@@ -99,10 +99,13 @@ class HistoricLocalVLMModel(VLMModel):
         return model if self.device_map else model.to(self.device)
 
     def _load_model(self, attn_impl: str) -> Any:
-        from transformers import AutoModelForCausalLM, AutoModelForImageTextToText
+        from transformers import AutoModelForCausalLM
         import transformers as tfm
         last_exc: Exception | None = None
-        model_classes = [AutoModelForImageTextToText]
+        model_classes = []
+        image_text_cls = getattr(tfm, "AutoModelForImageTextToText", None)
+        if image_text_cls is not None:
+            model_classes.append(image_text_cls)
         vision2seq_cls = getattr(tfm, "AutoModelForVision2Seq", None)
         if vision2seq_cls is not None:
             model_classes.append(vision2seq_cls)

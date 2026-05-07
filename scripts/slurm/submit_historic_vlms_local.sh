@@ -49,9 +49,9 @@ declare -A BATCH_SIZE_MAP=(
   ["openflamingo9b"]="1"
 )
 declare -A CONDA_ENV_MAP=(
-  ["llava15_13b"]="$PROJECT_ROOT/envs/levante-llava"
-  ["cogvlm"]="$PROJECT_ROOT/envs/levante-cogvlm"
-  ["openflamingo9b"]="$PROJECT_ROOT/envs/levante-openflamingo"
+  ["llava15_13b"]="$CODE_DIR/.venv-llava15"
+  ["cogvlm"]="$CODE_DIR/.venv-cogvlm"
+  ["openflamingo9b"]="$CODE_DIR/.venv-openflamingo"
 )
 
 DEFAULT_MODELS=(
@@ -86,7 +86,7 @@ for model in "${MODELS[@]}"; do
   time_limit="${TIME_MAP[$model]}"
   mem_limit="${MEM_MAP[$model]}"
   batch_size="${BATCH_SIZE_MAP[$model]}"
-  conda_env="${CONDA_ENV_MAP[$model]}"
+  runtime_env="${CONDA_ENV_MAP[$model]}"
   job_name="historic-${model}"
 
   cmd=(
@@ -94,11 +94,15 @@ for model in "${MODELS[@]}"; do
     --job-name "$job_name"
     --time "$time_limit"
     --mem "$mem_limit"
-    --export "PROJECT_ROOT=$PROJECT_ROOT,CODE_DIR=$CODE_DIR,CONDA_ENV_PATH=$conda_env,MODEL_ID=$model,VERSION=$VERSION,DEVICE=$DEVICE,BATCH_SIZE=$batch_size,NUM_RUNS=$NUM_RUNS,TRUE_RANDOM_OPTION_ORDER=$TRUE_RANDOM_OPTION_ORDER,OUTPUT_ROOT=$OUTPUT_ROOT,HF_TOKEN,HUGGINGFACEHUB_API_TOKEN,HF_HOME,HF_HUB_CACHE,TRANSFORMERS_CACHE"
+    --export "PROJECT_ROOT=$PROJECT_ROOT,CODE_DIR=$CODE_DIR,RUNTIME_ENV_PATH=$runtime_env,MODEL_ID=$model,VERSION=$VERSION,DEVICE=$DEVICE,BATCH_SIZE=$batch_size,NUM_RUNS=$NUM_RUNS,TRUE_RANDOM_OPTION_ORDER=$TRUE_RANDOM_OPTION_ORDER,OUTPUT_ROOT=$OUTPUT_ROOT,HF_TOKEN,HUGGINGFACEHUB_API_TOKEN,HF_HOME,HF_HUB_CACHE,TRANSFORMERS_CACHE"
     "$SBATCH_SCRIPT"
   )
 
-  echo "Model=$model time=$time_limit mem=$mem_limit env=$conda_env batch_size=$batch_size"
+  echo "Model=$model time=$time_limit mem=$mem_limit env=$runtime_env batch_size=$batch_size"
+  if [[ ! -f "$runtime_env/bin/activate" && ! -d "$runtime_env/conda-meta" ]]; then
+    echo "  WARNING: env path not found/activatable now: $runtime_env" >&2
+    echo "  Create it first or override with RUNTIME_ENV_PATH in --export." >&2
+  fi
   if [[ "$DRY_RUN" == "1" ]]; then
     printf 'DRY_RUN:'
     printf ' %q' "${cmd[@]}"

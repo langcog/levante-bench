@@ -1,5 +1,7 @@
 """VLM model adapters. Registry: name -> class."""
 
+import importlib
+
 from levante_bench.models.base import VLMModel
 from levante_bench.models.registry import (
     get_model_class,
@@ -7,20 +9,29 @@ from levante_bench.models.registry import (
     register,
 )
 
-# Import model modules so @register() runs
-from levante_bench.models import smolvlm2  # noqa: F401
-from levante_bench.models import qwen35  # noqa: F401
-from levante_bench.models import internvl35  # noqa: F401
-from levante_bench.models import tinyllava  # noqa: F401
-from levante_bench.models import aquila_vl  # noqa: F401
-from levante_bench.models import gemma3  # noqa: F401
-from levante_bench.models import gemma4  # noqa: F401
-from levante_bench.models import molmo2  # noqa: F401
-from levante_bench.models import hf_hosted  # noqa: F401
-from levante_bench.models import gemini  # noqa: F401
-from levante_bench.models import gpt  # noqa: F401
-from levante_bench.models import clip  # noqa: F401
-from levante_bench.models import historic_local  # noqa: F401
+# Import model modules so @register() decorators execute.
+for _module_name in (
+    "smolvlm2",
+    "qwen35",
+    "internvl35",
+    "tinyllava",
+    "aquila_vl",
+    "gemma3",
+    "gemma4",
+    "molmo2",
+    "hf_hosted",
+    "gemini",
+    "gpt",
+    "clip",
+    "historic_local",
+):
+    try:
+        importlib.import_module(f"levante_bench.models.{_module_name}")
+    except ModuleNotFoundError:
+        # Keep core CLI usable when optional local adapters are not present
+        # on a specific machine/branch checkout.
+        if _module_name != "historic_local":
+            raise
 
 __all__ = [
     "VLMModel",

@@ -22,6 +22,9 @@ from levante_bench.models.registry import register
 @register("qwen3vl_30b_hf")
 @register("qwen3vl_235b_hf")
 @register("aya_vision_32b_hf")
+@register("llava15_13b_hf")
+@register("cogvlm_chat_hf")
+@register("openflamingo9b_hf")
 class HFHostedModel(VLMModel):
     """OpenAI-compatible chat API adapter for Hugging Face hosted models."""
 

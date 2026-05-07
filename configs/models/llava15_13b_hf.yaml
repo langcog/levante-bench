@@ -1,0 +1,12 @@
+name: llava15_13b_hf
+hf_name: llava-hf/llava-1.5-13b-hf
+api_key_env: HF_TOKEN
+api_base: https://router.huggingface.co/v1
+timeout_s: 180
+retry_attempts: 4
+max_output_tokens_cap: 1024
+max_prompt_chars: 12000
+capabilities:
+  - text_only
+  - single_image
+  - multi_image

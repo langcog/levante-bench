@@ -276,6 +276,15 @@ Run real upload:
 DRY_RUN=0 bash scripts/slurm/sync_historic_vlms_to_bucket.sh
 ```
 
+If a remote machine has a partial checkout and is missing the local historic
+adapter/config files, bootstrap them with a versioned script:
+
+```bash
+bash scripts/slurm/bootstrap_historic_local_adapters.sh
+```
+
+Use `FORCE=1` to overwrite existing files with repo templates.
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:

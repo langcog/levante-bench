@@ -61,6 +61,14 @@ class HistoricLocalVLMModel(VLMModel):
     def _load_tokenizer(self) -> Any:
         from transformers import AutoTokenizer
 
+        lower_name = self.model_name.lower()
+        if "cogvlm" in lower_name:
+            # CogVLM chat checkpoints are LLaMA-family and often fail through
+            # AutoTokenizer fast/convert code paths.
+            from transformers import LlamaTokenizer
+
+            return LlamaTokenizer.from_pretrained(self.model_name, use_fast=False)
+
         kwargs = {"trust_remote_code": self.trust_remote_code, "use_fast": False}
         try:
             return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
@@ -93,6 +101,23 @@ class HistoricLocalVLMModel(VLMModel):
     def _load_model(self, attn_impl: str) -> Any:
         from transformers import AutoModelForCausalLM, AutoModelForImageTextToText
         import transformers as tfm
+
+        lower_name = self.model_name.lower()
+        if "llava" in lower_name:
+            # LLaVA-1.5 is not supported by older AutoModelFor* multimodal maps.
+            llava_cls = getattr(tfm, "LlavaForConditionalGeneration", None)
+            if llava_cls is not None:
+                try:
+                    return self._load_with_model_cls(llava_cls, attn_impl)
+                except Exception:
+                    pass
+
+        if "cogvlm" in lower_name:
+            # CogVLM chat model uses custom causal-lm remote code.
+            try:
+                return self._load_with_model_cls(AutoModelForCausalLM, attn_impl)
+            except Exception:
+                pass
 
         last_exc: Exception | None = None
         model_classes: list[Any] = [AutoModelForImageTextToText]

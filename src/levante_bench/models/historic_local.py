@@ -61,12 +61,17 @@ class HistoricLocalVLMModel(VLMModel):
     def _load_tokenizer(self) -> Any:
         from transformers import AutoTokenizer
 
-        kwargs = {"trust_remote_code": self.trust_remote_code}
+        kwargs = {"trust_remote_code": self.trust_remote_code, "use_fast": False}
         try:
             return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
         except TypeError:
             kwargs.pop("trust_remote_code", None)
-            return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
+            try:
+                return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
+            except TypeError:
+                # Very old tokenizers may not accept use_fast in this code path.
+                kwargs.pop("use_fast", None)
+                return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
 
     def _load_with_model_cls(self, model_cls: Any, attn_impl: str) -> Any:
         kwargs: dict[str, Any] = {
@@ -114,7 +119,17 @@ class HistoricLocalVLMModel(VLMModel):
             # AutoProcessor class. In that case we fall back to tokenizer-only.
             self.processor = None
             processor_exc = exc
-        self.tokenizer = self._load_tokenizer()
+        self.tokenizer = getattr(self.processor, "tokenizer", None) if self.processor else None
+        if self.tokenizer is None:
+            try:
+                self.tokenizer = self._load_tokenizer()
+            except Exception as exc:
+                # Some checkpoints only work through processor-managed tokenization.
+                # Keep loading unless we actually require tokenizer fallback paths.
+                if self.processor is None:
+                    raise RuntimeError(
+                        f"Failed to load tokenizer for '{self.model_name}': {exc}"
+                    ) from exc
         requested_attn = self.attn_implementation
         try:
             self.model = self._load_model(requested_attn)

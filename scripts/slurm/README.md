@@ -260,11 +260,9 @@ bash scripts/slurm/submit_historic_vlms_local.sh
 ```
 
 The launcher uses `run_historic_vlm_local.sbatch` and per-model defaults for
-walltime, memory, and runtime env path. Runtime env supports either:
-- Python venv path (expects `<env>/bin/activate`)
-- Conda env path/name (expects conda activation)
-
-Override via `RUNTIME_ENV_PATH` if your Marlowe setup differs.
+walltime and memory, and follows the same conda pattern as other Marlowe
+wrappers via `CONDA_ENV_PATH` (default: `/projects/m000102/envs/levante-bench-py311`).
+Override via `CONDA_ENV_PATH=/projects/m000102/envs/your-env`.
 
 After jobs finish, preview bucket sync (dry-run by default):
 

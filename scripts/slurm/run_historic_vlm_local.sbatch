@@ -27,7 +27,8 @@ TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-min
 
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CODE_DIR="${CODE_DIR:-${PROJECT_ROOT}/code/levante-bench}"
-CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
+# Backward compatible: if CONDA_ENV_PATH is provided, treat it as runtime env path.
+RUNTIME_ENV_PATH="${RUNTIME_ENV_PATH:-${CONDA_ENV_PATH:-$CODE_DIR/.venv}}"
 CUDA_MODULE="${CUDA_MODULE:-stockcuda/12.6.2}"
 SLURM_LOG_DIR="${SLURM_LOG_DIR:-$PROJECT_ROOT/outputs/slurm}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/v1_additional_models}"
@@ -43,7 +44,25 @@ module purge
 module load conda
 module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate "$CONDA_ENV_PATH"
+
+# Support either a conda env (path/name) or a Python venv path.
+if [[ "$RUNTIME_ENV_PATH" == */* ]]; then
+  if [[ -d "$RUNTIME_ENV_PATH/conda-meta" ]]; then
+    conda activate "$RUNTIME_ENV_PATH"
+    ENV_KIND="conda:path"
+  elif [[ -f "$RUNTIME_ENV_PATH/bin/activate" ]]; then
+    # shellcheck disable=SC1090
+    source "$RUNTIME_ENV_PATH/bin/activate"
+    ENV_KIND="venv:path"
+  else
+    echo "ERROR: RUNTIME_ENV_PATH not found or not activatable: $RUNTIME_ENV_PATH" >&2
+    echo "Expected either <env>/conda-meta (conda) or <env>/bin/activate (venv)." >&2
+    exit 1
+  fi
+else
+  conda activate "$RUNTIME_ENV_PATH"
+  ENV_KIND="conda:name"
+fi
 
 export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
 export PYTHONPATH="${PYTHONPATH:-src}"
@@ -78,7 +97,7 @@ CMD+=("${TASK_ARGS[@]}")
 echo "Starting historic local VLM job on $(hostname) at $(date)"
 echo "Job ID: ${SLURM_JOB_ID:-manual}"
 echo "Model: $MODEL_ID"
-echo "Conda env: $CONDA_ENV_PATH"
+echo "Runtime env ($ENV_KIND): $RUNTIME_ENV_PATH"
 echo "Python: $(command -v python)"
 echo "Command: ${CMD[*]}"
 

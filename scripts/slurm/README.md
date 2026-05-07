@@ -230,6 +230,51 @@ python scripts/analysis/stitch_resampling_runs.py \
   --output-root results/resampling/gemma4-31B-it/v1/gemma4-31B-it_r0040
 ```
 
+## Historic VLM local launcher
+
+Use this to submit one job each for the historic local VLM targets:
+`llava15_13b`, `cogvlm`, and `openflamingo9b`.
+
+```bash
+bash scripts/slurm/submit_historic_vlms_local.sh
+```
+
+Preview generated `sbatch` commands without submitting:
+
+```bash
+DRY_RUN=1 bash scripts/slurm/submit_historic_vlms_local.sh
+```
+
+Submit only selected targets:
+
+```bash
+bash scripts/slurm/submit_historic_vlms_local.sh llava15_13b cogvlm
+```
+
+Useful overrides:
+
+```bash
+VERSION=v1_additional_images NUM_RUNS=1 \
+OUTPUT_ROOT=/projects/m000102/code/levante-bench/results/v1_additional_models \
+bash scripts/slurm/submit_historic_vlms_local.sh
+```
+
+The launcher uses `run_historic_vlm_local.sbatch` and per-model defaults for
+walltime, memory, and conda environment path. Override globally with environment
+variables if your Marlowe setup uses different env names.
+
+After jobs finish, preview bucket sync (dry-run by default):
+
+```bash
+bash scripts/slurm/sync_historic_vlms_to_bucket.sh
+```
+
+Run real upload:
+
+```bash
+DRY_RUN=0 bash scripts/slurm/sync_historic_vlms_to_bucket.sh
+```
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:

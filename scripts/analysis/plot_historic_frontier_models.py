@@ -71,7 +71,7 @@ DEFAULT_MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec("gemini25_pro", 2025.18, "Gemini 2.5 Pro"),
     ModelSpec("gpt41", 2025.33, "GPT-4.1"),
     ModelSpec("gpt53", 2025.58, "GPT-5.3"),
-    ModelSpec("gpt55", 2025.72, "GPT-5.5"),
+    ModelSpec("gpt55", 2026.15, "GPT-5.5"),
     ModelSpec("gemini3_flash", 2026.02, "Gemini 3 Flash"),
 )
 
@@ -129,6 +129,9 @@ def collect_series(
     missing: list[str] = []
     for spec in sorted(specs, key=lambda s: (s.year, s.slug)):
         summary = root / spec.slug / "summary.csv"
+        if not summary.is_file():
+            # Some hosted/API runs are stored under a baseline subfolder.
+            summary = root / spec.slug / "baseline" / "summary.csv"
         if not summary.is_file():
             missing.append(spec.slug)
             continue

@@ -38,6 +38,7 @@ class HistoricLocalVLMModel(VLMModel):
         device_map: str | None = None,
         max_image_edge: int | None = None,
         generation: dict[str, Any] | None = None,
+        tokenizer_hf_name: str | None = None,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(str(dtype), torch.bfloat16)
@@ -46,6 +47,7 @@ class HistoricLocalVLMModel(VLMModel):
         self.device_map = str(device_map).strip() if device_map else None
         self.max_image_edge = int(max_image_edge) if max_image_edge else None
         self.generation_defaults = dict(generation) if isinstance(generation, dict) else {}
+        self.tokenizer_hf_name = str(tokenizer_hf_name).strip() if tokenizer_hf_name else None
         self.tokenizer = None
 
     def _load_processor(self) -> Any:
@@ -66,15 +68,22 @@ class HistoricLocalVLMModel(VLMModel):
             # Prefer AutoTokenizer so remote-code tokenizers can initialize when
             # available. Fall back to slow/legacy modes for older checkpoints.
             last_exc: Exception | None = None
-            for kwargs in (
-                {"trust_remote_code": self.trust_remote_code, "use_fast": True},
-                {"trust_remote_code": self.trust_remote_code, "use_fast": False},
-                {"trust_remote_code": self.trust_remote_code, "use_fast": False, "legacy": True},
-            ):
-                try:
-                    return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
-                except Exception as exc:
-                    last_exc = exc
+            tokenizer_sources: list[str] = [self.model_name]
+            if self.tokenizer_hf_name:
+                tokenizer_sources.append(self.tokenizer_hf_name)
+            # CogVLM chat checkpoints are often based on Vicuna tokenizers.
+            tokenizer_sources.append("lmsys/vicuna-7b-v1.5")
+
+            for source in tokenizer_sources:
+                for kwargs in (
+                    {"trust_remote_code": self.trust_remote_code, "use_fast": True},
+                    {"trust_remote_code": self.trust_remote_code, "use_fast": False},
+                    {"trust_remote_code": self.trust_remote_code, "use_fast": False, "legacy": True},
+                ):
+                    try:
+                        return AutoTokenizer.from_pretrained(source, **kwargs)
+                    except Exception as exc:
+                        last_exc = exc
             if last_exc is not None:
                 raise last_exc
 

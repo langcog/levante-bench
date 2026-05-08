@@ -1,5 +1,6 @@
 name: cogvlm
 hf_name: THUDM/cogvlm-chat-hf
+tokenizer_hf_name: lmsys/vicuna-7b-v1.5
 dtype: float16
 attn_implementation: sdpa
 trust_remote_code: true

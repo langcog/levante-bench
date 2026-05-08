@@ -239,11 +239,32 @@ class HistoricLocalVLMModel(VLMModel):
             self.attn_implementation = "sdpa"
             self.model = self._load_model("sdpa")
         self.model.eval()
+        self._patch_generation_compat()
         if self.processor is None and processor_exc is not None:
             print(
                 f"[{self.model_name}] processor unavailable ({type(processor_exc).__name__}); "
                 "using tokenizer/build_conversation_input_ids fallback."
             )
+
+    def _patch_generation_compat(self) -> None:
+        """Patch model methods for remote-code / transformers compatibility."""
+        if self.model is None:
+            return
+        lower_name = self.model_name.lower()
+        if "cogvlm" not in lower_name:
+            return
+        # Some CogVLM remote-code revisions rely on a helper that is provided by
+        # newer/other transformers generation mixins. Add a safe fallback so
+        # generation does not crash when the helper is absent.
+        if not hasattr(self.model, "_extract_past_from_model_output"):
+            def _extract_past_from_model_output(_self, outputs):
+                if outputs is None:
+                    return None
+                if isinstance(outputs, dict):
+                    return outputs.get("past_key_values")
+                return getattr(outputs, "past_key_values", None)
+
+            setattr(self.model, "_extract_past_from_model_output", _extract_past_from_model_output.__get__(self.model, type(self.model)))
 
     def _build_messages(
         self,

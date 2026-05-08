@@ -303,9 +303,18 @@ class HistoricLocalVLMModel(VLMModel):
             model_inputs: dict[str, Any] = {}
             for k, v in inputs.items():
                 if torch.is_tensor(v):
-                    model_inputs[k] = v.unsqueeze(0).to(self.device)
+                    t = v.unsqueeze(0).to(self.device)
+                    if k in {"images", "pixel_values"} and t.is_floating_point():
+                        t = t.to(self.dtype)
+                    model_inputs[k] = t
                 elif isinstance(v, list) and v and torch.is_tensor(v[0]):
-                    model_inputs[k] = [[item.to(self.device) for item in v]]
+                    converted: list[torch.Tensor] = []
+                    for item in v:
+                        t = item.to(self.device)
+                        if k in {"images", "pixel_values"} and t.is_floating_point():
+                            t = t.to(self.dtype)
+                        converted.append(t)
+                    model_inputs[k] = [converted]
                 else:
                     model_inputs[k] = v
 

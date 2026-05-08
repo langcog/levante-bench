@@ -165,11 +165,13 @@ class HistoricLocalVLMModel(VLMModel):
         if "cogvlm" not in lower_name:
             return
         if not hasattr(self.model, "_extract_past_from_model_output"):
-            def _extract_past_from_model_output(_self, outputs):
+            def _extract_past_from_model_output(_self, outputs, *args, **kwargs):
                 if outputs is None:
                     return None
                 if isinstance(outputs, dict):
                     return outputs.get("past_key_values")
+                if isinstance(outputs, (list, tuple)) and len(outputs) > 1:
+                    return outputs[1]
                 return getattr(outputs, "past_key_values", None)
 
             setattr(self.model, "_extract_past_from_model_output", _extract_past_from_model_output.__get__(self.model, type(self.model)))

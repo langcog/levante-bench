@@ -480,6 +480,23 @@ class VLMModel:
         text = text.strip()
         labels_upper = [l.upper() for l in option_labels]
 
+        def _looks_like_label_list_prefix(value: str) -> bool:
+            """Detect echoed option-label preambles like 'A, B, C, or D'."""
+            if len(labels_upper) < 2:
+                return False
+            # Only inspect the beginning where instruction echoes typically appear.
+            head = value[:48].upper()
+            label_seq = ", ".join(labels_upper[: min(len(labels_upper), 4)])
+            if head.startswith(label_seq):
+                return True
+            # Also catch variants with conjunctions/punctuation after several labels.
+            listed = re.match(
+                r"^\s*[A-Z](?:\s*,\s*[A-Z]){1,7}\s*(?:,?\s*(?:OR|AND)\s*[A-Z])?",
+                head,
+                re.IGNORECASE,
+            )
+            return bool(listed)
+
         # 1. json-repair layer.
         parsed = _try_json_repair(text)
         if isinstance(parsed, dict) and "answer" in parsed:
@@ -592,17 +609,18 @@ class VLMModel:
             )
 
         # 6. Text starts with label followed by delimiter.
-        for label in option_labels:
-            if text.upper().startswith(label.upper()):
-                rest = text[len(label):]
-                if not rest or rest[0] in " .),:;\n":
-                    return ParseResult(
-                        value=label.upper(),
-                        reason=rest.strip(),
-                        parse_method="prefix_label",
-                        parse_confidence="low",
-                        raw_candidate=label,
-                    )
+        if not _looks_like_label_list_prefix(text):
+            for label in option_labels:
+                if text.upper().startswith(label.upper()):
+                    rest = text[len(label):]
+                    if not rest or rest[0] in " .),:;\n":
+                        return ParseResult(
+                            value=label.upper(),
+                            reason=rest.strip(),
+                            parse_method="prefix_label",
+                            parse_confidence="low",
+                            raw_candidate=label,
+                        )
 
         return ParseResult(
             value=None,

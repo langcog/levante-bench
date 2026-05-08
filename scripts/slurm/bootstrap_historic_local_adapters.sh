@@ -156,6 +156,23 @@ class HistoricLocalVLMModel(VLMModel):
             self.attn_implementation = "sdpa"
             self.model = self._load_model("sdpa")
         self.model.eval()
+        self._patch_generation_compat()
+
+    def _patch_generation_compat(self) -> None:
+        if self.model is None:
+            return
+        lower_name = self.model_name.lower()
+        if "cogvlm" not in lower_name:
+            return
+        if not hasattr(self.model, "_extract_past_from_model_output"):
+            def _extract_past_from_model_output(_self, outputs):
+                if outputs is None:
+                    return None
+                if isinstance(outputs, dict):
+                    return outputs.get("past_key_values")
+                return getattr(outputs, "past_key_values", None)
+
+            setattr(self.model, "_extract_past_from_model_output", _extract_past_from_model_output.__get__(self.model, type(self.model)))
 
     def _build_messages(
         self,
@@ -223,6 +240,7 @@ capabilities:
 
 cog_content='name: cogvlm
 hf_name: THUDM/cogvlm-chat-hf
+tokenizer_hf_name: lmsys/vicuna-7b-v1.5
 dtype: float16
 attn_implementation: sdpa
 trust_remote_code: true
@@ -234,6 +252,7 @@ capabilities:
 
 flamingo_content='name: openflamingo9b
 hf_name: openflamingo/OpenFlamingo-9B-vitl-mpt7b
+tokenizer_hf_name: EleutherAI/gpt-neox-20b
 dtype: float16
 attn_implementation: sdpa
 trust_remote_code: true

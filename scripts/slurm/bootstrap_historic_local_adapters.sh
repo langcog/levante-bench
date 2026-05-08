@@ -246,6 +246,8 @@ tokenizer_hf_name: lmsys/vicuna-7b-v1.5
 dtype: float16
 attn_implementation: sdpa
 trust_remote_code: true
+use_json_format: false
+max_new_tokens: 16
 capabilities:
   - text_only
   - single_image

@@ -46,6 +46,10 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
 {
   echo "models:"
   echo "  - name: ${MODEL_ID}"
+  if [[ "${MODEL_ID}" == "cogvlm" ]]; then
+    echo "    use_json_format: false"
+    echo "    max_new_tokens: 16"
+  fi
   echo ""
   echo "tasks:"
   tasks_normalized="${TASKS_CSV//;/,}"

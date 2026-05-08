@@ -80,6 +80,8 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
   echo "    dtype: float16"
   echo "    attn_implementation: sdpa"
   echo "    trust_remote_code: true"
+  echo "    use_json_format: false"
+  echo "    max_new_tokens: 16"
   echo ""
   echo "tasks:"
   tasks_normalized="${TASKS_CSV//;/,}"

@@ -82,21 +82,46 @@ class HistoricLocalVLMModel(VLMModel):
             return AutoProcessor.from_pretrained(self.model_name, **kwargs)
 
     def _load_with_model_cls(self, model_cls: Any, attn_impl: str) -> Any:
-        kwargs: dict[str, Any] = {
+        base_kwargs: dict[str, Any] = {
             "low_cpu_mem_usage": True,
             "trust_remote_code": self.trust_remote_code,
-            "attn_implementation": attn_impl,
         }
         if self.device_map:
-            kwargs["device_map"] = self.device_map
-        try:
-            kwargs["torch_dtype"] = self.dtype
-            model = model_cls.from_pretrained(self.model_name, **kwargs)
-        except TypeError:
-            kwargs.pop("torch_dtype", None)
-            kwargs["dtype"] = self.dtype
-            model = model_cls.from_pretrained(self.model_name, **kwargs)
-        return model if self.device_map else model.to(self.device)
+            base_kwargs["device_map"] = self.device_map
+
+        attempt_kwargs = []
+
+        kw = dict(base_kwargs)
+        kw["attn_implementation"] = attn_impl
+        kw["torch_dtype"] = self.dtype
+        attempt_kwargs.append(kw)
+
+        kw = dict(base_kwargs)
+        kw["attn_implementation"] = attn_impl
+        kw["dtype"] = self.dtype
+        attempt_kwargs.append(kw)
+
+        kw = dict(base_kwargs)
+        kw["torch_dtype"] = self.dtype
+        attempt_kwargs.append(kw)
+
+        kw = dict(base_kwargs)
+        kw["dtype"] = self.dtype
+        attempt_kwargs.append(kw)
+
+        attempt_kwargs.append(dict(base_kwargs))
+
+        last_exc: Exception | None = None
+        for kwargs in attempt_kwargs:
+            try:
+                model = model_cls.from_pretrained(self.model_name, **kwargs)
+                return model if self.device_map else model.to(self.device)
+            except Exception as exc:
+                last_exc = exc
+                continue
+        if last_exc is None:
+            raise RuntimeError(f"Failed to load model class {model_cls} for {self.model_name!r}.")
+        raise last_exc
 
     def _load_model(self, attn_impl: str) -> Any:
         from transformers import AutoModelForCausalLM

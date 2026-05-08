@@ -87,6 +87,32 @@ class HistoricLocalVLMModel(VLMModel):
             if last_exc is not None:
                 raise last_exc
 
+        if "openflamingo" in lower_name:
+            # OpenFlamingo checkpoints can expose incomplete tokenizer metadata
+            # under their primary repo. Prefer a known GPT-NeoX tokenizer source.
+            last_exc: Exception | None = None
+            tokenizer_sources: list[str] = []
+            if self.tokenizer_hf_name:
+                tokenizer_sources.append(self.tokenizer_hf_name)
+            tokenizer_sources.extend(
+                [
+                    "EleutherAI/gpt-neox-20b",
+                    self.model_name,
+                ]
+            )
+            for source in tokenizer_sources:
+                for kwargs in (
+                    {"trust_remote_code": self.trust_remote_code, "use_fast": False},
+                    {"trust_remote_code": self.trust_remote_code, "use_fast": True},
+                    {"trust_remote_code": self.trust_remote_code, "use_fast": False, "legacy": True},
+                ):
+                    try:
+                        return AutoTokenizer.from_pretrained(source, **kwargs)
+                    except Exception as exc:
+                        last_exc = exc
+            if last_exc is not None:
+                raise last_exc
+
         kwargs = {"trust_remote_code": self.trust_remote_code, "use_fast": False}
         try:
             return AutoTokenizer.from_pretrained(self.model_name, **kwargs)

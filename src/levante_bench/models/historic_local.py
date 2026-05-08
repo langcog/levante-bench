@@ -63,11 +63,20 @@ class HistoricLocalVLMModel(VLMModel):
 
         lower_name = self.model_name.lower()
         if "cogvlm" in lower_name:
-            # CogVLM chat checkpoints are LLaMA-family and often fail through
-            # AutoTokenizer fast/convert code paths.
-            from transformers import LlamaTokenizer
-
-            return LlamaTokenizer.from_pretrained(self.model_name, use_fast=False)
+            # Prefer AutoTokenizer so remote-code tokenizers can initialize when
+            # available. Fall back to slow/legacy modes for older checkpoints.
+            last_exc: Exception | None = None
+            for kwargs in (
+                {"trust_remote_code": self.trust_remote_code, "use_fast": True},
+                {"trust_remote_code": self.trust_remote_code, "use_fast": False},
+                {"trust_remote_code": self.trust_remote_code, "use_fast": False, "legacy": True},
+            ):
+                try:
+                    return AutoTokenizer.from_pretrained(self.model_name, **kwargs)
+                except Exception as exc:
+                    last_exc = exc
+            if last_exc is not None:
+                raise last_exc
 
         kwargs = {"trust_remote_code": self.trust_remote_code, "use_fast": False}
         try:

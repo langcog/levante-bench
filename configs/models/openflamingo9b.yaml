@@ -1,5 +1,6 @@
 name: openflamingo9b
 hf_name: openflamingo/OpenFlamingo-9B-vitl-mpt7b
+tokenizer_hf_name: EleutherAI/gpt-neox-20b
 dtype: float16
 attn_implementation: sdpa
 trust_remote_code: true

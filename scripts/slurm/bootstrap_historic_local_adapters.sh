@@ -187,6 +187,7 @@ class HistoricLocalVLMModel(VLMModel):
             inputs = inputs.to(self.device)
 
         gen_kwargs = {"do_sample": False, "max_new_tokens": int(max_new_tokens), **self.generation_defaults}
+        gen_kwargs.setdefault("use_cache", False)
         with torch.no_grad():
             output_ids = self.model.generate(**inputs, **gen_kwargs)
 

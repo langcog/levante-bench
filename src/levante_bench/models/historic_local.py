@@ -291,6 +291,10 @@ class HistoricLocalVLMModel(VLMModel):
                 "max_new_tokens": int(max_new_tokens),
                 **self.generation_defaults,
             }
+            # CogVLM remote code can crash when transformers generation hands it
+            # partially-populated past_key_values structures. Disabling cache
+            # avoids that incompatible code path at modest speed cost.
+            gen_kwargs.setdefault("use_cache", False)
             with torch.no_grad():
                 output_ids = self.model.generate(**model_inputs, **gen_kwargs)
 

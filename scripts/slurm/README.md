@@ -285,6 +285,39 @@ bash scripts/slurm/bootstrap_historic_local_adapters.sh
 
 Use `FORCE=1` to overwrite existing files with repo templates.
 
+## CogVLM from shared scratch
+
+Use this workflow when CogVLM downloads are unstable or when runtime should avoid
+network lookups entirely.
+
+Prefetch required Hugging Face repos to shared scratch:
+
+```bash
+bash scripts/slurm/prefetch_cogvlm_to_scratch.sh
+```
+
+Submit full benchmark (all six tasks) using local snapshots:
+
+```bash
+bash scripts/slurm/submit_cogvlm_from_scratch.sh
+```
+
+Submit a smoke run (`vocab` only):
+
+```bash
+SMOKE=1 bash scripts/slurm/submit_cogvlm_from_scratch.sh
+```
+
+Run prefetch and submit in one command:
+
+```bash
+PREFETCH=1 bash scripts/slurm/submit_cogvlm_from_scratch.sh
+```
+
+By default these scripts use:
+- env: `/projects/m000102/envs/levante-cogvlm`
+- cache root: `/scratch/m000102/$USER/levante-hf`
+
 ## What it runs
 
 - Task set is fixed to all six benchmark tasks:
@@ -323,3 +356,18 @@ Typical multirun path (true-random):
 /projects/m000102/outputs/slurm/<job-name>-<job-id>.out
 /projects/m000102/outputs/slurm/<job-name>-<job-id>.err
 ```
+
+## Hugging Face cache location
+
+All Slurm wrappers that run through `scripts/slurm/_levante_common.sh` now
+default model/tokenizer caches to shared scratch:
+
+```text
+/scratch/m000102/$USER/levante-hf/
+  hf-home/
+  hub/
+  transformers/
+```
+
+Override with environment variables when needed:
+`SCRATCH_ROOT`, `HF_HOME`, `HF_HUB_CACHE`, `TRANSFORMERS_CACHE`.

@@ -49,8 +49,17 @@ if ! "$LEVANTE_PYTHON_BIN" -c "import omegaconf" >/dev/null 2>&1; then
   exit 1
 fi
 
+# Default Hugging Face caches to shared scratch to avoid filling $HOME.
+SCRATCH_USER="${USER:-$(id -un)}"
+SCRATCH_ROOT="${SCRATCH_ROOT:-/scratch/m000102/$SCRATCH_USER/levante-hf}"
+export HF_HOME="${HF_HOME:-$SCRATCH_ROOT/hf-home}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-$SCRATCH_ROOT/hub}"
+export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$SCRATCH_ROOT/transformers}"
+export HF_HUB_DISABLE_TELEMETRY="${HF_HUB_DISABLE_TELEMETRY:-1}"
+
 mkdir -p "$SLURM_LOG_DIR"
 mkdir -p "$RESULTS_ROOT"
+mkdir -p "$HF_HOME" "$HF_HUB_CACHE" "$TRANSFORMERS_CACHE"
 
 cd "$CODE_DIR"
 
@@ -75,6 +84,9 @@ echo "Conda env: $CONDA_ENV_PATH"
 echo "LEVANTE_PYTHON_BIN: $LEVANTE_PYTHON_BIN"
 echo "Python after activate: $(command -v python)"
 echo "Python version: $(python -V 2>&1)"
+echo "HF_HOME: $HF_HOME"
+echo "HF_HUB_CACHE: $HF_HUB_CACHE"
+echo "TRANSFORMERS_CACHE: $TRANSFORMERS_CACHE"
 "$LEVANTE_PYTHON_BIN" - <<'PY'
 import site
 print(f"User site enabled: {site.ENABLE_USER_SITE}")

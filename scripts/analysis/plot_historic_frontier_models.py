@@ -67,7 +67,7 @@ class ModelSpec:
 # ordering only.
 DEFAULT_MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec("clip_base", 2021.0, "CLIP ViT-B/32"),
-    ModelSpec("tinyllava", 2023.92, "LLaVA 1.5B"),
+    ModelSpec("llava15_13b", 2023.92, "LLaVA 1.5 13B"),
     ModelSpec("gpt4o", 2024.42, "GPT-4o"),
     ModelSpec("gemini25_pro", 2025.18, "Gemini 2.5 Pro"),
     ModelSpec("gpt41", 2025.33, "GPT-4.1"),

@@ -319,6 +319,119 @@ class HistoricLocalVLMModel(VLMModel):
         merged_prompt = f"{compact_prompt}\n\n{panel_hint}" if compact_prompt else panel_hint
         return merged_prompt, [canvas]
 
+    def _build_cogvlm_model_inputs(
+        self,
+        prompt_text: str,
+        pil_images: list[Image.Image] | None,
+        tokenizer: Any,
+    ) -> dict[str, Any]:
+        if pil_images:
+            cog_prompt, cog_images = self._pack_multi_images_for_cogvlm(prompt_text, pil_images)
+            inputs = self.model.build_conversation_input_ids(
+                tokenizer=tokenizer,
+                query=cog_prompt,
+                history=[],
+                images=cog_images,
+            )
+        else:
+            # Text-only tasks perform better through direct tokenization.
+            inputs = tokenizer(prompt_text, return_tensors="pt")
+
+        model_inputs: dict[str, Any] = {}
+        for k, v in inputs.items():
+            if torch.is_tensor(v):
+                t = v.to(self.device)
+                if t.ndim == 1:
+                    t = t.unsqueeze(0)
+                if k in {"images", "pixel_values"} and t.is_floating_point():
+                    t = t.to(self.dtype)
+                model_inputs[k] = t
+            elif isinstance(v, list) and v and torch.is_tensor(v[0]):
+                converted: list[torch.Tensor] = []
+                for item in v:
+                    t = item.to(self.device)
+                    if k in {"images", "pixel_values"} and t.is_floating_point():
+                        t = t.to(self.dtype)
+                    converted.append(t)
+                model_inputs[k] = [converted]
+            else:
+                model_inputs[k] = v
+
+        if "token_type_ids" not in model_inputs:
+            input_ids = model_inputs.get("input_ids")
+            if torch.is_tensor(input_ids):
+                model_inputs["token_type_ids"] = torch.zeros_like(input_ids, dtype=torch.long)
+        return model_inputs
+
+    def _score_cogvlm_label_choices(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None,
+        option_labels: list[str],
+    ) -> tuple[str | None, dict[str, float]]:
+        tokenizer = self.tokenizer or getattr(self.processor, "tokenizer", None)
+        if tokenizer is None:
+            return None, {}
+        pil_images = load_pil_images(image_paths, max_image_edge=self.max_image_edge)
+        model_inputs = self._build_cogvlm_model_inputs(prompt_text, pil_images, tokenizer)
+        with torch.no_grad():
+            outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
+        logits = outputs.logits[:, -1, :]
+
+        scores: dict[str, float] = {}
+        for label in option_labels:
+            token_ids: set[int] = set()
+            for variant in (label, f" {label}"):
+                ids = tokenizer.encode(variant, add_special_tokens=False)
+                if len(ids) == 1:
+                    token_ids.add(int(ids[0]))
+            if token_ids:
+                cand = torch.tensor(sorted(token_ids), device=logits.device, dtype=torch.long)
+                scores[label] = float(torch.max(torch.index_select(logits[0], 0, cand)).item())
+            else:
+                scores[label] = float("-inf")
+
+        if not scores:
+            return None, {}
+        best = max(scores.items(), key=lambda kv: kv[1])[0]
+        return best, scores
+
+    def evaluate_trial(self, trial: dict) -> dict:
+        lower_name = self.model_name.lower()
+        answer_format = str(trial.get("answer_format", "label")).strip().lower()
+        if (
+            "cogvlm" in lower_name
+            and answer_format == "label"
+            and trial.get("option_labels")
+            and (self.processor is None)
+            and hasattr(self.model, "build_conversation_input_ids")
+        ):
+            prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
+            predicted_label, score_map = self._score_cogvlm_label_choices(
+                prompt_text=prompt,
+                image_paths=image_paths if image_paths else None,
+                option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
+            )
+            return {
+                "trial_id": trial["trial_id"],
+                "item_uid": trial["item_uid"],
+                "generated_text": predicted_label or "",
+                "predicted_label": predicted_label,
+                "reason": "choice logits",
+                "parse_method": "choice_logits",
+                "parse_confidence": "high" if predicted_label is not None else "none",
+                "parse_raw_candidate": (
+                    "; ".join(f"{k}:{v:.3f}" for k, v in sorted(score_map.items()))
+                    if score_map
+                    else ""
+                ),
+                "correct_label": trial["correct_label"],
+                "is_correct": predicted_label == trial["correct_label"],
+                "options": trial.get("options", []),
+                "option_labels": trial.get("option_labels", []),
+            }
+        return super().evaluate_trial(trial)
+
     def generate(
         self,
         prompt_text: str,
@@ -334,45 +447,7 @@ class HistoricLocalVLMModel(VLMModel):
             and hasattr(self.model, "build_conversation_input_ids")
         ):
             # CogVLM fallback paths when AutoProcessor is unavailable.
-            if pil_images:
-                cog_prompt, cog_images = self._pack_multi_images_for_cogvlm(prompt_text, pil_images)
-                # Multi-modal remote-code path.
-                inputs = self.model.build_conversation_input_ids(
-                    tokenizer=tokenizer,
-                    query=cog_prompt,
-                    history=[],
-                    images=cog_images,
-                )
-            else:
-                # Text-only tasks (e.g., egma-math) perform substantially better
-                # when we bypass CogVLM's image-oriented conversation builder.
-                inputs = tokenizer(prompt_text, return_tensors="pt")
-            model_inputs: dict[str, Any] = {}
-            for k, v in inputs.items():
-                if torch.is_tensor(v):
-                    t = v.to(self.device)
-                    if t.ndim == 1:
-                        t = t.unsqueeze(0)
-                    if k in {"images", "pixel_values"} and t.is_floating_point():
-                        t = t.to(self.dtype)
-                    model_inputs[k] = t
-                elif isinstance(v, list) and v and torch.is_tensor(v[0]):
-                    converted: list[torch.Tensor] = []
-                    for item in v:
-                        t = item.to(self.device)
-                        if k in {"images", "pixel_values"} and t.is_floating_point():
-                            t = t.to(self.dtype)
-                        converted.append(t)
-                    model_inputs[k] = [converted]
-                else:
-                    model_inputs[k] = v
-
-            # Some CogVLM remote-code revisions require token_type_ids in
-            # prepare_inputs_for_generation even for plain text prompts.
-            if "token_type_ids" not in model_inputs:
-                input_ids = model_inputs.get("input_ids")
-                if torch.is_tensor(input_ids):
-                    model_inputs["token_type_ids"] = torch.zeros_like(input_ids, dtype=torch.long)
+            model_inputs = self._build_cogvlm_model_inputs(prompt_text, pil_images, tokenizer)
 
             gen_kwargs = {
                 "do_sample": False,

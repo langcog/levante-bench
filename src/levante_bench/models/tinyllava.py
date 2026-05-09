@@ -18,6 +18,8 @@ Available model IDs:
 
 from __future__ import annotations
 
+import hashlib
+import random
 import re
 import tempfile
 from pathlib import Path
@@ -40,6 +42,8 @@ _FONT_CANDIDATES = (
     "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     "/System/Library/Fonts/Helvetica.ttc",
 )
+
+_CELL_NAMES = ("top-left", "top-middle", "top-right", "middle-left", "middle", "middle-right", "bottom-left", "bottom-middle", "bottom-right")
 
 
 def _load_grid_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -222,45 +226,77 @@ class TinyLLaVAModel(VLMModel):
         if len(image_paths) == 1:
             return str(Path(image_paths[0]).resolve()), clean_prompt
 
+        has_image0 = "<image0>" in prompt_text
+        labels: list[str] = []
+        for i, _ in enumerate(image_paths):
+            if has_image0:
+                if i == 0:
+                    labels.append("0")
+                elif 1 <= i <= 26:
+                    labels.append(chr(ord("A") + i - 1))
+                else:
+                    labels.append(str(i))
+            else:
+                if i < 26:
+                    labels.append(chr(ord("A") + i))
+                else:
+                    labels.append(str(i + 1))
+
+        entries = list(zip(image_paths, labels))
+        # Debias fixed corner priors by shuffling placement deterministically.
+        # Keep context image (label 0) fixed when present.
+        context_entry = None
+        if entries and entries[0][1] == "0":
+            context_entry = entries[0]
+            entries = entries[1:]
+        seed_src = f"{prompt_text}|{'|'.join(image_paths)}"
+        seed = int(hashlib.sha256(seed_src.encode("utf-8")).hexdigest()[:16], 16)
+        rng = random.Random(seed)
+        rng.shuffle(entries)
+        if context_entry is not None:
+            entries = [context_entry] + entries
+
         # Multiple images → compose a labeled grid
-        grid_path = self._make_grid(image_paths)
-        # Append a grid-layout hint so the model understands the labeling
-        n = min(len(image_paths), 4)
-        layout = ", ".join(
-            f"{_LABELS[i]}={'top-left' if i==0 else 'top-right' if i==1 else 'bottom-left' if i==2 else 'bottom-right'}"
-            for i in range(n)
-        )
+        grid_path, placement = self._make_grid(entries)
+        # Append a grid-layout hint so the model understands the labeling.
+        layout = ", ".join(f"{label}={cell_name}" for label, cell_name in placement)
         grid_prompt = (
             f"{clean_prompt} "
-            f"The image is a {2}×{(n+1)//2} grid of options ({layout})."
+            f"The image is a labeled grid ({layout})."
         )
         return grid_path, grid_prompt
 
-    def _make_grid(self, image_paths: list[str]) -> str:
-        """Compose up to 4 images into a labeled 2×2 grid; return temp path."""
-        n = min(len(image_paths), 4)
-        cols, rows = 2, (n + 1) // 2
+    def _make_grid(self, entries: list[tuple[str, str]]) -> tuple[str, list[tuple[str, str]]]:
+        """Compose images into a labeled grid; return (path, label placement)."""
+        n = len(entries)
+        if n <= 0:
+            raise ValueError("No images to compose.")
+        cols = 2 if n <= 4 else 3
+        rows = (n + cols - 1) // cols
         grid = Image.new("RGB", (cols * _CELL, rows * _CELL), color=(240, 240, 240))
         draw = ImageDraw.Draw(grid)
 
         font = _load_grid_font()
+        placement: list[tuple[str, str]] = []
 
-        for i in range(n):
-            img = Image.open(image_paths[i]).convert("RGB").resize(
+        for i, (image_path, label) in enumerate(entries):
+            img = Image.open(image_path).convert("RGB").resize(
                 (_CELL, _CELL), Image.LANCZOS
             )
             x, y = (i % cols) * _CELL, (i // cols) * _CELL
             grid.paste(img, (x, y))
+            cell_name = _CELL_NAMES[i] if i < len(_CELL_NAMES) else f"cell-{i}"
+            placement.append((label, cell_name))
             # Draw a small label badge in the top-left corner of each cell
             badge_w, badge_h = 28, 28
             draw.rectangle([x, y, x + badge_w, y + badge_h], fill=(0, 0, 0))
-            draw.text((x + 6, y + 4), _LABELS[i], fill=(255, 255, 255), font=font)
+            draw.text((x + 6, y + 4), label, fill=(255, 255, 255), font=font)
 
         if self._tmp_dir is None:
             self._tmp_dir = tempfile.mkdtemp()
         path = str(Path(self._tmp_dir) / "grid.png")
         grid.save(path)
-        return path
+        return path, placement
 
     # ── Output parsing ──────────────────────────────────────────────────────
 

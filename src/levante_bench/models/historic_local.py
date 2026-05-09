@@ -293,17 +293,25 @@ class HistoricLocalVLMModel(VLMModel):
             and tokenizer is not None
             and hasattr(self.model, "build_conversation_input_ids")
         ):
-            # CogVLM-style remote code path.
-            inputs = self.model.build_conversation_input_ids(
-                tokenizer=tokenizer,
-                query=prompt_text,
-                history=[],
-                images=pil_images or [],
-            )
+            # CogVLM fallback paths when AutoProcessor is unavailable.
+            if pil_images:
+                # Multi-modal remote-code path.
+                inputs = self.model.build_conversation_input_ids(
+                    tokenizer=tokenizer,
+                    query=prompt_text,
+                    history=[],
+                    images=pil_images or [],
+                )
+            else:
+                # Text-only tasks (e.g., egma-math) perform substantially better
+                # when we bypass CogVLM's image-oriented conversation builder.
+                inputs = tokenizer(prompt_text, return_tensors="pt")
             model_inputs: dict[str, Any] = {}
             for k, v in inputs.items():
                 if torch.is_tensor(v):
-                    t = v.unsqueeze(0).to(self.device)
+                    t = v.to(self.device)
+                    if t.ndim == 1:
+                        t = t.unsqueeze(0)
                     if k in {"images", "pixel_values"} and t.is_floating_point():
                         t = t.to(self.dtype)
                     model_inputs[k] = t

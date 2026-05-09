@@ -367,6 +367,13 @@ class HistoricLocalVLMModel(VLMModel):
                 else:
                     model_inputs[k] = v
 
+            # Some CogVLM remote-code revisions require token_type_ids in
+            # prepare_inputs_for_generation even for plain text prompts.
+            if "token_type_ids" not in model_inputs:
+                input_ids = model_inputs.get("input_ids")
+                if torch.is_tensor(input_ids):
+                    model_inputs["token_type_ids"] = torch.zeros_like(input_ids, dtype=torch.long)
+
             gen_kwargs = {
                 "do_sample": False,
                 "max_new_tokens": int(max_new_tokens),

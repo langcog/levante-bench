@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Optional
 
 import torch
+from PIL import Image, ImageDraw
 
 from levante_bench.models._common import (
     DTYPE_MAP,
@@ -279,6 +281,44 @@ class HistoricLocalVLMModel(VLMModel):
             {"role": "user", "content": content},
         ]
 
+    def _pack_multi_images_for_cogvlm(
+        self,
+        prompt_text: str,
+        pil_images: list[Image.Image],
+    ) -> tuple[str, list[Image.Image]]:
+        """Collapse multi-image trials to one panel image for CogVLM."""
+        if len(pil_images) <= 1:
+            return prompt_text, pil_images
+
+        n = len(pil_images)
+        cols = 2
+        rows = (n + cols - 1) // cols
+        cell = min(int(self.max_image_edge or 448), 512)
+        pad = 8
+        canvas = Image.new("RGB", (cols * cell, rows * cell), color=(240, 240, 240))
+        draw = ImageDraw.Draw(canvas)
+
+        for idx, img in enumerate(pil_images):
+            tile = img.copy()
+            tile.thumbnail((cell - (2 * pad), cell - (2 * pad)), Image.Resampling.LANCZOS)
+            ox = (idx % cols) * cell + (cell - tile.width) // 2
+            oy = (idx // cols) * cell + (cell - tile.height) // 2
+            canvas.paste(tile, (ox, oy))
+            # Index badge helps map prompt placeholders to merged panels.
+            bx0, by0 = (idx % cols) * cell + 4, (idx // cols) * cell + 4
+            bx1, by1 = bx0 + 24, by0 + 18
+            draw.rectangle([bx0, by0, bx1, by1], fill=(0, 0, 0))
+            draw.text((bx0 + 7, by0 + 3), str(idx), fill=(255, 255, 255))
+
+        compact_prompt = re.sub(r"<image\d+>", "", prompt_text).strip()
+        panel_hint = (
+            "All images are combined into one panel image. "
+            "Panels are numbered in row-major order (0, 1, 2, ...). "
+            "Use those panel numbers to identify the correct option."
+        )
+        merged_prompt = f"{compact_prompt}\n\n{panel_hint}" if compact_prompt else panel_hint
+        return merged_prompt, [canvas]
+
     def generate(
         self,
         prompt_text: str,
@@ -295,12 +335,13 @@ class HistoricLocalVLMModel(VLMModel):
         ):
             # CogVLM fallback paths when AutoProcessor is unavailable.
             if pil_images:
+                cog_prompt, cog_images = self._pack_multi_images_for_cogvlm(prompt_text, pil_images)
                 # Multi-modal remote-code path.
                 inputs = self.model.build_conversation_input_ids(
                     tokenizer=tokenizer,
-                    query=prompt_text,
+                    query=cog_prompt,
                     history=[],
-                    images=pil_images or [],
+                    images=cog_images,
                 )
             else:
                 # Text-only tasks (e.g., egma-math) perform substantially better

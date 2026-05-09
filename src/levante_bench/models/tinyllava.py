@@ -96,24 +96,42 @@ class TinyLLaVAModel(VLMModel):
         kw: dict[str, Any] = {
             "trust_remote_code": True,
             "attn_implementation": self.attn_implementation,
+            # Some upstream remote-code paths only honor the underscored key.
+            "_attn_implementation": self.attn_implementation,
         }
         if self.device_map:
             kw["device_map"] = self.device_map
+
+        def _load_with_kwargs(load_kwargs: dict[str, Any]):
+            return (
+                AutoModelForCausalLM.from_pretrained(self.model_name, **load_kwargs)
+                if model_cls is None
+                else model_cls.from_pretrained(self.model_name, **load_kwargs)
+            )
+
         try:
             kw["torch_dtype"] = self.dtype
-            m = (
-                AutoModelForCausalLM.from_pretrained(self.model_name, **kw)
-                if model_cls is None
-                else model_cls.from_pretrained(self.model_name, **kw)
-            )
+            m = _load_with_kwargs(kw)
         except TypeError:
             kw.pop("torch_dtype", None)
             kw["dtype"] = self.dtype
-            m = (
-                AutoModelForCausalLM.from_pretrained(self.model_name, **kw)
-                if model_cls is None
-                else model_cls.from_pretrained(self.model_name, **kw)
-            )
+            m = _load_with_kwargs(kw)
+        except ImportError as exc:
+            # Transformers may still route to flash-attn based on checkpoint
+            # defaults even when adapters request eager/sdpa. Retry explicitly.
+            if "flash_attn" not in str(exc).lower() and "flashattention" not in str(exc).lower():
+                raise
+            kw.pop("torch_dtype", None)
+            kw.pop("dtype", None)
+            kw["attn_implementation"] = "eager"
+            kw["_attn_implementation"] = "eager"
+            try:
+                kw["torch_dtype"] = self.dtype
+                m = _load_with_kwargs(kw)
+            except TypeError:
+                kw.pop("torch_dtype", None)
+                kw["dtype"] = self.dtype
+                m = _load_with_kwargs(kw)
         if not self.device_map:
             m = m.to(self.device)
         return m

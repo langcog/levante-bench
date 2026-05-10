@@ -10,7 +10,7 @@ Statistical comparison of model outputs to human response data using **IRT-deriv
 ## Scripts
 
 - **stats-helper.R** – Softmax, KL, beta optimization, RSA (adapted from DevBench).
-- **compare_levante.R** – Reads `data/responses/<version>/responses_by_ability/<task>_proportions_by_ability.csv` (item_uid, ability_bin, image1..image4) and `results/<version>/<model>/<task>.npy` (one row per item_uid). Joins IRT item difficulties from `data/responses/<version>/irt_models/<task>_item_params.csv`. Writes **D_KL** (per item_uid × ability_bin) and **accuracy** (per item_uid, with difficulty) to separate CSVs.
+- **compare_levante.R** – Reads `data/responses/<version>/responses_by_ability/<task>_proportions_by_ability.csv` (item_uid, ability_bin, image1..image4) and `results/<version>/<model>/<task>.npy` (one row per item_uid). Joins IRT item `d` parameters from `data/responses/<version>/irt_models/<task>_item_params.csv`. Writes **D_KL** (per item_uid × ability_bin) and **accuracy** (per item_uid, with the IRT `d` column named `difficulty`) to separate CSVs.
 
 ## IRT model mapping
 
@@ -28,7 +28,7 @@ The file `src/levante_bench/config/irt_model_mapping.csv` maps each task to its 
 
    This produces:
    - `data/responses/<version>/irt_models/<task>.rds` – downloaded IRT model
-   - `data/responses/<version>/irt_models/<task>_item_params.csv` – item difficulties (item_uid, difficulty)
+   - `data/responses/<version>/irt_models/<task>_item_params.csv` – item `d` parameters (item_uid, difficulty; higher values are empirically easier in the current exports)
    - `data/responses/<version>/irt_models/<task>_ability_scores.csv` – person abilities (run_id, ability, se)
    - `data/responses/<version>/responses_by_ability/<task>_proportions.csv` – overall response proportions (item_uid, image1..image4)
    - `data/responses/<version>/responses_by_ability/<task>_proportions_by_ability.csv` – ability-binned response proportions (item_uid, ability_bin, image1..image4), with 1-logit bins
@@ -93,13 +93,13 @@ The file `src/levante_bench/config/irt_model_mapping.csv` maps each task to its 
   The loader deduplicates by **item_uid**, so the model runs once per item and the .npy has one row per item_uid. The comparison aligns by item_uid (order from trials = order in .npy).
 
 - **Accuracy**
-  One row per item_uid: correct = 1 if model argmax (after softmax with fitted beta) equals the correct option, else 0. The `difficulty` column comes from the IRT model's `d` parameter. For 4 options, chance = 0.25. A negative correlation between `difficulty` and `correct` indicates the model finds harder items harder (expected).
+  One row per item_uid: correct = 1 if model argmax (after softmax with fitted beta) equals the correct option, else 0. The `difficulty` column comes from the IRT model's `d` parameter. In the current exports this parameter is easiness-oriented: higher values correlate with higher human item accuracy. For 4 options, chance = 0.25. A positive correlation between `difficulty` and `correct` indicates the model is more accurate on empirically easier items.
 
 - **D_KL**
   One row per (item_uid, ability_bin): KL(human proportions || model softmax) for that ability bin and item. Beta is fitted once to minimize mean D_KL across all (item_uid, ability_bin) pairs. Use the disaggregated D_KL CSV for per-ability or per-item analysis.
 
-- **Difficulty correlation**
-  The comparison script reports `difficulty correlation` — the point-biserial correlation between `correct` (0/1) and `difficulty` (IRT `d` parameter). Negative values mean harder items are less likely to be answered correctly by the model.
+- **IRT d correlation**
+  The comparison script reports the correlation between `correct` (0/1) and `difficulty` (IRT `d` parameter). Positive values mean the model is more likely to answer items with higher `d` correctly; validate the sign convention with `python scripts/analysis/validate_sign_conventions.py`.
 
 - **Spot-check**
   Inspect a few item_uids: in the accuracy CSV check that correct matches your expectation; in the D_KL CSV compare D_KL across ability bins or items.

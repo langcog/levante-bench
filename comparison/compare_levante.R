@@ -1,5 +1,5 @@
 # LEVANTE comparison: responses_by_ability (item_uid × ability_bin) vs model (one row per item_uid).
-# D_KL per (item_uid, ability_bin); accuracy per item_uid with IRT difficulty.
+# D_KL per (item_uid, ability_bin); accuracy per item_uid with IRT d parameter.
 # Usage: Rscript compare_levante.R --task TASK --model MODEL [--version VERSION] [--output-dir DIR] [--output-dkl CSV] [--output-accuracy CSV]
 # Requires: tidyverse, philentropy, nloptr, reticulate
 
@@ -186,6 +186,6 @@ message("Wrote ", output_dkl, " (", nrow(result$d_kl), " rows)")
 message("Wrote ", output_acc, " (", nrow(result$accuracy), " rows)")
 message("Beta = ", round(result$beta, 4),
         "; mean accuracy = ", round(mean(result$accuracy$correct, na.rm = TRUE), 4),
-        "; difficulty correlation = ",
+        "; IRT d/easiness correlation = ",
         tryCatch(round(cor(result$accuracy$correct, result$accuracy$difficulty,
                            use = "pairwise.complete.obs"), 4), error = function(e) "NA"))

@@ -14,6 +14,7 @@ from levante_bench.models.registry import register
 
 
 @register("gemini_pro")
+@register("gemini15_flash")
 @register("gemini20_flash")
 @register("gemini25_pro")
 @register("gemini3_flash")

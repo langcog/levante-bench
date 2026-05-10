@@ -1,0 +1,15 @@
+---
+description: Reinforce Slurm-only execution guidance in historic runbook docs
+globs: docs/historic_vlm_runbook.md
+alwaysApply: false
+---
+
+# Historic Runbook Execution Guidance
+
+- Document Marlowe benchmark/eval commands as Slurm submissions (`sbatch`), not direct long-running CLI invocations on login nodes.
+- Prefer `scripts/slurm/` wrappers and include concrete examples users can copy.
+- For every execution section, include:
+  - repo sync step (`cd /projects/m000102/code/levante-bench && git pull`)
+  - exact submit command
+  - where to watch job state/logs (`squeue`, Slurm output path)
+- Keep direct interactive commands limited to diagnostics or short smoke checks.

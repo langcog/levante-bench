@@ -67,13 +67,24 @@ class ModelSpec:
 # ordering only.
 DEFAULT_MODEL_SPECS: tuple[ModelSpec, ...] = (
     ModelSpec("clip_base", 2021.0, "CLIP ViT-B/32"),
-    ModelSpec("llava15_13b", 2023.92, "LLaVA 1.5 13B"),
+    ModelSpec("gemini15_flash", 2024.20, "Gemini 1.5 Flash"),
     ModelSpec("gpt4o", 2024.42, "GPT-4o"),
     ModelSpec("gemini25_pro", 2025.18, "Gemini 2.5 Pro"),
     ModelSpec("gpt41", 2025.33, "GPT-4.1"),
     ModelSpec("gpt53", 2025.58, "GPT-5.3"),
     ModelSpec("gpt55", 2026.15, "GPT-5.5"),
     ModelSpec("gemini3_flash", 2026.02, "Gemini 3 Flash"),
+)
+
+OPEN_WEIGHT_MODEL_SPECS: tuple[ModelSpec, ...] = (
+    ModelSpec("llava15_13b", 2023.92, "LLaVA 1.5 13B"),
+    ModelSpec("cogvlm", 2023.95, "CogVLM"),
+    ModelSpec("tinyllava", 2024.02, "TinyLLaVA 3.1B"),
+    ModelSpec("gemma3-4b-it", 2025.18, "Gemma 3 4B IT"),
+    ModelSpec("qwen25vl_32b", 2024.75, "Qwen2.5-VL 32B"),
+    ModelSpec("qwen3vl_30b", 2025.58, "Qwen3-VL 30B"),
+    ModelSpec("smolvlm2-500M-tl", 2025.30, "SmolVLM2 500M TL"),
+    ModelSpec("smolvlm2-256M-tl", 2025.30, "SmolVLM2 256M TL"),
 )
 
 
@@ -144,7 +155,9 @@ def collect_series(
 def plot_macro(
     rows: list[tuple[float, str, str, dict[str, float]]],
     *,
+    open_rows: list[tuple[float, str, str, dict[str, float]]],
     missing: list[str],
+    open_missing: list[str],
     out: Path,
     dpi: int,
 ) -> None:
@@ -155,10 +168,24 @@ def plot_macro(
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
     labels = [p[2] for p in points]
+    open_points = [(r[0], sum(r[3].values()) / len(TASK_ORDER), r[2], r[1]) for r in open_rows]
+    open_xs = [p[0] for p in open_points]
+    open_ys = [p[1] for p in open_points]
+    open_labels = [p[2] for p in open_points]
 
     fig, ax = plt.subplots(figsize=(11, 5.8), layout="constrained")
     ax.plot(xs, ys, color="#334155", linewidth=1.5, alpha=0.85, zorder=1)
     ax.scatter(xs, ys, s=120, color="#2563eb", edgecolors="#1e293b", linewidths=1.2, zorder=2)
+    if open_points:
+        ax.scatter(
+            open_xs,
+            open_ys,
+            s=75,
+            color="#dc2626",
+            edgecolors="#7f1d1d",
+            linewidths=1.0,
+            zorder=3,
+        )
 
     legend_handles = [
         mlines.Line2D(
@@ -172,6 +199,20 @@ def plot_macro(
         )
         for x, y, lab in sorted(zip(xs, ys, labels), key=lambda t: (t[0], t[1]))
     ]
+    legend_handles.extend(
+        [
+            mlines.Line2D(
+                [],
+                [],
+                color="#dc2626",
+                marker="o",
+                linestyle="",
+                markersize=6.5,
+                label=f"{lab} — {y:.1%} [open]",
+            )
+            for x, y, lab in sorted(zip(open_xs, open_ys, open_labels), key=lambda t: (t[0], t[1]))
+        ]
+    )
     ax.legend(
         handles=legend_handles,
         loc="upper left",
@@ -187,14 +228,16 @@ def plot_macro(
     ax.set_ylim(0.0, 1.02)
     ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
     ax.grid(True, alpha=0.35, linestyle="--")
-    ax.set_xticks(sorted({round(x, 2) for x in xs}))
+    ax.set_xticks(sorted({round(x, 2) for x in xs + open_xs}))
 
     note = (
-        "Macro accuracy = unweighted mean of task accuracies in each summary.csv. "
-        "CLIP scores ~0 on egma-math (no numeric head), which lowers its macro mean."
+        "Blue line/points = frontier lineup. Red dots = open-weight checkpoints. "
+        "Macro accuracy = unweighted mean of task accuracies in each summary.csv."
     )
     if missing:
-        note += f" Skipped (no summary): {', '.join(missing)}."
+        note += f" Skipped frontier (no summary): {', '.join(missing)}."
+    if open_missing:
+        note += f" Skipped open-weight (no summary): {', '.join(open_missing)}."
     fig.text(0.02, 0.02, note, fontsize=8, color="#475569", wrap=True)
 
     fig.savefig(out, dpi=dpi)
@@ -257,6 +300,7 @@ def main() -> int:
     out_tasks.parent.mkdir(parents=True, exist_ok=True)
 
     rows, missing = collect_series(root, DEFAULT_MODEL_SPECS)
+    open_rows, open_missing = collect_series(root, OPEN_WEIGHT_MODEL_SPECS)
 
     if len(rows) < 2:
         print(
@@ -268,15 +312,31 @@ def main() -> int:
 
     if missing:
         print(f"Skipped (no summary.csv): {', '.join(missing)}", flush=True)
+    if open_missing:
+        print(f"Skipped open-weight (no summary.csv): {', '.join(open_missing)}", flush=True)
 
     macros = [sum(r[3].values()) / len(TASK_ORDER) for r in rows]
+    open_macros = [sum(r[3].values()) / len(TASK_ORDER) for r in open_rows]
     print(
         "Plotting: "
         + ", ".join(f"{r[1]} ({m:.1%})" for r, m in zip(rows, macros)),
         flush=True,
     )
+    if open_rows:
+        print(
+            "Open-weight dots: "
+            + ", ".join(f"{r[1]} ({m:.1%})" for r, m in zip(open_rows, open_macros)),
+            flush=True,
+        )
 
-    plot_macro(rows, missing=missing, out=out_macro, dpi=args.dpi)
+    plot_macro(
+        rows,
+        open_rows=open_rows,
+        missing=missing,
+        open_missing=open_missing,
+        out=out_macro,
+        dpi=args.dpi,
+    )
     print(f"Wrote {out_macro}", flush=True)
 
     plot_by_task(rows, missing=missing, out=out_tasks, dpi=args.dpi)

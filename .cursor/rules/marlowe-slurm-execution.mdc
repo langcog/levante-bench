@@ -1,0 +1,15 @@
+---
+description: Require sbatch for Marlowe benchmark runs
+globs: scripts/slurm/**
+alwaysApply: false
+---
+
+# Marlowe Job Execution
+
+- Submit Marlowe benchmark/evaluation runs via Slurm with `sbatch`; do not run long eval commands directly on login nodes.
+- Prefer existing wrappers in `scripts/slurm/` and pass runtime settings via `sbatch --export` or wrapper env vars.
+- When providing run instructions, include:
+  - `cd /projects/m000102/code/levante-bench`
+  - `git pull`
+  - the exact `sbatch`/wrapper command to submit
+- For quick checks, keep direct runs limited to lightweight diagnostics only (no full benchmark tasks).

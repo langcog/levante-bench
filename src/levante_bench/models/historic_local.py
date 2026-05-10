@@ -489,6 +489,81 @@ class HistoricLocalVLMModel(VLMModel):
         best = max(scores.items(), key=lambda kv: kv[1])[0]
         return best, scores
 
+    def _score_yes_no_from_logits(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None,
+    ) -> float | None:
+        tokenizer, model_inputs = self._build_forward_inputs(prompt_text, image_paths)
+        if tokenizer is None or model_inputs is None:
+            return None
+        try:
+            with torch.no_grad():
+                outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
+        except RuntimeError as exc:
+            msg = str(exc)
+            if "CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg:
+                raise
+            torch.cuda.empty_cache()
+            with torch.backends.cudnn.flags(enabled=False):
+                with torch.no_grad():
+                    outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
+        logits = outputs.logits[:, -1, :]
+
+        def _best_single_token_logit(variants: tuple[str, ...]) -> float | None:
+            token_ids: set[int] = set()
+            for variant in variants:
+                ids = tokenizer.encode(variant, add_special_tokens=False)
+                if len(ids) == 1:
+                    token_ids.add(int(ids[0]))
+            if not token_ids:
+                return None
+            cand = torch.tensor(sorted(token_ids), device=logits.device, dtype=torch.long)
+            return float(torch.max(torch.index_select(logits[0], 0, cand)).item())
+
+        yes_logit = _best_single_token_logit((" yes", "Yes", " YES", "yes"))
+        no_logit = _best_single_token_logit((" no", "No", " NO", "no"))
+        if yes_logit is None or no_logit is None:
+            return None
+        return yes_logit - no_logit
+
+    def _score_llava_options_binary(
+        self,
+        trial: dict,
+    ) -> tuple[str | None, dict[str, float]]:
+        option_labels = [str(x).upper() for x in trial.get("option_labels", [])]
+        option_texts = [str(x) for x in trial.get("options", [])]
+        option_images = list(trial.get("option_image_paths", []) or [])
+        context_images = list(trial.get("context_image_paths", []) or [])
+        if not option_labels or len(option_images) != len(option_labels):
+            return None, {}
+
+        stem = re.sub(r"<image\d+>", "", str(trial.get("prompt", ""))).strip()
+        base_prompt = (
+            "You are solving a visual multiple-choice question.\n"
+            "A single candidate option image is provided with the context.\n"
+            "Answer only Yes or No: is this candidate option the correct answer?\n\n"
+            f"Question:\n{stem}"
+        )
+
+        score_map: dict[str, float] = {}
+        for i, label in enumerate(option_labels):
+            option_text = option_texts[i] if i < len(option_texts) else ""
+            candidate_prompt = (
+                f"{base_prompt}\n\n"
+                f"Candidate label: {label}\n"
+                f"Candidate text: {option_text}\n"
+                "Answer:"
+            )
+            candidate_images = context_images + [option_images[i]]
+            score = self._score_yes_no_from_logits(candidate_prompt, candidate_images)
+            score_map[label] = float(score) if score is not None else float("-inf")
+
+        if not score_map:
+            return None, {}
+        best = max(score_map.items(), key=lambda kv: kv[1])[0]
+        return best, score_map
+
     def evaluate_trial(self, trial: dict) -> dict:
         lower_name = self.model_name.lower()
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
@@ -528,16 +603,12 @@ class HistoricLocalVLMModel(VLMModel):
             and answer_format == "label"
             and trial.get("option_labels")
         ):
-            prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
-            if not image_paths:
+            _, _, image_paths, _ = self._prepare_trial_inputs(trial)
+            if not image_paths or not trial.get("option_image_paths"):
                 # Keep text-only tasks (e.g., egma-math) on the generation path.
                 return super().evaluate_trial(trial)
             try:
-                predicted_label, score_map = self._score_label_choices_from_logits(
-                    prompt_text=prompt,
-                    image_paths=image_paths if image_paths else None,
-                    option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
-                )
+                predicted_label, score_map = self._score_llava_options_binary(trial)
             except RuntimeError as exc:
                 msg = str(exc)
                 if "CUDNN_STATUS_NOT_INITIALIZED" in msg or "cuDNN" in msg:

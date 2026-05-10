@@ -456,8 +456,19 @@ class HistoricLocalVLMModel(VLMModel):
         tokenizer, model_inputs = self._build_forward_inputs(prompt_text, image_paths)
         if tokenizer is None or model_inputs is None:
             return None, {}
-        with torch.no_grad():
-            outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
+        try:
+            with torch.no_grad():
+                outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
+        except RuntimeError as exc:
+            msg = str(exc)
+            if "CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg:
+                raise
+            # Retry once with cuDNN disabled; some Marlowe nodes intermittently
+            # fail CLIP vision conv initialization in LLaVA.
+            torch.cuda.empty_cache()
+            with torch.backends.cudnn.flags(enabled=False):
+                with torch.no_grad():
+                    outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
         logits = outputs.logits[:, -1, :]
 
         scores: dict[str, float] = {}
@@ -624,8 +635,18 @@ class HistoricLocalVLMModel(VLMModel):
             "max_new_tokens": int(max_new_tokens),
             **self.generation_defaults,
         }
-        with torch.no_grad():
-            output_ids = self.model.generate(**inputs, **gen_kwargs)
+        try:
+            with torch.no_grad():
+                output_ids = self.model.generate(**inputs, **gen_kwargs)
+        except RuntimeError as exc:
+            msg = str(exc)
+            has_pixels = isinstance(inputs, dict) and ("pixel_values" in inputs)
+            if ("CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg) or not has_pixels:
+                raise
+            torch.cuda.empty_cache()
+            with torch.backends.cudnn.flags(enabled=False):
+                with torch.no_grad():
+                    output_ids = self.model.generate(**inputs, **gen_kwargs)
 
         input_ids = inputs.get("input_ids")
         if input_ids is not None:

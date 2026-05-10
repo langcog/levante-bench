@@ -80,7 +80,7 @@ levante-bench run-trials-jsonl \
    - `scripts/validate_all.sh --full-benchmarks`  # same checks + full v1 and vocab benchmarks
    - `scripts/validate_all.sh --with-r-validation`  # include R/Redivis package checks
    - `scripts/validate_r.sh --run-comparison-smoke --version 2026-03-24`  # optional R comparison smoke test
-5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with IRT item difficulty) and D_KL (by ability bin) to `results/comparison/`.
+5. **Compare (R):** Run `levante-bench run-comparison --task trog --model clip_base` or run `Rscript comparison/compare_levante.R --task TASK --model MODEL` directly. Outputs accuracy (with the IRT item `d` parameter) and D_KL (by ability bin) to `results/comparison/`.
 
 For multilingual runs (`--prompt-language` not English), per-model result folders include a 2-letter language suffix. Result layout is deterministic: `results/<version>/<model>-<size>[-<lang>]/` and each model folder includes a `metadata.json`. Example: `results/<version>/qwen35-2B-de/`.
 
@@ -316,7 +316,7 @@ identifying low-confidence parses).
 
 The benchmark compares model outputs to human behavioral data on two dimensions:
 
-- **Accuracy vs item difficulty:** Model accuracy (correct/incorrect per item) is paired with IRT item difficulty parameters extracted from fitted Rasch models. A negative correlation indicates the model finds harder items harder, as children do.
+- **Accuracy vs IRT item `d`:** Model accuracy (correct/incorrect per item) is paired with IRT item `d` parameters extracted from fitted Rasch models. In the current exports, higher `d` values are empirically easier: they correlate positively with human item accuracy. A positive model correlation indicates the model is also more accurate on easier items.
 - **Response distribution D_KL by ability bin:** Human response distributions are computed within subgroups of children binned by IRT ability (1-logit width bins on the logit scale). KL divergence between these human distributions and the model's softmax distribution quantifies alignment at each ability level.
 
 See [comparison/README.md](comparison/README.md) for details.

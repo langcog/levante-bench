@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Item-level difficulty correlation: VLM accuracy vs. IRT difficulty from children.
+Item-level IRT d correlation: VLM accuracy vs. child-derived item d.
 
 Reuses infrastructure from prompt_robustness_sweep.py.
 Runs the best prompt (TF×OF from sweep) on ALL items for selected tasks/models,
@@ -189,7 +189,7 @@ def parse_answer_from_text(text: str, option_labels: list[str]) -> str | None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Item-level difficulty correlation")
+    parser = argparse.ArgumentParser(description="Item-level IRT d/easiness correlation")
     parser.add_argument("--models", nargs="+", required=True)
     parser.add_argument("--model-sizes", default=None)
     parser.add_argument("--tasks", nargs="+",
@@ -312,7 +312,8 @@ def main():
                 correctness = [r["is_correct"] for r in with_irt]
                 r_val, p_val = stats.pointbiserialr(correctness, difficulties)
                 rho, rho_p = stats.spearmanr(correctness, difficulties)
-                print(f"    Correlation: r_pb={r_val:.3f} (p={p_val:.3f}), "
+                print("    IRT d correlation (higher d is empirically easier): "
+                      f"r_pb={r_val:.3f} (p={p_val:.3f}), "
                       f"rho={rho:.3f} (p={rho_p:.3f})")
 
         del model

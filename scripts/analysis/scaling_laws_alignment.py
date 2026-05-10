@@ -303,10 +303,10 @@ def compute_item_correlations(
 ) -> pd.DataFrame:
     """Compute item-level correlation between model accuracy and human D_KL.
 
-    Since IRT params aren't on the bucket, we use mean D_KL across ability bins
-    as a proxy for item difficulty: higher D_KL ≈ items where model diverges
-    more from humans. We correlate per-item model accuracy (proportion correct
-    across runs) with this proxy.
+    Since IRT item parameters aren't on the bucket, this uses mean D_KL across
+    ability bins as an item-level divergence proxy: higher D_KL means the model
+    diverges more from human response distributions. This is not an item
+    difficulty sign convention.
     """
     if item_df.empty or kl_df.empty:
         return pd.DataFrame()
@@ -475,7 +475,7 @@ def plot_main_figure(
         )
         axes[0].set_ylim(0, 1.05)
 
-    # Panel B: Item-level correlation (mean r_pb across tasks per model)
+    # Panel B: Item-level model-human divergence correlation (mean r_pb across tasks per model)
     if not corr_df.empty:
         agg_corr = corr_df.groupby(["model", "params_b", "family"]).agg(
             mean_rpb=("r_pb", "mean")
@@ -483,7 +483,7 @@ def plot_main_figure(
         _plot_scatter(
             axes[1], agg_corr, "params_b", "mean_rpb",
             fit_result=fit_results.get("item_corr"),
-            ylabel="Mean $r_{pb}$ (item difficulty)", title="B. Item alignment scaling",
+            ylabel="Mean $r_{pb}$ (item divergence)", title="B. Item alignment scaling",
         )
 
     # Panel C: KL divergence
@@ -680,7 +680,7 @@ def main() -> None:
     cab_df = fetch_closest_ability_bin()
     print(f"  {len(cab_df)} rows")
 
-    # 4. Compute item-level correlations (using D_KL as difficulty proxy)
+    # 4. Compute item-level correlations (using D_KL as divergence proxy)
     print("Computing item-level correlations...")
     corr_df = compute_item_correlations(item_df, kl_df)
     print(f"  {len(corr_df)} model×task correlation cells")

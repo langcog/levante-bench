@@ -403,6 +403,15 @@ class HistoricLocalVLMModel(VLMModel):
     ) -> tuple[Any, dict[str, Any]] | tuple[None, None]:
         tokenizer = self.tokenizer or getattr(self.processor, "tokenizer", None)
         pil_images = load_pil_images(image_paths, max_image_edge=self.max_image_edge)
+        if tokenizer is not None and not pil_images:
+            inputs = tokenizer(prompt_text, return_tensors="pt")
+            model_inputs: dict[str, Any] = {}
+            for k, v in inputs.items():
+                if torch.is_tensor(v):
+                    model_inputs[k] = v.to(self.device)
+                else:
+                    model_inputs[k] = v
+            return tokenizer, model_inputs
         if (
             self.processor is None
             and tokenizer is not None
@@ -509,6 +518,9 @@ class HistoricLocalVLMModel(VLMModel):
             and trial.get("option_labels")
         ):
             prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
+            if not image_paths:
+                # Keep text-only tasks (e.g., egma-math) on the generation path.
+                return super().evaluate_trial(trial)
             predicted_label, score_map = self._score_label_choices_from_logits(
                 prompt_text=prompt,
                 image_paths=image_paths if image_paths else None,

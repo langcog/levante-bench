@@ -521,11 +521,24 @@ class HistoricLocalVLMModel(VLMModel):
             if not image_paths:
                 # Keep text-only tasks (e.g., egma-math) on the generation path.
                 return super().evaluate_trial(trial)
-            predicted_label, score_map = self._score_label_choices_from_logits(
-                prompt_text=prompt,
-                image_paths=image_paths if image_paths else None,
-                option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
-            )
+            try:
+                predicted_label, score_map = self._score_label_choices_from_logits(
+                    prompt_text=prompt,
+                    image_paths=image_paths if image_paths else None,
+                    option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
+                )
+            except RuntimeError as exc:
+                msg = str(exc)
+                if "CUDNN_STATUS_NOT_INITIALIZED" in msg or "cuDNN" in msg:
+                    # Some cluster driver/cudnn combos intermittently fail on
+                    # direct vision forward passes. Fall back to standard
+                    # generation so evaluation can proceed.
+                    print(
+                        f"[{self.model_name}] choice-logit path failed ({type(exc).__name__}: {exc}); "
+                        "falling back to generation parsing.",
+                    )
+                    return super().evaluate_trial(trial)
+                raise
             if predicted_label is not None:
                 return {
                     "trial_id": trial["trial_id"],

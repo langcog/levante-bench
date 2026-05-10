@@ -711,7 +711,10 @@ class HistoricLocalVLMModel(VLMModel):
                 output_ids = self.model.generate(**inputs, **gen_kwargs)
         except RuntimeError as exc:
             msg = str(exc)
-            has_pixels = isinstance(inputs, dict) and ("pixel_values" in inputs)
+            try:
+                has_pixels = "pixel_values" in inputs
+            except Exception:
+                has_pixels = isinstance(inputs, dict) and ("pixel_values" in inputs)
             if ("CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg) or not has_pixels:
                 raise
             torch.cuda.empty_cache()

@@ -396,6 +396,79 @@ class HistoricLocalVLMModel(VLMModel):
         best = max(scores.items(), key=lambda kv: kv[1])[0]
         return best, scores
 
+    def _build_forward_inputs(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None,
+    ) -> tuple[Any, dict[str, Any]] | tuple[None, None]:
+        tokenizer = self.tokenizer or getattr(self.processor, "tokenizer", None)
+        pil_images = load_pil_images(image_paths, max_image_edge=self.max_image_edge)
+        if (
+            self.processor is None
+            and tokenizer is not None
+            and hasattr(self.model, "build_conversation_input_ids")
+        ):
+            return tokenizer, self._build_cogvlm_model_inputs(prompt_text, pil_images, tokenizer)
+
+        if self.processor is None:
+            return None, None
+
+        apply_template = getattr(self.processor, "apply_chat_template", None)
+        if callable(apply_template):
+            messages = self._build_messages(prompt_text, pil_images)
+            text = self.processor.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+            inputs = self.processor(
+                text=[text],
+                images=pil_images if pil_images else None,
+                return_tensors="pt",
+                padding=True,
+            )
+        else:
+            inputs = self.processor(
+                text=[prompt_text],
+                images=pil_images if pil_images else None,
+                return_tensors="pt",
+                padding=True,
+            )
+        if hasattr(inputs, "to"):
+            inputs = inputs.to(self.device)
+        return tokenizer, dict(inputs)
+
+    def _score_label_choices_from_logits(
+        self,
+        prompt_text: str,
+        image_paths: list[str] | None,
+        option_labels: list[str],
+    ) -> tuple[str | None, dict[str, float]]:
+        tokenizer, model_inputs = self._build_forward_inputs(prompt_text, image_paths)
+        if tokenizer is None or model_inputs is None:
+            return None, {}
+        with torch.no_grad():
+            outputs = self.model(**model_inputs, use_cache=False, return_dict=True)
+        logits = outputs.logits[:, -1, :]
+
+        scores: dict[str, float] = {}
+        for label in option_labels:
+            token_ids: set[int] = set()
+            for variant in (label, f" {label}"):
+                ids = tokenizer.encode(variant, add_special_tokens=False)
+                if len(ids) == 1:
+                    token_ids.add(int(ids[0]))
+            if token_ids:
+                cand = torch.tensor(sorted(token_ids), device=logits.device, dtype=torch.long)
+                scores[label] = float(torch.max(torch.index_select(logits[0], 0, cand)).item())
+            else:
+                scores[label] = float("-inf")
+
+        if not scores:
+            return None, {}
+        best = max(scores.items(), key=lambda kv: kv[1])[0]
+        return best, scores
+
     def evaluate_trial(self, trial: dict) -> dict:
         lower_name = self.model_name.lower()
         answer_format = str(trial.get("answer_format", "label")).strip().lower()
@@ -430,6 +503,34 @@ class HistoricLocalVLMModel(VLMModel):
                 "options": trial.get("options", []),
                 "option_labels": trial.get("option_labels", []),
             }
+        if (
+            "llava" in lower_name
+            and answer_format == "label"
+            and trial.get("option_labels")
+        ):
+            prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
+            predicted_label, score_map = self._score_label_choices_from_logits(
+                prompt_text=prompt,
+                image_paths=image_paths if image_paths else None,
+                option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
+            )
+            if predicted_label is not None:
+                return {
+                    "trial_id": trial["trial_id"],
+                    "item_uid": trial["item_uid"],
+                    "generated_text": predicted_label,
+                    "predicted_label": predicted_label,
+                    "reason": "choice logits",
+                    "parse_method": "choice_logits",
+                    "parse_confidence": "high",
+                    "parse_raw_candidate": "; ".join(
+                        f"{k}:{v:.3f}" for k, v in sorted(score_map.items())
+                    ),
+                    "correct_label": trial["correct_label"],
+                    "is_correct": predicted_label == trial["correct_label"],
+                    "options": trial.get("options", []),
+                    "option_labels": trial.get("option_labels", []),
+                }
         return super().evaluate_trial(trial)
 
     def generate(

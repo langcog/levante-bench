@@ -154,9 +154,45 @@ async function buildReportFromBucket(bucketName, prefix) {
   // - multirun: results/<version>/<model>/<run_id>/summary.csv
   const summaryObjects = allObjects.filter((obj) => obj.name.endsWith("/summary.csv"));
   const baselineObjects = summaryObjects.filter((obj) => obj.name.endsWith("/baseline/summary.csv"));
+  const topLevelObjects = summaryObjects.filter((obj) => {
+    const relativePath = obj.name.startsWith(listingPrefix)
+      ? obj.name.slice(listingPrefix.length)
+      : obj.name;
+    const cleanedRelative = relativePath.replace(/^\/+/, "");
+    const parts = cleanedRelative.split("/");
+    return parts.length === 2 && parts[1] === "summary.csv";
+  });
+
+  // Prioritize baseline snapshots for dashboard stability/perf.
+  // Fall back to direct model summary.csv if no baselines exist.
+  // Final fallback: latest summary per inferred model (still bounded).
+  let selectedObjects = baselineObjects;
+  let summarySelectionMode = "baseline";
+  if (!selectedObjects.length && topLevelObjects.length) {
+    selectedObjects = topLevelObjects;
+    summarySelectionMode = "top_level";
+  }
+  if (!selectedObjects.length) {
+    const latestByModel = new Map();
+    for (const obj of summaryObjects) {
+      const relativePath = obj.name.startsWith(listingPrefix)
+        ? obj.name.slice(listingPrefix.length)
+        : obj.name;
+      const cleanedRelative = relativePath.replace(/^\/+/, "");
+      const modelTag = inferModelTagFromPath(cleanedRelative);
+      const prev = latestByModel.get(modelTag);
+      const curTs = new Date(obj.updated || 0).getTime();
+      const prevTs = prev ? new Date(prev.updated || 0).getTime() : Number.NEGATIVE_INFINITY;
+      if (!prev || curTs >= prevTs) {
+        latestByModel.set(modelTag, obj);
+      }
+    }
+    selectedObjects = Array.from(latestByModel.values());
+    summarySelectionMode = "latest_per_model";
+  }
 
   const runs = [];
-  for (const obj of summaryObjects) {
+  for (const obj of selectedObjects) {
     const relativePath = obj.name.startsWith(listingPrefix)
       ? obj.name.slice(listingPrefix.length)
       : obj.name;
@@ -230,8 +266,9 @@ async function buildReportFromBucket(bucketName, prefix) {
   return {
     generated_at: new Date().toISOString(),
     results_root: `gs://${bucketName}/${cleanPrefix}`,
-    summary_file_count: baselineObjects.length,
-    run_summary_file_count: runs.length,
+    summary_file_count: selectedObjects.length,
+    run_summary_file_count: summaryObjects.length,
+    summary_selection_mode: summarySelectionMode,
     runs,
     by_model: byModel,
   };

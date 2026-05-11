@@ -281,11 +281,17 @@ module.exports = async function handler(req, res) {
   const sourceMode = process.env.RESULTS_SOURCE_MODE || "bucket_compute";
   const reportUrl = process.env.RESULTS_REPORT_URL;
   const bucketName = process.env.RESULTS_BUCKET_NAME || "levante-bench";
+  const queryPrefix =
+    req && req.query && typeof req.query.results_prefix === "string"
+      ? req.query.results_prefix
+      : null;
+  const queryPrefixAlt =
+    req && req.query && typeof req.query.resultsPrefix === "string"
+      ? req.query.resultsPrefix
+      : null;
   // Default to v1-only results to avoid mixing legacy bucket layouts.
-  const bucketPrefix = (process.env.RESULTS_BUCKET_PREFIX || "results/v1").replace(
-    /^\/+|\/+$/g,
-    "",
-  );
+  const bucketPrefix = (queryPrefix || queryPrefixAlt || process.env.RESULTS_BUCKET_PREFIX || "results/v1")
+    .replace(/^\/+|\/+$/g, "");
 
   try {
     let payload = null;

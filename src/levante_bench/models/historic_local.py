@@ -571,15 +571,22 @@ class HistoricLocalVLMModel(VLMModel):
             "cogvlm" in lower_name
             and answer_format == "label"
             and trial.get("option_labels")
-            and (self.processor is None)
-            and hasattr(self.model, "build_conversation_input_ids")
         ):
             prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
-            predicted_label, score_map = self._score_cogvlm_label_choices(
-                prompt_text=prompt,
-                image_paths=image_paths if image_paths else None,
-                option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
-            )
+            try:
+                predicted_label, score_map = self._score_cogvlm_label_choices(
+                    prompt_text=prompt,
+                    image_paths=image_paths if image_paths else None,
+                    option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
+                )
+            except Exception as exc:
+                # Fall back to generation parsing if the logits path fails for
+                # this checkpoint/runtime combination.
+                print(
+                    f"[{self.model_name}] choice-logit path failed "
+                    f"({type(exc).__name__}: {exc}); falling back to generation parsing.",
+                )
+                return super().evaluate_trial(trial)
             return {
                 "trial_id": trial["trial_id"],
                 "item_uid": trial["item_uid"],

@@ -1339,7 +1339,7 @@
         : [];
 
       // Keep all metric tabs aligned to the canonical v1 model set loaded from
-      // /api/results-report (bucket baseline summaries under results/v1/...).
+      // /api/results-report.
       const allowedModelLanguage = new Set(accuracyModelRecords.map((r) => modelLanguageKey(r)));
       const filterToAllowedModels = (rows) =>
         (rows || []).filter((row) => allowedModelLanguage.has(modelLanguageKey(row)));

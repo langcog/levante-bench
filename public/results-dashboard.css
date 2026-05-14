@@ -153,7 +153,7 @@ body {
 
 .tab-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 8px;
 }
@@ -161,7 +161,9 @@ body {
 .tab-button {
   margin: 0;
   width: 100%;
-  padding: 7px 8px;
+  padding: 6px 6px;
+  font-size: 0.86rem;
+  white-space: nowrap;
 }
 
 .tab-button.active {

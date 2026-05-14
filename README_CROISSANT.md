@@ -16,7 +16,18 @@ This repository now includes a validated Croissant metadata scaffold for LEVANTE
   - `responses_by_ability` (optional aggregate-style RecordSet)
 - Distribution entries with `contentUrl`, `encodingFormat`, and `sha256`.
 - RAI/provenance-style metadata fields for collection context and limitations.
+- NeurIPS-targeted RAI fields included in JSON-LD: `rai:dataBiases`,
+  `rai:dataSocialImpact`, and `rai:hasSyntheticData`.
 - Validation workflow using `mlcroissant` (currently passes with 0 errors / 0 warnings).
+
+## Licensing split (code vs data)
+
+- Repository code/docs are licensed under MIT (see `LICENSE`).
+- LEVANTE benchmark assets/data referenced by Croissant are noncommercial-use
+  only unless a file-specific notice states otherwise.
+- `datasets/v1/levante_v1.croissant.json` sets dataset license to
+  `https://creativecommons.org/licenses/by-nc/4.0/` for the distributed data
+  artifacts.
 
 ## How to keep Croissant up to date
 
@@ -101,6 +112,24 @@ PYTHONPATH=src .venv/bin/python scripts/data_prep/publish_assets_manifests_to_bu
   --bucket-url https://storage.googleapis.com/levante-bench/corpus_data \
   --dry-run
 ```
+
+## Portals and automated checkers (e.g. NeurIPS)
+
+**The manifest files are on the bucket** under these public HTTPS URLs (also listed as `distribution[].contentUrl` in the Croissant file):
+
+| Prefix on `gs://levante-bench/` | Example object |
+|---------------------------------|----------------|
+| `corpus_data/v1/` | `manifest.csv`, `manifests/v1_eval_all.parquet` |
+| `responses_manifests/v1/` | `trials.csv`, `manifests/trials_all.parquet`, `manifests/responses_by_ability_all.parquet` |
+
+They are **not** at the bucket root; tools that only **list** `gs://levante-bench/` without reading Croissant may appear to find “no manifests.”
+
+**Give the portal the machine-readable Croissant URL**, not the GitHub **blob** (HTML) page:
+
+- Use: `https://raw.githubusercontent.com/langcog/levante-bench/main/datasets/v1/levante_v1.croissant.json`
+- Avoid: `https://github.com/langcog/levante-bench/blob/main/datasets/v1/levante_v1.croissant.json` (returns HTML; fetchers that resolve `@id` will not see JSON).
+
+The dataset `@id` / `citeAs` in repo point at the **raw** URL so automated validators can download JSON-LD and follow `distribution` links.
 
 ## Responses note
 

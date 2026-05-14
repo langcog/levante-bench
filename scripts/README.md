@@ -19,6 +19,11 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
   - **Inputs:** `--croissant-json`, optional `--check` (no write; exits non-zero if stale)
   - **Outputs:** updated Croissant JSON-LD checksums (or check-only status)
   - **Example:** `python scripts/data_prep/update_croissant_checksums.py --croissant-json datasets/v1/levante_v1.croissant.json`
+- `data_prep/audit_croissant_sync.py`
+  - **Purpose:** verify embedded Croissant checksums match **local** mirrors and **remote** `contentUrl` bytes (public HTTPS)
+  - **Inputs:** `--croissant-json`, `--repo-root`, optional `--skip-remote`
+  - **Outputs:** printed per-file diff report; exit `0` if all match
+  - **Example:** `python scripts/data_prep/audit_croissant_sync.py`
 - `data_prep/publish_assets_manifests_to_bucket.py`
   - **Purpose:** publish assets manifest + split manifests (+ checksum sidecar) to bucket paths referenced by Croissant
   - **Inputs:** `--version`, `--bucket-url`, optional `--dry-run`

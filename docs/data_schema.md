@@ -41,7 +41,7 @@ The result is a tibble of trial-level data. The **dataset** identifier (e.g. `le
 | answer | Correct answer |
 | distractors | Distractor options (if applicable) |
 | chance | Chance level |
-| difficulty | Item difficulty (if available) |
+| difficulty | IRT item `d` parameter if available; in current exports, higher values are empirically easier |
 | theta_estimate | IRT ability estimate (if available) |
 | theta_se | Standard error of theta (if available) |
 | timestamp | Timestamp |

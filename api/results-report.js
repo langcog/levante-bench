@@ -153,10 +153,101 @@ async function buildReportFromBucket(bucketName, prefix) {
   // - baseline: results/<version>/<model>/baseline/summary.csv
   // - multirun: results/<version>/<model>/<run_id>/summary.csv
   const summaryObjects = allObjects.filter((obj) => obj.name.endsWith("/summary.csv"));
-  const baselineObjects = summaryObjects.filter((obj) => obj.name.endsWith("/baseline/summary.csv"));
+  const classifySummary = (obj) => {
+    if (obj.name.endsWith("/baseline/summary.csv")) {
+      return "baseline";
+    }
+    const relativePath = obj.name.startsWith(listingPrefix)
+      ? obj.name.slice(listingPrefix.length)
+      : obj.name;
+    const cleanedRelative = relativePath.replace(/^\/+/, "");
+    const parts = cleanedRelative.split("/");
+    if (parts.length === 2 && parts[1] === "summary.csv") {
+      return "top_level";
+    }
+    return "run";
+  };
+  const kindRank = (kind) => {
+    if (kind === "baseline") {
+      return 3;
+    }
+    if (kind === "top_level") {
+      return 2;
+    }
+    return 1;
+  };
+
+  const isAdditionalPrefix = /(^|\/)v1_additional_models(?:\/|$)/.test(cleanPrefix);
+  const baselineObjects = summaryObjects.filter((obj) => classifySummary(obj) === "baseline");
+  const topLevelObjects = summaryObjects.filter((obj) => classifySummary(obj) === "top_level");
+
+  let selectedObjects = [];
+  let summarySelectionMode = "none";
+  if (isAdditionalPrefix) {
+    // For add'l models, keep one best summary per inferred model:
+    // baseline preferred > top-level model summary > latest run summary.
+    const selectedByModel = new Map();
+    for (const obj of summaryObjects) {
+      const relativePath = obj.name.startsWith(listingPrefix)
+        ? obj.name.slice(listingPrefix.length)
+        : obj.name;
+      const cleanedRelative = relativePath.replace(/^\/+/, "");
+      const modelTag = inferModelTagFromPath(cleanedRelative);
+      const kind = classifySummary(obj);
+      const candidate = {
+        obj,
+        modelTag,
+        kind,
+        rank: kindRank(kind),
+        updatedTs: new Date(obj.updated || 0).getTime(),
+      };
+      const prev = selectedByModel.get(modelTag);
+      if (
+        !prev ||
+        candidate.rank > prev.rank ||
+        (candidate.rank === prev.rank && candidate.updatedTs >= prev.updatedTs)
+      ) {
+        selectedByModel.set(modelTag, candidate);
+      }
+    }
+    selectedObjects = Array.from(selectedByModel.values()).map((x) => x.obj);
+    const selectedKinds = new Set(Array.from(selectedByModel.values()).map((x) => x.kind));
+    summarySelectionMode =
+      selectedKinds.size === 1
+        ? Array.from(selectedKinds)[0]
+        : selectedKinds.size
+          ? "mixed_best_per_model"
+          : "none";
+  } else {
+    // Preserve previous stable behavior for canonical v1 models.
+    selectedObjects = baselineObjects;
+    summarySelectionMode = "baseline";
+    if (!selectedObjects.length && topLevelObjects.length) {
+      selectedObjects = topLevelObjects;
+      summarySelectionMode = "top_level";
+    }
+    if (!selectedObjects.length) {
+      const latestByModel = new Map();
+      for (const obj of summaryObjects) {
+        const relativePath = obj.name.startsWith(listingPrefix)
+          ? obj.name.slice(listingPrefix.length)
+          : obj.name;
+        const cleanedRelative = relativePath.replace(/^\/+/, "");
+        const modelTag = inferModelTagFromPath(cleanedRelative);
+        const prev = latestByModel.get(modelTag);
+        const curTs = new Date(obj.updated || 0).getTime();
+        const prevTs = prev ? new Date(prev.updated || 0).getTime() : Number.NEGATIVE_INFINITY;
+        if (!prev || curTs >= prevTs) {
+          latestByModel.set(modelTag, obj);
+        }
+      }
+      selectedObjects = Array.from(latestByModel.values());
+      summarySelectionMode = "latest_per_model";
+    }
+  }
 
   const runs = [];
-  for (const obj of summaryObjects) {
+  for (const obj of selectedObjects) {
     const relativePath = obj.name.startsWith(listingPrefix)
       ? obj.name.slice(listingPrefix.length)
       : obj.name;
@@ -183,7 +274,7 @@ async function buildReportFromBucket(bucketName, prefix) {
   }
 
   const grouped = new Map();
-  for (const run of runs.filter((r) => r.run_id.endsWith("/baseline"))) {
+  for (const run of runs) {
     const key = `${run.model}|${run.size || ""}|${run.language || ""}`;
     if (!grouped.has(key)) {
       grouped.set(key, []);
@@ -230,8 +321,9 @@ async function buildReportFromBucket(bucketName, prefix) {
   return {
     generated_at: new Date().toISOString(),
     results_root: `gs://${bucketName}/${cleanPrefix}`,
-    summary_file_count: baselineObjects.length,
-    run_summary_file_count: runs.length,
+    summary_file_count: selectedObjects.length,
+    run_summary_file_count: summaryObjects.length,
+    summary_selection_mode: summarySelectionMode,
     runs,
     by_model: byModel,
   };
@@ -244,11 +336,17 @@ module.exports = async function handler(req, res) {
   const sourceMode = process.env.RESULTS_SOURCE_MODE || "bucket_compute";
   const reportUrl = process.env.RESULTS_REPORT_URL;
   const bucketName = process.env.RESULTS_BUCKET_NAME || "levante-bench";
+  const queryPrefix =
+    req && req.query && typeof req.query.results_prefix === "string"
+      ? req.query.results_prefix
+      : null;
+  const queryPrefixAlt =
+    req && req.query && typeof req.query.resultsPrefix === "string"
+      ? req.query.resultsPrefix
+      : null;
   // Default to v1-only results to avoid mixing legacy bucket layouts.
-  const bucketPrefix = (process.env.RESULTS_BUCKET_PREFIX || "results/v1").replace(
-    /^\/+|\/+$/g,
-    "",
-  );
+  const bucketPrefix = (queryPrefix || queryPrefixAlt || process.env.RESULTS_BUCKET_PREFIX || "results/v1")
+    .replace(/^\/+|\/+$/g, "");
 
   try {
     let payload = null;

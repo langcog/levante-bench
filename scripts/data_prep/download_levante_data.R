@@ -210,7 +210,8 @@ if (nrow(irt_mapping) == 0L) {
 
       mod <- readRDS(rds_path)
 
-      # Extract item difficulties (d parameter)
+      # Extract item d parameters. Current exports are easiness-oriented in
+      # practice: higher d values correlate with higher human item accuracy.
       model_vals <- attr(mod, "model_vals")
       group_names <- attr(mod, "group_names")
       ref_group <- group_names[1]

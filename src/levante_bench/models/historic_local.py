@@ -396,6 +396,55 @@ class HistoricLocalVLMModel(VLMModel):
         best = max(scores.items(), key=lambda kv: kv[1])[0]
         return best, scores
 
+    def _score_cogvlm_options_binary(
+        self,
+        trial: dict,
+    ) -> tuple[str | None, dict[str, float]]:
+        """Score each option independently with a yes/no logit margin.
+
+        This reduces single-token label prior bias (e.g., always choosing "A")
+        by comparing candidate options under the same prompt frame.
+        """
+        option_labels = [str(x).upper() for x in trial.get("option_labels", [])]
+        option_texts = [str(x) for x in trial.get("options", [])]
+        option_images = list(trial.get("option_image_paths", []) or [])
+        context_images = list(trial.get("context_image_paths", []) or [])
+        if not option_labels:
+            return None, {}
+        if option_images and len(option_images) != len(option_labels):
+            return None, {}
+
+        stem = re.sub(r"<image\d+>", "", str(trial.get("prompt", ""))).strip()
+        base_prompt = (
+            "You are solving a multiple-choice question.\n"
+            "Consider one candidate option at a time.\n"
+            "Answer only Yes or No: is this candidate option the correct answer?\n\n"
+            f"Question:\n{stem}"
+        )
+
+        score_map: dict[str, float] = {}
+        for i, label in enumerate(option_labels):
+            option_text = option_texts[i] if i < len(option_texts) else ""
+            candidate_prompt = (
+                f"{base_prompt}\n\n"
+                f"Candidate label: {label}\n"
+                f"Candidate text: {option_text}\n"
+                "Answer:"
+            )
+            candidate_images = list(context_images)
+            if option_images:
+                candidate_images.append(option_images[i])
+            score = self._score_yes_no_from_logits(
+                candidate_prompt,
+                candidate_images if candidate_images else None,
+            )
+            score_map[label] = float(score) if score is not None else float("-inf")
+
+        if not score_map:
+            return None, {}
+        best = max(score_map.items(), key=lambda kv: kv[1])[0]
+        return best, score_map
+
     def _build_forward_inputs(
         self,
         prompt_text: str,
@@ -572,13 +621,19 @@ class HistoricLocalVLMModel(VLMModel):
             and answer_format == "label"
             and trial.get("option_labels")
         ):
-            prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
             try:
-                predicted_label, score_map = self._score_cogvlm_label_choices(
-                    prompt_text=prompt,
-                    image_paths=image_paths if image_paths else None,
-                    option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
-                )
+                # Prefer option-wise binary scoring to avoid A/B/C/D token prior collapse.
+                predicted_label, score_map = self._score_cogvlm_options_binary(trial)
+                parse_method = "choice_binary_logits"
+                if predicted_label is None:
+                    # Fallback: direct next-token label logits.
+                    prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
+                    predicted_label, score_map = self._score_cogvlm_label_choices(
+                        prompt_text=prompt,
+                        image_paths=image_paths if image_paths else None,
+                        option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
+                    )
+                    parse_method = "choice_logits"
             except Exception as exc:
                 # Fall back to generation parsing if the logits path fails for
                 # this checkpoint/runtime combination.
@@ -593,7 +648,7 @@ class HistoricLocalVLMModel(VLMModel):
                 "generated_text": predicted_label or "",
                 "predicted_label": predicted_label,
                 "reason": "choice logits",
-                "parse_method": "choice_logits",
+                "parse_method": parse_method,
                 "parse_confidence": "high" if predicted_label is not None else "none",
                 "parse_raw_candidate": (
                     "; ".join(f"{k}:{v:.3f}" for k, v in sorted(score_map.items()))

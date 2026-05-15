@@ -94,7 +94,7 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
   done
   echo ""
   echo "data_root: data"
-  echo "output_dir: results"
+  echo "output_dir: ${OUTPUT_ROOT}"
   echo "version: ${VERSION}"
   echo "device: ${DEVICE}"
   echo "batch_size: ${BATCH_SIZE}"

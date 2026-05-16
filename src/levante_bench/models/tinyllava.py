@@ -205,12 +205,27 @@ class TinyLLaVAModel(VLMModel):
 
         chat_kw = dict(self._chat_generation_defaults)
         chat_kw["max_new_tokens"] = max_new_tokens
-        output, _ = self.model.chat(
-            prompt=prompt,
-            image=image,
-            tokenizer=self.tokenizer,
-            **chat_kw,
-        )
+        try:
+            output, _ = self.model.chat(
+                prompt=prompt,
+                image=image,
+                tokenizer=self.tokenizer,
+                **chat_kw,
+            )
+        except RuntimeError as exc:
+            msg = str(exc)
+            if "CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg:
+                raise
+            # Some Marlowe nodes intermittently fail vision conv initialization
+            # for TinyLLaVA/SigLIP. Retry once with cuDNN disabled.
+            torch.cuda.empty_cache()
+            with torch.backends.cudnn.flags(enabled=False):
+                output, _ = self.model.chat(
+                    prompt=prompt,
+                    image=image,
+                    tokenizer=self.tokenizer,
+                    **chat_kw,
+                )
         return output
 
     def _get_blank_image_path(self) -> str:

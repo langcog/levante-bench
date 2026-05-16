@@ -24,6 +24,7 @@ BATCH_SIZE="${BATCH_SIZE:-1}"
 NUM_RUNS="${NUM_RUNS:-1}"
 TRUE_RANDOM_OPTION_ORDER="${TRUE_RANDOM_OPTION_ORDER:-false}"
 TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
+IMAGE_SIZE="${IMAGE_SIZE:-}"
 
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CODE_DIR="${CODE_DIR:-${PROJECT_ROOT}/code/levante-bench}"
@@ -49,6 +50,9 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
   if [[ "${MODEL_ID}" == "cogvlm" ]]; then
     echo "    use_json_format: false"
     echo "    max_new_tokens: 16"
+  fi
+  if [[ -n "$IMAGE_SIZE" ]]; then
+    echo "    max_image_edge: ${IMAGE_SIZE}"
   fi
   echo ""
   echo "tasks:"

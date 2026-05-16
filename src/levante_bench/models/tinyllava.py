@@ -74,11 +74,13 @@ class TinyLLaVAModel(VLMModel):
         generation: dict[str, Any] | None = None,
         device_map: str | None = None,
         attn_implementation: str = "eager",
+        max_image_edge: int | None = None,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.attn_implementation = str(attn_implementation or "eager")
         self.dtype = DTYPE_MAP.get(str(dtype), torch.bfloat16)
         self.device_map = str(device_map).strip() if device_map else None
+        self.max_image_edge = int(max_image_edge) if max_image_edge else None
         gen = dict(generation) if isinstance(generation, dict) else {}
         self._chat_generation_defaults: dict[str, Any] = {
             "temperature": 0,
@@ -257,7 +259,7 @@ class TinyLLaVAModel(VLMModel):
         clean_prompt = re.sub(r"<image\d+>", "", prompt_text).strip()
 
         if len(image_paths) == 1:
-            return str(Path(image_paths[0]).resolve()), clean_prompt
+            return self._prepare_single_image_path(image_paths[0]), clean_prompt
 
         has_image0 = "<image0>" in prompt_text
         labels: list[str] = []
@@ -304,19 +306,18 @@ class TinyLLaVAModel(VLMModel):
         n = len(entries)
         if n <= 0:
             raise ValueError("No images to compose.")
+        cell = int(self.max_image_edge) if self.max_image_edge else _CELL
         cols = 2 if n <= 4 else 3
         rows = (n + cols - 1) // cols
-        grid = Image.new("RGB", (cols * _CELL, rows * _CELL), color=(240, 240, 240))
+        grid = Image.new("RGB", (cols * cell, rows * cell), color=(240, 240, 240))
         draw = ImageDraw.Draw(grid)
 
         font = _load_grid_font()
         placement: list[tuple[str, str]] = []
 
         for i, (image_path, label) in enumerate(entries):
-            img = Image.open(image_path).convert("RGB").resize(
-                (_CELL, _CELL), Image.LANCZOS
-            )
-            x, y = (i % cols) * _CELL, (i // cols) * _CELL
+            img = self._load_resized_for_grid(image_path, cell)
+            x, y = (i % cols) * cell, (i // cols) * cell
             grid.paste(img, (x, y))
             cell_name = _CELL_NAMES[i] if i < len(_CELL_NAMES) else f"cell-{i}"
             placement.append((label, cell_name))
@@ -330,6 +331,28 @@ class TinyLLaVAModel(VLMModel):
         path = str(Path(self._tmp_dir) / "grid.png")
         grid.save(path)
         return path, placement
+
+    def _prepare_single_image_path(self, image_path: str) -> str:
+        """Return source path or a resized temp copy for single-image chat()."""
+        src = Path(image_path).resolve()
+        if self.max_image_edge is None:
+            return str(src)
+        img = Image.open(src).convert("RGB")
+        try:
+            if max(img.size) <= self.max_image_edge:
+                return str(src)
+            if self._tmp_dir is None:
+                self._tmp_dir = tempfile.mkdtemp()
+            out = Path(self._tmp_dir) / f"{src.stem}-edge{self.max_image_edge}.png"
+            img.thumbnail((self.max_image_edge, self.max_image_edge), Image.Resampling.LANCZOS)
+            img.save(out)
+            return str(out)
+        finally:
+            img.close()
+
+    def _load_resized_for_grid(self, image_path: str, cell: int) -> Image.Image:
+        """Load and resize image for grid composition."""
+        return Image.open(image_path).convert("RGB").resize((cell, cell), Image.LANCZOS)
 
     # ── Output parsing ──────────────────────────────────────────────────────
 

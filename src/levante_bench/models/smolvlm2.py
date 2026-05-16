@@ -2,6 +2,7 @@
 
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 import torch
@@ -25,11 +26,14 @@ class SmolVLM2Model(VLMModel):
         device: str = "cpu",
         dtype: str = "bfloat16",
         attn_implementation: str = "flash_attention_2",
+        max_image_edge: int | None = None,
     ) -> None:
         super().__init__(model_name=model_name, device=device)
         self.dtype = DTYPE_MAP.get(dtype, torch.bfloat16)
         self.attn_implementation = attn_implementation
+        self.max_image_edge = int(max_image_edge) if max_image_edge else None
         self._batch_fallback_count = 0
+        self._tmp_dir: str | None = None
 
     def load(self) -> None:
         """Load SmolVLM2 model and processor from HuggingFace."""
@@ -169,6 +173,7 @@ class SmolVLM2Model(VLMModel):
         image_paths: list[str] | None = None,
     ) -> list[dict]:
         """Build SmolVLM2 chat messages, interleaving images at <imageN> placeholders."""
+        image_paths = self._resize_image_paths(image_paths)
         content = []
         if image_paths and re.search(r"<image\d+>", prompt_text):
             labels = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -278,6 +283,27 @@ class SmolVLM2Model(VLMModel):
             tokenize=True,
             **processor_kwargs,
         )
+
+    def _resize_image_paths(self, image_paths: list[str] | None) -> list[str] | None:
+        """Optionally downscale image inputs by max_image_edge."""
+        if not image_paths or self.max_image_edge is None:
+            return image_paths
+        from PIL import Image
+
+        resized: list[str] = []
+        if self._tmp_dir is None:
+            self._tmp_dir = tempfile.mkdtemp()
+        for idx, path in enumerate(image_paths):
+            src = Path(path).resolve()
+            with Image.open(src).convert("RGB") as img:
+                if max(img.size) <= self.max_image_edge:
+                    resized.append(str(src))
+                    continue
+                img.thumbnail((self.max_image_edge, self.max_image_edge), Image.Resampling.LANCZOS)
+                out = Path(self._tmp_dir) / f"{src.stem}-edge{self.max_image_edge}-{idx}.png"
+                img.save(out)
+                resized.append(str(out))
+        return resized
 
     def _generate_with_cudnn_retry(self, inputs, max_new_tokens: int):
         """Generate with one cuDNN-disabled retry for unstable nodes."""

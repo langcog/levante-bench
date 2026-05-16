@@ -91,10 +91,10 @@ class SmolVLM2Model(VLMModel):
             self.device, dtype=self.dtype
         )
 
-        with torch.no_grad():
-            output_ids = self.model.generate(
-                **inputs, do_sample=False, max_new_tokens=max_new_tokens
-            )
+        output_ids = self._generate_with_cudnn_retry(
+            inputs=inputs,
+            max_new_tokens=max_new_tokens,
+        )
 
         return self.processor.batch_decode(output_ids, skip_special_tokens=True)[0]
 
@@ -128,9 +128,8 @@ class SmolVLM2Model(VLMModel):
                 input_lens = [inputs["input_ids"].shape[1]] * len(prepared_trials)
 
             with torch.no_grad():
-                output_ids = self.model.generate(
-                    **inputs,
-                    do_sample=False,
+                output_ids = self._generate_with_cudnn_retry(
+                    inputs=inputs,
                     max_new_tokens=max_new_tokens,
                 )
 
@@ -226,7 +225,7 @@ class SmolVLM2Model(VLMModel):
                 )
             choice_ids.append(toks[0])
 
-        output, elapsed = self._timed_call(lambda: self.model(**inputs))
+        output, elapsed = self._timed_call(lambda: self._forward_with_cudnn_retry(inputs))
         next_logits = output.logits[:, -1, :].float()
         selected = next_logits[:, choice_ids].squeeze(0)
         probs = torch.softmax(selected, dim=-1)
@@ -279,3 +278,37 @@ class SmolVLM2Model(VLMModel):
             tokenize=True,
             **processor_kwargs,
         )
+
+    def _generate_with_cudnn_retry(self, inputs, max_new_tokens: int):
+        """Generate with one cuDNN-disabled retry for unstable nodes."""
+        try:
+            with torch.no_grad():
+                return self.model.generate(
+                    **inputs,
+                    do_sample=False,
+                    max_new_tokens=max_new_tokens,
+                )
+        except RuntimeError as exc:
+            msg = str(exc)
+            if "CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg:
+                raise
+            torch.cuda.empty_cache()
+            with torch.backends.cudnn.flags(enabled=False):
+                with torch.no_grad():
+                    return self.model.generate(
+                        **inputs,
+                        do_sample=False,
+                        max_new_tokens=max_new_tokens,
+                    )
+
+    def _forward_with_cudnn_retry(self, inputs):
+        """Forward-pass with one cuDNN-disabled retry for logits scoring."""
+        try:
+            return self.model(**inputs)
+        except RuntimeError as exc:
+            msg = str(exc)
+            if "CUDNN_STATUS_NOT_INITIALIZED" not in msg and "cuDNN" not in msg:
+                raise
+            torch.cuda.empty_cache()
+            with torch.backends.cudnn.flags(enabled=False):
+                return self.model(**inputs)

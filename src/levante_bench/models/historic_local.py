@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any, Optional
 
@@ -621,12 +622,11 @@ class HistoricLocalVLMModel(VLMModel):
             and answer_format == "label"
             and trial.get("option_labels")
         ):
+            scoring_mode = str(
+                os.environ.get("COGVLM_LABEL_SCORING_MODE", "binary")
+            ).strip().lower()
             try:
-                # Prefer option-wise binary scoring to avoid A/B/C/D token prior collapse.
-                predicted_label, score_map = self._score_cogvlm_options_binary(trial)
-                parse_method = "choice_binary_logits"
-                if predicted_label is None:
-                    # Fallback: direct next-token label logits.
+                if scoring_mode == "token":
                     prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
                     predicted_label, score_map = self._score_cogvlm_label_choices(
                         prompt_text=prompt,
@@ -634,6 +634,19 @@ class HistoricLocalVLMModel(VLMModel):
                         option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
                     )
                     parse_method = "choice_logits"
+                else:
+                    # Prefer option-wise binary scoring to avoid A/B/C/D token prior collapse.
+                    predicted_label, score_map = self._score_cogvlm_options_binary(trial)
+                    parse_method = "choice_binary_logits"
+                    if predicted_label is None:
+                        # Fallback: direct next-token label logits.
+                        prompt, _, image_paths, _ = self._prepare_trial_inputs(trial)
+                        predicted_label, score_map = self._score_cogvlm_label_choices(
+                            prompt_text=prompt,
+                            image_paths=image_paths if image_paths else None,
+                            option_labels=[str(x).upper() for x in trial.get("option_labels", [])],
+                        )
+                        parse_method = "choice_logits"
             except Exception as exc:
                 # Fall back to generation parsing if the logits path fails for
                 # this checkpoint/runtime combination.

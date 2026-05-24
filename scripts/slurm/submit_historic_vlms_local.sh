@@ -34,6 +34,7 @@ TRUE_RANDOM_OPTION_ORDER="${TRUE_RANDOM_OPTION_ORDER:-false}"
 TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/v1_additional_models}"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
+COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
 IMAGE_SIZE="${IMAGE_SIZE:-}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-}"
@@ -75,6 +76,22 @@ normalize_model_id() {
   esac
 }
 
+resolve_model_fields() {
+  local normalized="$1"
+  MODEL_NAME_RESOLVED="$normalized"
+  MODEL_SIZE_RESOLVED=""
+  case "$normalized" in
+    smolvlm2-256M)
+      MODEL_NAME_RESOLVED="smolvlm2"
+      MODEL_SIZE_RESOLVED="256M"
+      ;;
+    smolvlm2-500M)
+      MODEL_NAME_RESOLVED="smolvlm2"
+      MODEL_SIZE_RESOLVED="500M"
+      ;;
+  esac
+}
+
 if [[ $# -gt 0 ]]; then
   MODELS=("$@")
 else
@@ -92,6 +109,7 @@ echo "  TRUE_RANDOM_OPTION_ORDER=$TRUE_RANDOM_OPTION_ORDER"
 echo "  TASKS_CSV=$TASKS_CSV"
 echo "  DRY_RUN=$DRY_RUN"
 echo "  CONDA_ENV_PATH=$CONDA_ENV_PATH"
+echo "  COGVLM_CONDA_ENV_PATH=$COGVLM_CONDA_ENV_PATH"
 echo "  IMAGE_SIZE=${IMAGE_SIZE:-<default>}"
 echo "  COGVLM_LABEL_SCORING_MODE=${COGVLM_LABEL_SCORING_MODE:-<default>}"
 echo "  FORCE_BINARY_LABEL_SCORING=${FORCE_BINARY_LABEL_SCORING:-<default>}"
@@ -102,6 +120,7 @@ TASKS_CSV_EXPORT="${TASKS_CSV//,/;}"
 
 for model in "${MODELS[@]}"; do
   model="$(normalize_model_id "$model")"
+  resolve_model_fields "$model"
   if [[ -z "${TIME_MAP[$model]+x}" ]]; then
     echo "Skipping unknown model target: $model" >&2
     continue
@@ -111,17 +130,21 @@ for model in "${MODELS[@]}"; do
   mem_limit="${MEM_MAP[$model]}"
   batch_size="${BATCH_SIZE_MAP[$model]}"
   job_name="historic-${model}"
+  job_conda_env="$CONDA_ENV_PATH"
+  if [[ "$MODEL_NAME_RESOLVED" == "cogvlm" ]]; then
+    job_conda_env="$COGVLM_CONDA_ENV_PATH"
+  fi
 
   cmd=(
     sbatch
     --job-name "$job_name"
     --time "$time_limit"
     --mem "$mem_limit"
-    --export "ALL,PROJECT_ROOT=$PROJECT_ROOT,CODE_DIR=$CODE_DIR,CONDA_ENV_PATH=$CONDA_ENV_PATH,MODEL_ID=$model,VERSION=$VERSION,DEVICE=$DEVICE,BATCH_SIZE=$batch_size,NUM_RUNS=$NUM_RUNS,TRUE_RANDOM_OPTION_ORDER=$TRUE_RANDOM_OPTION_ORDER,TASKS_CSV=$TASKS_CSV_EXPORT,IMAGE_SIZE=$IMAGE_SIZE,COGVLM_LABEL_SCORING_MODE=$COGVLM_LABEL_SCORING_MODE,FORCE_BINARY_LABEL_SCORING=$FORCE_BINARY_LABEL_SCORING,OUTPUT_ROOT=$OUTPUT_ROOT,USE_JOB_OUTPUT_ROOT=0,HF_TOKEN,HUGGINGFACEHUB_API_TOKEN,HF_HOME,HF_HUB_CACHE,TRANSFORMERS_CACHE"
+    --export "ALL,PROJECT_ROOT=$PROJECT_ROOT,CODE_DIR=$CODE_DIR,CONDA_ENV_PATH=$job_conda_env,MODEL_ID=$model,MODEL_NAME=$MODEL_NAME_RESOLVED,MODEL_SIZE=$MODEL_SIZE_RESOLVED,VERSION=$VERSION,DEVICE=$DEVICE,BATCH_SIZE=$batch_size,NUM_RUNS=$NUM_RUNS,TRUE_RANDOM_OPTION_ORDER=$TRUE_RANDOM_OPTION_ORDER,TASKS_CSV=$TASKS_CSV_EXPORT,IMAGE_SIZE=$IMAGE_SIZE,COGVLM_LABEL_SCORING_MODE=$COGVLM_LABEL_SCORING_MODE,FORCE_BINARY_LABEL_SCORING=$FORCE_BINARY_LABEL_SCORING,OUTPUT_ROOT=$OUTPUT_ROOT,USE_JOB_OUTPUT_ROOT=0,HF_TOKEN,HUGGINGFACEHUB_API_TOKEN,HF_HOME,HF_HUB_CACHE,TRANSFORMERS_CACHE"
     "$SBATCH_SCRIPT"
   )
 
-  echo "Model=$model time=$time_limit mem=$mem_limit env=$CONDA_ENV_PATH batch_size=$batch_size"
+  echo "Model=$model resolved=${MODEL_NAME_RESOLVED}${MODEL_SIZE_RESOLVED:+:$MODEL_SIZE_RESOLVED} time=$time_limit mem=$mem_limit env=$job_conda_env batch_size=$batch_size"
   if [[ "$DRY_RUN" == "1" ]]; then
     printf 'DRY_RUN:'
     printf ' %q' "${cmd[@]}"

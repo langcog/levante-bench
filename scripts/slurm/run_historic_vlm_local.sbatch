@@ -16,6 +16,8 @@ set -euo pipefail
 
 # Required
 MODEL_ID="${MODEL_ID:?MODEL_ID is required (e.g., llava15_13b)}"
+MODEL_NAME="${MODEL_NAME:-$MODEL_ID}"
+MODEL_SIZE="${MODEL_SIZE:-}"
 
 # Optional runtime knobs (override via sbatch --export)
 VERSION="${VERSION:-v1}"
@@ -46,8 +48,11 @@ trap 'rm -f "$EXPERIMENT_CONFIG"' EXIT
 
 {
   echo "models:"
-  echo "  - name: ${MODEL_ID}"
-  if [[ "${MODEL_ID}" == "cogvlm" ]]; then
+  echo "  - name: ${MODEL_NAME}"
+  if [[ -n "$MODEL_SIZE" ]]; then
+    echo "    size: ${MODEL_SIZE}"
+  fi
+  if [[ "${MODEL_NAME}" == "cogvlm" ]]; then
     echo "    use_json_format: false"
     echo "    max_new_tokens: 16"
   fi

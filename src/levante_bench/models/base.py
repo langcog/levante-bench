@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import json
+import os
 import re
 import time
 from typing import Any, Literal, Optional
@@ -175,6 +176,10 @@ class VLMModel:
     def evaluate_trial(self, trial: dict) -> dict:
         """Run a single trial: generate answer, parse it, return result."""
         prompt, answer_format, image_paths, max_new_tokens = self._prepare_trial_inputs(trial)
+        if answer_format == "label":
+            forced_binary = self._evaluate_label_trial_with_forced_binary_logits(trial)
+            if forced_binary is not None:
+                return forced_binary
         raw_output = self.generate(
             prompt_text=prompt,
             image_paths=image_paths if image_paths else None,
@@ -190,6 +195,83 @@ class VLMModel:
         if isinstance(metadata, dict) and metadata:
             result.update(metadata)
         return result
+
+    def _evaluate_label_trial_with_forced_binary_logits(self, trial: dict) -> dict | None:
+        """Optional env-gated binary option scoring for label tasks.
+
+        Enabled only when FORCE_BINARY_LABEL_SCORING is truthy. Uses model
+        score_choices(prompt, image_paths, choice_texts=(" yes", " no")).
+        """
+        raw_flag = str(os.environ.get("FORCE_BINARY_LABEL_SCORING", "")).strip().lower()
+        if raw_flag not in {"1", "true", "yes", "on"}:
+            return None
+
+        option_labels = [str(x).upper() for x in trial.get("option_labels", [])]
+        option_texts = [str(x) for x in trial.get("options", [])]
+        if not option_labels:
+            return None
+        option_images = list(trial.get("option_image_paths", []) or [])
+        if option_images and len(option_images) != len(option_labels):
+            return None
+        context_images = list(trial.get("context_image_paths", []) or [])
+
+        stem = re.sub(r"<image\d+>", "", str(trial.get("prompt", ""))).strip()
+        base_prompt = (
+            "You are solving a multiple-choice question.\n"
+            "Consider one candidate option at a time.\n"
+            "Answer with Yes or No: is this candidate option the correct answer?\n\n"
+            f"Question:\n{stem}"
+        )
+
+        score_map: dict[str, float] = {}
+        try:
+            for i, label in enumerate(option_labels):
+                option_text = option_texts[i] if i < len(option_texts) else ""
+                candidate_prompt = (
+                    f"{base_prompt}\n\n"
+                    f"Candidate label: {label}\n"
+                    f"Candidate text: {option_text}\n"
+                    "Answer:"
+                )
+                candidate_images = list(context_images)
+                if option_images:
+                    candidate_images.append(option_images[i])
+                scores = self.score_choices(
+                    prompt_text=candidate_prompt,
+                    image_paths=candidate_images,
+                    choice_texts=(" yes", " no"),
+                )
+                logits = scores.get("choice_logits") if isinstance(scores, dict) else None
+                if (
+                    not isinstance(logits, list)
+                    or len(logits) < 2
+                    or not all(isinstance(x, (int, float)) for x in logits[:2])
+                ):
+                    return None
+                yes_logit = float(logits[0])
+                no_logit = float(logits[1])
+                score_map[label] = yes_logit - no_logit
+        except Exception:
+            return None
+
+        if not score_map:
+            return None
+        predicted_label = max(score_map.items(), key=lambda kv: kv[1])[0]
+        correct_label = str(trial.get("correct_label", "")).strip().upper()
+        return {
+            "trial_id": trial["trial_id"],
+            "item_uid": trial["item_uid"],
+            "generated_text": predicted_label,
+            "predicted_label": predicted_label,
+            "reason": "forced binary logits",
+            "parse_method": "choice_binary_logits_forced",
+            "parse_confidence": "high",
+            "parse_raw_candidate": "; ".join(f"{k}:{v:.3f}" for k, v in sorted(score_map.items())),
+            "correct_label": trial["correct_label"],
+            "is_correct": predicted_label == correct_label,
+            "options": trial.get("options", []),
+            "option_labels": trial.get("option_labels", []),
+        }
 
     def _prepare_trial_inputs(self, trial: dict) -> tuple[str, str, list[str], int]:
         """Build canonical prompt/input payload for a trial.

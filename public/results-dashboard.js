@@ -524,7 +524,35 @@
       const model = String(cols[modelIdx] || "").trim();
       const forced = Number(cols[forcedIdx]);
       if (model && Number.isFinite(forced)) {
-        out.set(`${model}|vocab`, forced);
+        out.set(`${model.toLowerCase()}|vocab`, forced);
+      }
+    }
+    return out;
+  }
+
+  function parseForcedBinaryTaskOverridesCsv(csvText) {
+    const lines = String(csvText || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length < 2) {
+      return new Map();
+    }
+    const header = lines[0].split(",");
+    const modelIdx = header.indexOf("model");
+    const taskIdx = header.indexOf("task");
+    const forcedIdx = header.indexOf("forced_binary_accuracy");
+    if (modelIdx < 0 || taskIdx < 0 || forcedIdx < 0) {
+      return new Map();
+    }
+    const out = new Map();
+    for (let i = 1; i < lines.length; i += 1) {
+      const cols = lines[i].split(",");
+      const model = String(cols[modelIdx] || "").trim();
+      const task = String(cols[taskIdx] || "").trim();
+      const forced = Number(cols[forcedIdx]);
+      if (model && task && Number.isFinite(forced)) {
+        out.set(`${model.toLowerCase()}|${task}`, forced);
       }
     }
     return out;
@@ -535,8 +563,14 @@
     // analysis CSV is not available in deployed static assets.
     return new Map([
       ["cogvlm|vocab", 0.9941],
-      ["smolvlm2-256M|vocab", 0.5118],
-      ["smolvlm2-500M|vocab", 0.8059],
+      ["smolvlm2-256m|vocab", 0.5118],
+      ["smolvlm2-500m|vocab", 0.8059],
+      ["cogvlm|trog", 0.7071],
+      ["cogvlm|matrix-reasoning", 0.1875],
+      ["smolvlm2-500m|trog", 0.3939],
+      ["smolvlm2-500m|matrix-reasoning", 0.1750],
+      ["smolvlm2-256m|trog", 0.3333],
+      ["smolvlm2-256m|matrix-reasoning", 0.4125],
     ]);
   }
 
@@ -1164,12 +1198,14 @@
         let value = row.taskMeans[taskId];
         let question = false;
         let forcedBinary = false;
-        const forcedBinaryKey = `${row.model}|${taskId}`;
-        if (forcedBinaryOverrides.has(forcedBinaryKey)) {
-          const forcedBinaryValue = Number(forcedBinaryOverrides.get(forcedBinaryKey));
-          if (Number.isFinite(forcedBinaryValue)) {
-            value = forcedBinaryValue;
-            forcedBinary = true;
+        if (compareToChance) {
+          const forcedBinaryKey = `${String(row.model || "").toLowerCase()}|${taskId}`;
+          if (forcedBinaryOverrides.has(forcedBinaryKey)) {
+            const forcedBinaryValue = Number(forcedBinaryOverrides.get(forcedBinaryKey));
+            if (Number.isFinite(forcedBinaryValue)) {
+              value = forcedBinaryValue;
+              forcedBinary = true;
+            }
           }
         }
         if (isAgeEqAccuracyMetric() && row.ageEqMetaByTask && row.ageEqMetaByTask[taskId]) {
@@ -1439,6 +1475,7 @@
         fetch(`/api/results-report?results_prefix=results/v1_additional_models&t=${Date.now()}`),
         fetch(`/api/kl-report?t=${Date.now()}`),
         fetch(`/results/analysis/vocab_forced_binary_improvement.csv?t=${Date.now()}`),
+        fetch(`/results/analysis/forced_binary_task_overrides.csv?t=${Date.now()}`),
       ];
       const ageEqRequests = ageEqFeatureEnabled
         ? [
@@ -1451,8 +1488,9 @@
       const additionalModelResponse = responses[1];
       const klResponse = responses[2];
       const forcedBinaryCsvResponse = responses[3];
-      const ageEqResponse = ageEqFeatureEnabled ? responses[4] : null;
-      const ageEqAccResponse = ageEqFeatureEnabled ? responses[5] : null;
+      const forcedBinaryTaskCsvResponse = responses[4];
+      const ageEqResponse = ageEqFeatureEnabled ? responses[5] : null;
+      const ageEqAccResponse = ageEqFeatureEnabled ? responses[6] : null;
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
       }
@@ -1473,6 +1511,10 @@
       if (forcedBinaryCsvResponse && forcedBinaryCsvResponse.ok) {
         const csvOverrides = parseForcedBinaryOverridesCsv(await forcedBinaryCsvResponse.text());
         csvOverrides.forEach((value, key) => forcedBinaryOverrides.set(key, value));
+      }
+      if (forcedBinaryTaskCsvResponse && forcedBinaryTaskCsvResponse.ok) {
+        const taskOverrides = parseForcedBinaryTaskOverridesCsv(await forcedBinaryTaskCsvResponse.text());
+        taskOverrides.forEach((value, key) => forcedBinaryOverrides.set(key, value));
       }
       const ageEqPayload = ageEqFeatureEnabled && ageEqResponse ? await ageEqResponse.json() : null;
       const ageEqAccPayload =

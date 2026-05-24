@@ -27,13 +27,28 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/forced_binary_other_tasks}"
 
 # Preserve previously working env routing defaults.
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
-SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
+SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-}"
 COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
 
 # Force binary scoring for generic label models and CogVLM adapter.
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-1}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-binary}"
 DRY_RUN="${DRY_RUN:-0}"
+
+if [[ -z "$SMOLVLM_CONDA_ENV_PATH" ]]; then
+  CANDIDATES=(
+    "$PROJECT_ROOT/envs/${USER:-unknown}-levante-py311"
+    "$PROJECT_ROOT/envs/david81-levante-py311"
+    "$CONDA_ENV_PATH"
+  )
+  for candidate in "${CANDIDATES[@]}"; do
+    if [[ -x "$candidate/bin/python" ]] && "$candidate/bin/python" -c "import num2words" >/dev/null 2>&1; then
+      SMOLVLM_CONDA_ENV_PATH="$candidate"
+      break
+    fi
+  done
+fi
+SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 
 MODELS=(
   "cogvlm"

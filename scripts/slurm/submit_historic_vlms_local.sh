@@ -35,6 +35,7 @@ TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-min
 OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/v1_additional_models}"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
+SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 IMAGE_SIZE="${IMAGE_SIZE:-}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-}"
@@ -110,6 +111,7 @@ echo "  TASKS_CSV=$TASKS_CSV"
 echo "  DRY_RUN=$DRY_RUN"
 echo "  CONDA_ENV_PATH=$CONDA_ENV_PATH"
 echo "  COGVLM_CONDA_ENV_PATH=$COGVLM_CONDA_ENV_PATH"
+echo "  SMOLVLM_CONDA_ENV_PATH=$SMOLVLM_CONDA_ENV_PATH"
 echo "  IMAGE_SIZE=${IMAGE_SIZE:-<default>}"
 echo "  COGVLM_LABEL_SCORING_MODE=${COGVLM_LABEL_SCORING_MODE:-<default>}"
 echo "  FORCE_BINARY_LABEL_SCORING=${FORCE_BINARY_LABEL_SCORING:-<default>}"
@@ -133,6 +135,20 @@ for model in "${MODELS[@]}"; do
   job_conda_env="$CONDA_ENV_PATH"
   if [[ "$MODEL_NAME_RESOLVED" == "cogvlm" ]]; then
     job_conda_env="$COGVLM_CONDA_ENV_PATH"
+  elif [[ "$MODEL_NAME_RESOLVED" == "smolvlm2" ]]; then
+    job_conda_env="$SMOLVLM_CONDA_ENV_PATH"
+    if [[ "$DRY_RUN" != "1" ]]; then
+      if [[ ! -x "$job_conda_env/bin/python" ]]; then
+        echo "ERROR: SmolVLM env python missing at $job_conda_env/bin/python" >&2
+        echo "Set SMOLVLM_CONDA_ENV_PATH to an env containing num2words." >&2
+        exit 1
+      fi
+      if ! "$job_conda_env/bin/python" -c "import num2words" >/dev/null 2>&1; then
+        echo "ERROR: num2words missing in SmolVLM env: $job_conda_env" >&2
+        echo "Install num2words there, or set SMOLVLM_CONDA_ENV_PATH accordingly." >&2
+        exit 1
+      fi
+    fi
   fi
 
   cmd=(

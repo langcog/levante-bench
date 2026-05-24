@@ -151,6 +151,20 @@ body {
   color: #0f172a;
 }
 
+.control-group label.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.control-group label.checkbox-row input[type="checkbox"] {
+  margin: 0;
+}
+
 .tab-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -337,18 +351,6 @@ select:focus-visible {
   border-top: 0;
   background: transparent;
   border-radius: 0;
-}
-
-.line-swatch-tl {
-  border-top-style: dashed;
-}
-
-.line-swatch-tl::after {
-  width: 10px;
-  height: 10px;
-  top: -7px;
-  border-radius: 2px;
-  transform: rotate(18deg);
 }
 
 .chart-wrap canvas {

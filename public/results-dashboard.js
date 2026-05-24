@@ -4,6 +4,7 @@
   const metricEl = document.getElementById("metric");
   const tasksEl = document.getElementById("tasks");
   const languagesEl = document.getElementById("languages");
+  const compareToChanceEl = document.getElementById("compare-to-chance");
   const tableBody = document.querySelector("#results-table tbody");
   const metricColumnHeaderEl = document.getElementById("metric-column-header");
   const closestBinColumnHeaderEl = document.getElementById("closest-bin-column-header");
@@ -88,6 +89,14 @@
     "#bcbddc",
   ];
   const excludedLanguages = new Set(["tl", "tlh", "klingon"]);
+  const chanceByTask = {
+    "egma-math": 0.25,
+    "matrix-reasoning": 0.25,
+    "mental-rotation": 0.5,
+    "theory-of-mind": 0.25,
+    trog: 0.25,
+    vocab: 0.25,
+  };
   const MODEL_SIZE_UNDERSCORE_RE = /^(?<model>[A-Za-z0-9.-]+)_(?<size>[0-9]+(?:\.[0-9]+)?[A-Za-z]+)$/;
   const MODEL_SIZE_DASH_RE =
     /^(?<model>[A-Za-z0-9._-]+)-(?<size>(?:\d+(?:\.\d+)?[A-Za-z]+|[A-Za-z]+\d+[A-Za-z]*)(?:-(?:it|instruct))?)$/;
@@ -364,7 +373,14 @@
 
   function isExcludedLanguage(language) {
     const normalized = String(language || "").trim().toLowerCase();
-    return excludedLanguages.has(normalized);
+    if (!normalized) {
+      return false;
+    }
+    return (
+      excludedLanguages.has(normalized) ||
+      normalized.startsWith("tlh") ||
+      normalized.startsWith("klingon")
+    );
   }
 
   function languageChartStyle(language) {
@@ -481,6 +497,10 @@
 
   function isAgeEqAccuracyMetric() {
     return currentMetric() === "age_eq_acc";
+  }
+
+  function isComparedToChanceEnabled() {
+    return Boolean(compareToChanceEl && compareToChanceEl.checked && currentMetric() === "accuracy");
   }
 
   function currentModelRecords() {
@@ -1112,6 +1132,12 @@
             question = true;
           }
         }
+        if (compareToChance && Number.isFinite(value)) {
+          const chance = chanceByTask[taskId];
+          if (Number.isFinite(chance)) {
+            value = value - chance;
+          }
+        }
         return { value, question };
       });
       return {
@@ -1135,10 +1161,34 @@
     const klMetric = isKlMetric();
     const ageEqMetric = isAgeEqMetric();
     const ageEqAccMetric = isAgeEqAccuracyMetric();
+    const compareToChance = isComparedToChanceEnabled();
+    const chanceAdjustedValues = [];
 
     if (chart) {
       chart.destroy();
     }
+    if (compareToChance) {
+      labels.forEach((taskId) => {
+        const chance = chanceByTask[taskId];
+        if (!Number.isFinite(chance)) {
+          return;
+        }
+        rows.forEach((row) => {
+          if (Object.prototype.hasOwnProperty.call(row.taskMeans, taskId)) {
+            const val = Number(row.taskMeans[taskId]);
+            if (Number.isFinite(val)) {
+              chanceAdjustedValues.push(val - chance);
+            }
+          }
+        });
+      });
+    }
+    const maxChanceDelta = compareToChance
+      ? Math.max(
+          0.05,
+          ...chanceAdjustedValues.map((v) => Math.abs(v)),
+        )
+      : null;
     chart = new Chart(ctx, {
       type: "line",
       data: {
@@ -1162,6 +1212,21 @@
           tooltip: {
             mode: "nearest",
             intersect: false,
+            callbacks: {
+              label(context) {
+                const datasetLabel = context.dataset && context.dataset.label ? context.dataset.label : "Series";
+                const taskId = context.label;
+                const value = Number(context.parsed.y);
+                if (compareToChance && Number.isFinite(value)) {
+                  const chance = chanceByTask[taskId];
+                  if (Number.isFinite(chance)) {
+                    const rawAccuracy = value + chance;
+                    return `${datasetLabel}: ${(rawAccuracy * 100).toFixed(1)}% (${(value * 100).toFixed(1)} pp vs chance ${(chance * 100).toFixed(0)}%)`;
+                  }
+                }
+                return `${datasetLabel}: ${Number.isFinite(value) ? value.toFixed(4) : "n/a"}`;
+              },
+            },
           },
         },
         interaction: {
@@ -1178,8 +1243,14 @@
             },
           },
           y: {
-            min: 0,
-            max: klMetric || ageEqMetric || ageEqAccMetric ? undefined : 1,
+            min:
+              compareToChance && Number.isFinite(maxChanceDelta) ? -maxChanceDelta : 0,
+            max:
+              compareToChance && Number.isFinite(maxChanceDelta)
+                ? maxChanceDelta
+                : klMetric || ageEqMetric || ageEqAccMetric
+                  ? undefined
+                  : 1,
             title: {
               display: true,
               text: klMetric
@@ -1188,11 +1259,19 @@
                   ? "Age equivalency (years)"
                   : ageEqAccMetric
                     ? "Age equivalency from accuracy (years)"
-                  : "Accuracy",
+                    : compareToChance
+                      ? "Accuracy vs chance (0 = chance)"
+                      : "Accuracy",
               color: "#334155",
             },
             ticks: {
               color: "#475569",
+              callback(value) {
+                if (!compareToChance) {
+                  return value;
+                }
+                return `${(Number(value) * 100).toFixed(0)} pp`;
+              },
             },
             grid: {
               color: "rgba(148, 163, 184, 0.28)",
@@ -1225,6 +1304,12 @@
     }
     if (gapColumnHeaderEl) {
       gapColumnHeaderEl.textContent = ageEqAccMetric ? "Gap (lower better)" : "Gap";
+    }
+    if (compareToChanceEl) {
+      compareToChanceEl.disabled = currentMetric() !== "accuracy";
+      if (compareToChanceEl.disabled) {
+        compareToChanceEl.checked = false;
+      }
     }
     const rows = filteredRecords();
     statusEl.textContent =
@@ -1499,6 +1584,9 @@
   });
   if (metricEl) {
     metricEl.addEventListener("change", rerender);
+  }
+  if (compareToChanceEl) {
+    compareToChanceEl.addEventListener("change", rerender);
   }
   allModelsBtn.addEventListener("click", () => {
     setAllSelected(modelsEl);

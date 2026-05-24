@@ -52,6 +52,7 @@
   let ageEqAccModelRecords = [];
   let ageEquivalencyIndex = new Map();
   let ageEquivalencyAccuracyIndex = new Map();
+  let forcedBinaryOverrides = new Map();
   let metaBase = null;
   let activeSeriesTab = "models";
   const preferredTaskOrder = [
@@ -503,6 +504,42 @@
     return Boolean(compareToChanceEl && compareToChanceEl.checked && currentMetric() === "accuracy");
   }
 
+  function parseForcedBinaryOverridesCsv(csvText) {
+    const lines = String(csvText || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length < 2) {
+      return new Map();
+    }
+    const header = lines[0].split(",");
+    const modelIdx = header.indexOf("model");
+    const forcedIdx = header.indexOf("forced_binary_vocab");
+    if (modelIdx < 0 || forcedIdx < 0) {
+      return new Map();
+    }
+    const out = new Map();
+    for (let i = 1; i < lines.length; i += 1) {
+      const cols = lines[i].split(",");
+      const model = String(cols[modelIdx] || "").trim();
+      const forced = Number(cols[forcedIdx]);
+      if (model && Number.isFinite(forced)) {
+        out.set(`${model}|vocab`, forced);
+      }
+    }
+    return out;
+  }
+
+  function defaultForcedBinaryOverrides() {
+    // Fallback so dashboard highlights remain visible even when the
+    // analysis CSV is not available in deployed static assets.
+    return new Map([
+      ["cogvlm|vocab", 0.9941],
+      ["smolvlm2-256M|vocab", 0.5118],
+      ["smolvlm2-500M|vocab", 0.8059],
+    ]);
+  }
+
   function currentModelRecords() {
     if (activeSeriesTab === "additional") {
       return additionalAccuracyModelRecords;
@@ -583,6 +620,11 @@
     const model = String((row && row.model) || "").trim();
     const language = String((row && row.language) || "en").trim().toLowerCase() || "en";
     return `${model}|${language}`;
+  }
+
+  function isAdditionalOnlyModel(row) {
+    const model = String((row && row.model) || "").trim().toLowerCase();
+    return model.startsWith("molmo");
   }
 
   function parseRunRecords(report) {
@@ -1111,15 +1153,25 @@
     uniqueSorted(rows.map((row) => row.model)).forEach((model, idx) => {
       modelColors.set(model, levantePalette[idx % levantePalette.length]);
     });
+    const compareToChance = isComparedToChanceEnabled();
     const datasets = rows.map((row) => {
       const color = modelColors.get(row.model) || levantePalette[0];
       const style = languageChartStyle(row.language);
       const points = labels.map((taskId) => {
         if (!Object.prototype.hasOwnProperty.call(row.taskMeans, taskId)) {
-          return { value: null, question: false };
+          return { value: null, question: false, forcedBinary: false };
         }
         let value = row.taskMeans[taskId];
         let question = false;
+        let forcedBinary = false;
+        const forcedBinaryKey = `${row.model}|${taskId}`;
+        if (forcedBinaryOverrides.has(forcedBinaryKey)) {
+          const forcedBinaryValue = Number(forcedBinaryOverrides.get(forcedBinaryKey));
+          if (Number.isFinite(forcedBinaryValue)) {
+            value = forcedBinaryValue;
+            forcedBinary = true;
+          }
+        }
         if (isAgeEqAccuracyMetric() && row.ageEqMetaByTask && row.ageEqMetaByTask[taskId]) {
           const meta = row.ageEqMetaByTask[taskId];
           if (
@@ -1138,20 +1190,33 @@
             value = value - chance;
           }
         }
-        return { value, question };
+        return { value, question, forcedBinary };
       });
       return {
         label: seriesDisplayLabel(row),
         data: points.map((p) => p.value),
         questionMarkMask: points.map((p) => p.question),
+        forcedBinaryMask: points.map((p) => p.forcedBinary),
         borderColor: color,
         backgroundColor: `${color}55`,
         pointBackgroundColor: color,
-        pointBorderColor: "#ffffff",
-        pointStyle: style.pointStyle,
+        pointBorderColor: (ctx) =>
+          ctx.dataset.forcedBinaryMask?.[ctx.dataIndex] ? color : "#ffffff",
+        pointBorderWidth: (ctx) => (ctx.dataset.forcedBinaryMask?.[ctx.dataIndex] ? 2 : 1.4),
+        pointStyle: points.map((p) => (p.forcedBinary ? "rectRot" : style.pointStyle)),
         borderDash: style.borderDash,
-        pointRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 4),
-        pointHoverRadius: (ctx) => (ctx.dataset.questionMarkMask?.[ctx.dataIndex] ? 0 : 5),
+        pointRadius: (ctx) =>
+          ctx.dataset.questionMarkMask?.[ctx.dataIndex]
+            ? 0
+            : ctx.dataset.forcedBinaryMask?.[ctx.dataIndex]
+              ? 8
+              : 4,
+        pointHoverRadius: (ctx) =>
+          ctx.dataset.questionMarkMask?.[ctx.dataIndex]
+            ? 0
+            : ctx.dataset.forcedBinaryMask?.[ctx.dataIndex]
+              ? 9
+              : 5,
         borderWidth: 2.4,
         tension: 0.22,
         spanGaps: true,
@@ -1161,34 +1226,10 @@
     const klMetric = isKlMetric();
     const ageEqMetric = isAgeEqMetric();
     const ageEqAccMetric = isAgeEqAccuracyMetric();
-    const compareToChance = isComparedToChanceEnabled();
-    const chanceAdjustedValues = [];
 
     if (chart) {
       chart.destroy();
     }
-    if (compareToChance) {
-      labels.forEach((taskId) => {
-        const chance = chanceByTask[taskId];
-        if (!Number.isFinite(chance)) {
-          return;
-        }
-        rows.forEach((row) => {
-          if (Object.prototype.hasOwnProperty.call(row.taskMeans, taskId)) {
-            const val = Number(row.taskMeans[taskId]);
-            if (Number.isFinite(val)) {
-              chanceAdjustedValues.push(val - chance);
-            }
-          }
-        });
-      });
-    }
-    const maxChanceDelta = compareToChance
-      ? Math.max(
-          0.05,
-          ...chanceAdjustedValues.map((v) => Math.abs(v)),
-        )
-      : null;
     chart = new Chart(ctx, {
       type: "line",
       data: {
@@ -1244,10 +1285,10 @@
           },
           y: {
             min:
-              compareToChance && Number.isFinite(maxChanceDelta) ? -maxChanceDelta : 0,
+              compareToChance ? -0.25 : 0,
             max:
-              compareToChance && Number.isFinite(maxChanceDelta)
-                ? maxChanceDelta
+              compareToChance
+                ? 0.75
                 : klMetric || ageEqMetric || ageEqAccMetric
                   ? undefined
                   : 1,
@@ -1270,11 +1311,47 @@
                 if (!compareToChance) {
                   return value;
                 }
-                return `${(Number(value) * 100).toFixed(0)} pp`;
+                const numeric = Number(value);
+                if (Math.abs(numeric) < 1e-9) {
+                  return "Chance";
+                }
+                return `${(numeric * 100).toFixed(0)} pp`;
+              },
+              font(context) {
+                if (!compareToChance) {
+                  return {};
+                }
+                const numeric = Number(context && context.tick ? context.tick.value : NaN);
+                if (Math.abs(numeric) < 1e-9) {
+                  return { weight: "700" };
+                }
+                return {};
               },
             },
             grid: {
-              color: "rgba(148, 163, 184, 0.28)",
+              color: (context) => {
+                if (!compareToChance) {
+                  return "rgba(148, 163, 184, 0.28)";
+                }
+                const tickValue =
+                  context && context.tick && Number.isFinite(Number(context.tick.value))
+                    ? Number(context.tick.value)
+                    : NaN;
+                if (Math.abs(tickValue) < 1e-9) {
+                  return "rgba(30, 41, 59, 0.9)";
+                }
+                return "rgba(148, 163, 184, 0.24)";
+              },
+              lineWidth: (context) => {
+                if (!compareToChance) {
+                  return 1;
+                }
+                const tickValue =
+                  context && context.tick && Number.isFinite(Number(context.tick.value))
+                    ? Number(context.tick.value)
+                    : NaN;
+                return Math.abs(tickValue) < 1e-9 ? 2.8 : 1;
+              },
             },
           },
         },
@@ -1361,6 +1438,7 @@
         fetch(`/api/results-report?t=${Date.now()}`),
         fetch(`/api/results-report?results_prefix=results/v1_additional_models&t=${Date.now()}`),
         fetch(`/api/kl-report?t=${Date.now()}`),
+        fetch(`/results/analysis/vocab_forced_binary_improvement.csv?t=${Date.now()}`),
       ];
       const ageEqRequests = ageEqFeatureEnabled
         ? [
@@ -1372,8 +1450,9 @@
       const modelResponse = responses[0];
       const additionalModelResponse = responses[1];
       const klResponse = responses[2];
-      const ageEqResponse = ageEqFeatureEnabled ? responses[3] : null;
-      const ageEqAccResponse = ageEqFeatureEnabled ? responses[4] : null;
+      const forcedBinaryCsvResponse = responses[3];
+      const ageEqResponse = ageEqFeatureEnabled ? responses[4] : null;
+      const ageEqAccResponse = ageEqFeatureEnabled ? responses[5] : null;
       if (!modelResponse.ok) {
         throw new Error(`Model report HTTP ${modelResponse.status}`);
       }
@@ -1390,6 +1469,11 @@
         ? { source: "unavailable", report: { by_model: {}, runs: [] } }
         : await additionalModelResponse.json();
       const klPayload = klUnavailable ? { source: "unavailable", records: [] } : await klResponse.json();
+      forcedBinaryOverrides = defaultForcedBinaryOverrides();
+      if (forcedBinaryCsvResponse && forcedBinaryCsvResponse.ok) {
+        const csvOverrides = parseForcedBinaryOverridesCsv(await forcedBinaryCsvResponse.text());
+        csvOverrides.forEach((value, key) => forcedBinaryOverrides.set(key, value));
+      }
       const ageEqPayload = ageEqFeatureEnabled && ageEqResponse ? await ageEqResponse.json() : null;
       const ageEqAccPayload =
         ageEqFeatureEnabled && ageEqAccResponse ? await ageEqAccResponse.json() : null;
@@ -1399,6 +1483,20 @@
       additionalAccuracyModelRecords = parseModelRecords(additionalPayload.report || {}).filter(
         (row) => !isExcludedLanguage(row.language),
       );
+      // Keep select models (for now, Molmo family) out of the main series tab
+      // and visible only under Add'l Models.
+      const movedToAdditional = accuracyModelRecords.filter((row) => isAdditionalOnlyModel(row));
+      accuracyModelRecords = accuracyModelRecords.filter((row) => !isAdditionalOnlyModel(row));
+      if (movedToAdditional.length) {
+        const seen = new Set(additionalAccuracyModelRecords.map((row) => modelLanguageKey(row)));
+        movedToAdditional.forEach((row) => {
+          const key = modelLanguageKey(row);
+          if (!seen.has(key)) {
+            additionalAccuracyModelRecords.push(row);
+            seen.add(key);
+          }
+        });
+      }
       accuracyRunRecords = parseRunRecords(payload.report || {}).filter(
         (row) => !isExcludedLanguage(row.language),
       );

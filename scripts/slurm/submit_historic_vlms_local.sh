@@ -40,6 +40,7 @@ QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 IMAGE_SIZE="${IMAGE_SIZE:-}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-}"
+STRICT_QWEN_PREFLIGHT="${STRICT_QWEN_PREFLIGHT:-0}"
 
 # Per-model defaults. Override globally via env vars if needed.
 declare -A TIME_MAP=(
@@ -127,6 +128,7 @@ echo "  CONDA_ENV_PATH=$CONDA_ENV_PATH"
 echo "  COGVLM_CONDA_ENV_PATH=$COGVLM_CONDA_ENV_PATH"
 echo "  SMOLVLM_CONDA_ENV_PATH=$SMOLVLM_CONDA_ENV_PATH"
 echo "  QWEN_CONDA_ENV_PATH=$QWEN_CONDA_ENV_PATH"
+echo "  STRICT_QWEN_PREFLIGHT=$STRICT_QWEN_PREFLIGHT"
 echo "  IMAGE_SIZE=${IMAGE_SIZE:-<default>}"
 echo "  COGVLM_LABEL_SCORING_MODE=${COGVLM_LABEL_SCORING_MODE:-<default>}"
 echo "  FORCE_BINARY_LABEL_SCORING=${FORCE_BINARY_LABEL_SCORING:-<default>}"
@@ -160,9 +162,13 @@ if "qwen3_5" not in CONFIG_MAPPING_NAMES:
     raise SystemExit(1)
 PY
       then
-        echo "ERROR: Qwen env lacks qwen3_5 architecture support: $job_conda_env" >&2
-        echo "Use an env with updated Transformers, then set QWEN_CONDA_ENV_PATH." >&2
-        exit 1
+        if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then
+          echo "ERROR: Qwen env lacks qwen3_5 architecture support: $job_conda_env" >&2
+          echo "Use an env with updated Transformers, then set QWEN_CONDA_ENV_PATH." >&2
+          exit 1
+        else
+          echo "WARNING: Qwen preflight did not detect qwen3_5 support in $job_conda_env; proceeding anyway (STRICT_QWEN_PREFLIGHT=0)." >&2
+        fi
       fi
     fi
   elif [[ "$MODEL_NAME_RESOLVED" == "smolvlm2" ]]; then

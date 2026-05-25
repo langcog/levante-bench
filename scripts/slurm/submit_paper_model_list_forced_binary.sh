@@ -40,6 +40,7 @@ QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-}"
 
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-1}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-binary}"
+STRICT_QWEN_PREFLIGHT="${STRICT_QWEN_PREFLIGHT:-0}"
 
 qwen_env_supports_qwen35() {
   local env_path="$1"
@@ -185,6 +186,7 @@ echo "  ALLOW_FRONTIER=$ALLOW_FRONTIER"
 echo "  FORCE_BINARY_LABEL_SCORING=$FORCE_BINARY_LABEL_SCORING"
 echo "  COGVLM_LABEL_SCORING_MODE=$COGVLM_LABEL_SCORING_MODE"
 echo "  QWEN_CONDA_ENV_PATH=$QWEN_CONDA_ENV_PATH"
+echo "  STRICT_QWEN_PREFLIGHT=$STRICT_QWEN_PREFLIGHT"
 echo ""
 
 submitted=0
@@ -210,9 +212,13 @@ for target in "${TARGETS[@]}"; do
   fi
 
   if [[ "$model" == "qwen35" ]] && ! qwen_env_supports_qwen35 "$QWEN_CONDA_ENV_PATH"; then
-    echo "Skipping unsupported Qwen target (missing qwen3_5 support in $QWEN_CONDA_ENV_PATH): $target"
-    skipped_unsupported=$((skipped_unsupported + 1))
-    continue
+    if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then
+      echo "Skipping unsupported Qwen target (missing qwen3_5 support in $QWEN_CONDA_ENV_PATH): $target"
+      skipped_unsupported=$((skipped_unsupported + 1))
+      continue
+    else
+      echo "WARNING: Qwen preflight did not detect qwen3_5 support in $QWEN_CONDA_ENV_PATH; submitting anyway: $target" >&2
+    fi
   fi
 
   if [[ "$FORCE" != "1" ]] && has_existing_summary "$label"; then
@@ -234,6 +240,7 @@ for target in "${TARGETS[@]}"; do
   SMOLVLM_CONDA_ENV_PATH="$SMOLVLM_CONDA_ENV_PATH" \
   COGVLM_CONDA_ENV_PATH="$COGVLM_CONDA_ENV_PATH" \
   QWEN_CONDA_ENV_PATH="$QWEN_CONDA_ENV_PATH" \
+  STRICT_QWEN_PREFLIGHT="$STRICT_QWEN_PREFLIGHT" \
   FORCE_BINARY_LABEL_SCORING="$FORCE_BINARY_LABEL_SCORING" \
   COGVLM_LABEL_SCORING_MODE="$COGVLM_LABEL_SCORING_MODE" \
   BATCH_SIZE="$batch_size" \

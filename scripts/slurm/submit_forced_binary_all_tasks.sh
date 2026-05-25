@@ -1,13 +1,17 @@
 #!/bin/bash
-# Submit forced-binary reruns for "other tasks" across three target models.
+# Submit forced-binary reruns for selected local VLMs on Marlowe.
 #
-# Default tasks exclude the already-run vocab/trog/matrix set:
-#   egma-math,mental-rotation,theory-of-mind
+# Defaults:
+#   - all benchmark tasks
+#   - cogvlm, smolvlm2:256M, smolvlm2:500M
+#   - output root: results/forced_binary_all_tasks
 #
 # Usage:
-#   bash scripts/slurm/submit_forced_binary_other_tasks.sh
-#   DRY_RUN=1 bash scripts/slurm/submit_forced_binary_other_tasks.sh
-#   TASKS_CSV="egma-math,theory-of-mind" bash scripts/slurm/submit_forced_binary_other_tasks.sh
+#   bash scripts/slurm/submit_forced_binary_all_tasks.sh
+#   DRY_RUN=1 bash scripts/slurm/submit_forced_binary_all_tasks.sh
+#   TASKS_CSV="trog,vocab" bash scripts/slurm/submit_forced_binary_all_tasks.sh
+#   MODELS_CSV="cogvlm,smolvlm2:256M,qwen35:0.8B" bash scripts/slurm/submit_forced_binary_all_tasks.sh
+#   bash scripts/slurm/submit_forced_binary_all_tasks.sh cogvlm smolvlm2:500M
 
 set -euo pipefail
 
@@ -22,18 +26,17 @@ fi
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"
 CODE_DIR="${CODE_DIR:-$PROJECT_ROOT/code/levante-bench}"
 VERSION="${VERSION:-v1}"
-TASKS_CSV="${TASKS_CSV:-egma-math,mental-rotation,theory-of-mind}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/forced_binary_other_tasks}"
+TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/forced_binary_all_tasks}"
 
-# Preserve previously working env routing defaults.
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-}"
 COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
 
-# Force binary scoring for generic label models and CogVLM adapter.
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-1}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-binary}"
 DRY_RUN="${DRY_RUN:-0}"
+MODELS_CSV="${MODELS_CSV:-}"
 
 if [[ -z "$SMOLVLM_CONDA_ENV_PATH" ]]; then
   CANDIDATES=(
@@ -50,13 +53,19 @@ if [[ -z "$SMOLVLM_CONDA_ENV_PATH" ]]; then
 fi
 SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 
-MODELS=(
-  "cogvlm"
-  "smolvlm2:256M"
-  "smolvlm2:500M"
-)
+if [[ $# -gt 0 ]]; then
+  MODELS=("$@")
+elif [[ -n "$MODELS_CSV" ]]; then
+  IFS=',' read -r -a MODELS <<< "$MODELS_CSV"
+else
+  MODELS=(
+    "cogvlm"
+    "smolvlm2:256M"
+    "smolvlm2:500M"
+  )
+fi
 
-echo "Submitting forced-binary 'other tasks' jobs:"
+echo "Submitting forced-binary jobs:"
 echo "  VERSION=$VERSION"
 echo "  TASKS_CSV=$TASKS_CSV"
 echo "  OUTPUT_ROOT=$OUTPUT_ROOT"

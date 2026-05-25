@@ -73,6 +73,7 @@ normalize_model_id() {
   case "$raw" in
     smolvlm2:256M) echo "smolvlm2-256M" ;;
     smolvlm2:500M) echo "smolvlm2-500M" ;;
+    *:*) echo "${raw/:/-}" ;;
     *) echo "$raw" ;;
   esac
 }
@@ -89,6 +90,14 @@ resolve_model_fields() {
     smolvlm2-500M)
       MODEL_NAME_RESOLVED="smolvlm2"
       MODEL_SIZE_RESOLVED="500M"
+      ;;
+    *-*)
+      local maybe_name="${normalized%-*}"
+      local maybe_size="${normalized##*-}"
+      if [[ "$maybe_size" =~ ^[0-9]+(\.[0-9]+)?[A-Za-z]+$ ]]; then
+        MODEL_NAME_RESOLVED="$maybe_name"
+        MODEL_SIZE_RESOLVED="$maybe_size"
+      fi
       ;;
   esac
 }
@@ -123,14 +132,10 @@ TASKS_CSV_EXPORT="${TASKS_CSV//,/;}"
 for model in "${MODELS[@]}"; do
   model="$(normalize_model_id "$model")"
   resolve_model_fields "$model"
-  if [[ -z "${TIME_MAP[$model]+x}" ]]; then
-    echo "Skipping unknown model target: $model" >&2
-    continue
-  fi
 
-  time_limit="${TIME_MAP[$model]}"
-  mem_limit="${MEM_MAP[$model]}"
-  batch_size="${BATCH_SIZE_MAP[$model]}"
+  time_limit="${TIME_MAP[$model]:-${TIME_LIMIT:-04:00:00}}"
+  mem_limit="${MEM_MAP[$model]:-${MEM_LIMIT:-96G}}"
+  batch_size="${BATCH_SIZE_MAP[$model]:-${BATCH_SIZE:-1}}"
   job_name="historic-${model}"
   job_conda_env="$CONDA_ENV_PATH"
   if [[ "$MODEL_NAME_RESOLVED" == "cogvlm" ]]; then

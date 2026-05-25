@@ -73,7 +73,6 @@ normalize_model_id() {
   case "$raw" in
     smolvlm2:256M) echo "smolvlm2-256M" ;;
     smolvlm2:500M) echo "smolvlm2-500M" ;;
-    *:*) echo "${raw/:/-}" ;;
     *) echo "$raw" ;;
   esac
 }
@@ -82,6 +81,11 @@ resolve_model_fields() {
   local normalized="$1"
   MODEL_NAME_RESOLVED="$normalized"
   MODEL_SIZE_RESOLVED=""
+  if [[ "$normalized" == *:* ]]; then
+    MODEL_NAME_RESOLVED="${normalized%%:*}"
+    MODEL_SIZE_RESOLVED="${normalized#*:}"
+    return
+  fi
   case "$normalized" in
     smolvlm2-256M)
       MODEL_NAME_RESOLVED="smolvlm2"
@@ -133,9 +137,9 @@ for model in "${MODELS[@]}"; do
   model="$(normalize_model_id "$model")"
   resolve_model_fields "$model"
 
-  time_limit="${TIME_MAP[$model]:-${TIME_LIMIT:-04:00:00}}"
-  mem_limit="${MEM_MAP[$model]:-${MEM_LIMIT:-96G}}"
-  batch_size="${BATCH_SIZE_MAP[$model]:-${BATCH_SIZE:-1}}"
+  time_limit="${TIME_LIMIT:-${TIME_MAP[$model]:-04:00:00}}"
+  mem_limit="${MEM_LIMIT:-${MEM_MAP[$model]:-96G}}"
+  batch_size="${BATCH_SIZE:-${BATCH_SIZE_MAP[$model]:-1}}"
   job_name="historic-${model}"
   job_conda_env="$CONDA_ENV_PATH"
   if [[ "$MODEL_NAME_RESOLVED" == "cogvlm" ]]; then

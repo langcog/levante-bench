@@ -155,8 +155,9 @@ for model in "${MODELS[@]}"; do
         exit 1
       fi
       if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
-from transformers import AutoConfig
-AutoConfig.for_model("qwen3_5")
+from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
+if "qwen3_5" not in CONFIG_MAPPING_NAMES:
+    raise SystemExit(1)
 PY
       then
         echo "ERROR: Qwen env lacks qwen3_5 architecture support: $job_conda_env" >&2

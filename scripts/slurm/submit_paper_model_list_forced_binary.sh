@@ -41,6 +41,16 @@ QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-1}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-binary}"
 
+qwen_env_supports_qwen35() {
+  local env_path="$1"
+  [[ -x "$env_path/bin/python" ]] || return 1
+  "$env_path/bin/python" - <<'PY' >/dev/null 2>&1
+from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
+if "qwen3_5" not in CONFIG_MAPPING_NAMES:
+    raise SystemExit(1)
+PY
+}
+
 if [[ -z "$QWEN_CONDA_ENV_PATH" ]]; then
   CANDIDATES=(
     "$PROJECT_ROOT/envs/${USER:-unknown}-levante-py311"
@@ -48,11 +58,7 @@ if [[ -z "$QWEN_CONDA_ENV_PATH" ]]; then
     "$CONDA_ENV_PATH"
   )
   for candidate in "${CANDIDATES[@]}"; do
-    if [[ -x "$candidate/bin/python" ]] && "$candidate/bin/python" - <<'PY' >/dev/null 2>&1
-from transformers import AutoConfig
-AutoConfig.for_model("qwen3_5")
-PY
-    then
+    if qwen_env_supports_qwen35 "$candidate"; then
       QWEN_CONDA_ENV_PATH="$candidate"
       break
     fi
@@ -185,6 +191,7 @@ submitted=0
 skipped_existing=0
 skipped_frontier=0
 skipped_malformed=0
+skipped_unsupported=0
 
 for target in "${TARGETS[@]}"; do
   if [[ "$target" != *:* ]]; then
@@ -199,6 +206,12 @@ for target in "${TARGETS[@]}"; do
   if [[ "$ALLOW_FRONTIER" != "1" ]] && is_frontier_or_hosted "$model"; then
     echo "Skipping frontier/hosted model for forced-binary: $target"
     skipped_frontier=$((skipped_frontier + 1))
+    continue
+  fi
+
+  if [[ "$model" == "qwen35" ]] && ! qwen_env_supports_qwen35 "$QWEN_CONDA_ENV_PATH"; then
+    echo "Skipping unsupported Qwen target (missing qwen3_5 support in $QWEN_CONDA_ENV_PATH): $target"
+    skipped_unsupported=$((skipped_unsupported + 1))
     continue
   fi
 
@@ -232,4 +245,4 @@ for target in "${TARGETS[@]}"; do
 done
 
 echo ""
-echo "Done. submitted=$submitted skipped_existing=$skipped_existing skipped_frontier=$skipped_frontier skipped_malformed=$skipped_malformed"
+echo "Done. submitted=$submitted skipped_existing=$skipped_existing skipped_frontier=$skipped_frontier skipped_unsupported=$skipped_unsupported skipped_malformed=$skipped_malformed"

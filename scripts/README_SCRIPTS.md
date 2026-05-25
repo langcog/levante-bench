@@ -213,3 +213,30 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
 
 - Most scripts support `--help`; prefer checking each script's CLI for the latest flags.
 - For end-to-end user workflows, start in the top-level `README.md` and `comparison/README.md`.
+
+## Slurm Scripts
+
+- `slurm/submit_historic_vlms_local.sh`
+  - General local-model Slurm submitter.
+  - Supports model overrides (including `model:size`), task overrides via `TASKS_CSV`, and env routing for CogVLM/SmolVLM.
+- `slurm/submit_forced_binary_all_tasks.sh`
+  - Canonical entry point for forced-binary scoring experiments.
+  - Defaults to all tasks and the three primary models (`cogvlm`, `smolvlm2:256M`, `smolvlm2:500M`).
+  - Writes to `results/forced_binary_all_tasks` by default.
+- `slurm/run_historic_vlm_local.sbatch`
+  - Job template used by `submit_historic_vlms_local.sh`.
+  - Generates experiment YAML and runs `levante_bench.cli` in-cluster.
+- `slurm/submit_lowres_image_sweep.sh` / `slurm/run_lowres_image_sweep.sbatch`
+  - Utilities for image-resolution sweep experiments (`IMAGE_SIZE` variants).
+- `slurm/run_eval_multirun.sbatch`
+  - True-random multi-run template for repeated evaluations.
+- `slurm/sync_historic_vlms_to_bucket.sh`
+  - Sync utility for publishing selected result trees to bucket storage.
+
+## Experimental Scripts
+
+- `experimental/` mirrors scripts that are being iterated on before promotion to canonical locations.
+- Current examples include:
+  - `experimental/submit_lowres_image_sweep.sh`
+  - `experimental/run_lowres_image_sweep.sbatch`
+- Prefer `scripts/slurm/` versions for routine use unless a specific experimental variant is requested.

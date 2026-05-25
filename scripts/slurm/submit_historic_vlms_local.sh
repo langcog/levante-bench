@@ -36,6 +36,7 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/v1_additional_models}"
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
 SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
+QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 IMAGE_SIZE="${IMAGE_SIZE:-}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-}"
@@ -125,6 +126,7 @@ echo "  DRY_RUN=$DRY_RUN"
 echo "  CONDA_ENV_PATH=$CONDA_ENV_PATH"
 echo "  COGVLM_CONDA_ENV_PATH=$COGVLM_CONDA_ENV_PATH"
 echo "  SMOLVLM_CONDA_ENV_PATH=$SMOLVLM_CONDA_ENV_PATH"
+echo "  QWEN_CONDA_ENV_PATH=$QWEN_CONDA_ENV_PATH"
 echo "  IMAGE_SIZE=${IMAGE_SIZE:-<default>}"
 echo "  COGVLM_LABEL_SCORING_MODE=${COGVLM_LABEL_SCORING_MODE:-<default>}"
 echo "  FORCE_BINARY_LABEL_SCORING=${FORCE_BINARY_LABEL_SCORING:-<default>}"
@@ -144,6 +146,24 @@ for model in "${MODELS[@]}"; do
   job_conda_env="$CONDA_ENV_PATH"
   if [[ "$MODEL_NAME_RESOLVED" == "cogvlm" ]]; then
     job_conda_env="$COGVLM_CONDA_ENV_PATH"
+  elif [[ "$MODEL_NAME_RESOLVED" == "qwen35" ]]; then
+    job_conda_env="$QWEN_CONDA_ENV_PATH"
+    if [[ "$DRY_RUN" != "1" ]]; then
+      if [[ ! -x "$job_conda_env/bin/python" ]]; then
+        echo "ERROR: Qwen env python missing at $job_conda_env/bin/python" >&2
+        echo "Set QWEN_CONDA_ENV_PATH to an env with a newer Transformers build." >&2
+        exit 1
+      fi
+      if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
+from transformers import AutoConfig
+AutoConfig.for_model("qwen3_5")
+PY
+      then
+        echo "ERROR: Qwen env lacks qwen3_5 architecture support: $job_conda_env" >&2
+        echo "Use an env with updated Transformers, then set QWEN_CONDA_ENV_PATH." >&2
+        exit 1
+      fi
+    fi
   elif [[ "$MODEL_NAME_RESOLVED" == "smolvlm2" ]]; then
     job_conda_env="$SMOLVLM_CONDA_ENV_PATH"
     if [[ "$DRY_RUN" != "1" ]]; then

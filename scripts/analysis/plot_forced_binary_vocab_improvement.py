@@ -26,6 +26,12 @@ def parse_args() -> argparse.Namespace:
         help="Directory containing per-model forced-binary trog/matrix results.",
     )
     p.add_argument(
+        "--forced-other-root",
+        type=Path,
+        default=REPO_ROOT / "results" / "forced_binary_other_tasks",
+        help="Directory containing per-model forced-binary results for other tasks.",
+    )
+    p.add_argument(
         "--baseline-root",
         type=Path,
         default=REPO_ROOT / "results" / "v1",
@@ -52,7 +58,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--tasks",
         type=str,
-        default="vocab,trog,matrix-reasoning",
+        default="egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab",
         help="Comma-separated tasks to include in the comparison plot.",
     )
     p.add_argument(
@@ -151,6 +157,7 @@ def main() -> int:
     args = parse_args()
     forced_root = args.forced_root.resolve()
     forced_task_root = args.forced_task_root.resolve()
+    forced_other_root = args.forced_other_root.resolve()
     baseline_root = args.baseline_root.resolve()
     output_png = args.output_png.resolve()
     output_csv = args.output_csv.resolve()
@@ -161,8 +168,14 @@ def main() -> int:
 
     tasks = [t.strip() for t in args.tasks.split(",") if t.strip()]
     rows: list[dict[str, str | float]] = []
+    trog_matrix_tasks = {"trog", "matrix-reasoning"}
     for task_id in tasks:
-        task_root = forced_root if task_id == "vocab" else forced_task_root
+        if task_id == "vocab":
+            task_root = forced_root
+        elif task_id in trog_matrix_tasks:
+            task_root = forced_task_root
+        else:
+            task_root = forced_other_root
         rows.extend(collect_rows_for_task(task_id, task_root, baseline_root))
     if "vocab" in tasks:
         maybe_append_cogvlm_vocab_row(rows, REPO_ROOT)

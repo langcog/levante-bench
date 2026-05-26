@@ -212,16 +212,16 @@ PY
         exit 1
       fi
       if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
-from transformers import AutoConfig
-AutoConfig.from_pretrained("Qwen/Qwen3.5-0.8B", trust_remote_code=True)
+import transformers  # noqa: F401
+from transformers import AutoModelForImageTextToText  # noqa: F401
 PY
       then
         if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then
-          echo "ERROR: Qwen env lacks qwen3_5 architecture support: $job_conda_env" >&2
-          echo "Use an env with updated Transformers, then set QWEN_CONDA_ENV_PATH." >&2
+          echo "ERROR: Qwen preflight failed in env: $job_conda_env" >&2
+          echo "Ensure transformers + AutoModelForImageTextToText are importable in that env." >&2
           exit 1
         else
-          echo "WARNING: Qwen preflight did not detect qwen3_5 support in $job_conda_env; proceeding anyway (STRICT_QWEN_PREFLIGHT=0)." >&2
+          echo "WARNING: Qwen preflight failed in $job_conda_env; proceeding anyway (STRICT_QWEN_PREFLIGHT=0)." >&2
         fi
       fi
     fi

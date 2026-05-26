@@ -10,14 +10,19 @@
 set -euo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENSURE_SBATCH_SCRIPT="$SCRIPT_DIR/_ensure_sbatch.sh"
 
-if [[ "$DRY_RUN" != "1" ]] && ! command -v sbatch >/dev/null 2>&1; then
-  echo "ERROR: sbatch not found in PATH." >&2
-  echo "Run this script on a Marlowe login node." >&2
-  exit 127
+if [[ ! -f "$ENSURE_SBATCH_SCRIPT" ]]; then
+  echo "ERROR: missing sbatch helper: $ENSURE_SBATCH_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$ENSURE_SBATCH_SCRIPT"
+if [[ "$DRY_RUN" != "1" ]]; then
+  ensure_sbatch_available
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SBATCH_SCRIPT="$SCRIPT_DIR/run_historic_vlm_local.sbatch"
 
 if [[ ! -f "$SBATCH_SCRIPT" ]]; then
@@ -178,6 +183,22 @@ PY
       then
         echo "ERROR: requests missing in Qwen env: $job_conda_env" >&2
         echo "Install core deps in that env (e.g. pip install requests)." >&2
+        exit 1
+      fi
+      if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
+import pandas as pd  # noqa: F401
+PY
+      then
+        echo "ERROR: pandas missing in Qwen env: $job_conda_env" >&2
+        echo "Install core deps in that env (e.g. pip install pandas)." >&2
+        exit 1
+      fi
+      if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
+import torchvision  # noqa: F401
+PY
+      then
+        echo "ERROR: torchvision missing in Qwen env: $job_conda_env" >&2
+        echo "Install torchvision in that env (must match torch build)." >&2
         exit 1
       fi
       if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1

@@ -8,12 +8,14 @@
 
 set -euo pipefail
 
-if ! command -v sbatch >/dev/null 2>&1; then
-  echo "ERROR: sbatch not found in PATH." >&2
-  exit 127
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENSURE_SBATCH_SCRIPT="$SCRIPT_DIR/_ensure_sbatch.sh"
+if [[ ! -f "$ENSURE_SBATCH_SCRIPT" ]]; then
+  echo "ERROR: missing sbatch helper: $ENSURE_SBATCH_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$ENSURE_SBATCH_SCRIPT"
 SBATCH_SCRIPT="$SCRIPT_DIR/run_cogvlm_from_scratch.sbatch"
 PREFETCH_SCRIPT="$SCRIPT_DIR/prefetch_cogvlm_to_scratch.sh"
 
@@ -31,6 +33,9 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-$CODE_DIR/results/v1_additional_models}"
 SMOKE="${SMOKE:-0}"
 PREFETCH="${PREFETCH:-0}"
 DRY_RUN="${DRY_RUN:-0}"
+if [[ "$DRY_RUN" != "1" ]]; then
+  ensure_sbatch_available
+fi
 
 TASKS_CSV="${TASKS_CSV:-egma-math,matrix-reasoning,mental-rotation,theory-of-mind,trog,vocab}"
 TIME_LIMIT="${TIME_LIMIT:-12:00:00}"

@@ -42,6 +42,16 @@ CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
 COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
 SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
+if [[ "$QWEN_CONDA_ENV_PATH" == "$CONDA_ENV_PATH" ]]; then
+  for qwen_candidate in \
+    "$PROJECT_ROOT/envs/${USER:-unknown}-qwen-py311" \
+    "$PROJECT_ROOT/envs/david81-qwen-py311"; do
+    if [[ -x "$qwen_candidate/bin/python" ]]; then
+      QWEN_CONDA_ENV_PATH="$qwen_candidate"
+      break
+    fi
+  done
+fi
 IMAGE_SIZE="${IMAGE_SIZE:-}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-}"

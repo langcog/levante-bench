@@ -202,9 +202,8 @@ PY
         exit 1
       fi
       if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
-from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
-if "qwen3_5" not in CONFIG_MAPPING_NAMES:
-    raise SystemExit(1)
+from transformers import AutoConfig
+AutoConfig.from_pretrained("Qwen/Qwen3.5-0.8B", trust_remote_code=True)
 PY
       then
         if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then

@@ -46,14 +46,15 @@ qwen_env_supports_qwen35() {
   local env_path="$1"
   [[ -x "$env_path/bin/python" ]] || return 1
   "$env_path/bin/python" - <<'PY' >/dev/null 2>&1
-from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
-if "qwen3_5" not in CONFIG_MAPPING_NAMES:
-    raise SystemExit(1)
+from transformers import AutoConfig
+AutoConfig.from_pretrained("Qwen/Qwen3.5-0.8B", trust_remote_code=True)
 PY
 }
 
 if [[ -z "$QWEN_CONDA_ENV_PATH" ]]; then
   CANDIDATES=(
+    "$PROJECT_ROOT/envs/${USER:-unknown}-qwen-py311"
+    "$PROJECT_ROOT/envs/david81-qwen-py311"
     "$PROJECT_ROOT/envs/${USER:-unknown}-levante-py311"
     "$PROJECT_ROOT/envs/david81-levante-py311"
     "$CONDA_ENV_PATH"

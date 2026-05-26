@@ -165,6 +165,22 @@ PY
         exit 1
       fi
       if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
+from PIL import Image  # noqa: F401
+PY
+      then
+        echo "ERROR: Pillow (PIL) missing in Qwen env: $job_conda_env" >&2
+        echo "Install core deps in that env (e.g. pip install Pillow)." >&2
+        exit 1
+      fi
+      if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
+import requests  # noqa: F401
+PY
+      then
+        echo "ERROR: requests missing in Qwen env: $job_conda_env" >&2
+        echo "Install core deps in that env (e.g. pip install requests)." >&2
+        exit 1
+      fi
+      if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
 from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
 if "qwen3_5" not in CONFIG_MAPPING_NAMES:
     raise SystemExit(1)

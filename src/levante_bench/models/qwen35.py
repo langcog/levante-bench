@@ -45,7 +45,9 @@ class Qwen35Model(VLMModel):
         from transformers import AutoProcessor, AutoModelForImageTextToText
 
         self.processor = AutoProcessor.from_pretrained(
-            self.model_name, padding_side="left"
+            self.model_name,
+            padding_side="left",
+            trust_remote_code=True,
         )
         requested_attn = self.attn_implementation
         try:
@@ -53,6 +55,7 @@ class Qwen35Model(VLMModel):
                 self.model_name,
                 dtype=self.dtype,
                 attn_implementation=requested_attn,
+                trust_remote_code=True,
             ).to(self.device)
         except Exception as exc:
             if not should_fallback_to_sdpa(requested_attn, exc):
@@ -63,6 +66,7 @@ class Qwen35Model(VLMModel):
                 self.model_name,
                 dtype=self.dtype,
                 attn_implementation="sdpa",
+                trust_remote_code=True,
             ).to(self.device)
         self.model.eval()
 

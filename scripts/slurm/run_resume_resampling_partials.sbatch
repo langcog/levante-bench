@@ -33,7 +33,7 @@ module load conda
 module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
-export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-0}"
 
 cd "$CODE_DIR"
 

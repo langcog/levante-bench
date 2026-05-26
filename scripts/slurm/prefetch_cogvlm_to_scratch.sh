@@ -35,7 +35,7 @@ echo ""
 
 cd "$REPO_DIR"
 
-PYTHONNOUSERSITE=1 HF_HUB_OFFLINE=0 "$PY_BIN" - <<'PY'
+PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-0}" HF_HUB_OFFLINE=0 "$PY_BIN" - <<'PY'
 from huggingface_hub import snapshot_download
 
 repos = [

@@ -43,7 +43,7 @@ for r in repos:
 PY
 
 # 2) Run eval using local cache (offline)
-export PYTHONNOUSERSITE=1
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-0}"
 export PYTHONPATH="${REPO}/src"
 export HF_HUB_OFFLINE=1
 

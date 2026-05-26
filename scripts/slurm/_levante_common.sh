@@ -35,9 +35,10 @@ module load "$CUDA_MODULE"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
 
-# Keep Marlowe user-site packages (e.g. ~/.local transformers/llava) from
-# shadowing the project conda env and model-specific dependencies.
-export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-1}"
+# Default allows user-site imports (PYTHONNOUSERSITE=0) so prior Marlowe
+# behavior is preserved. Set PYTHONNOUSERSITE=1 to force isolated env-only
+# imports.
+export PYTHONNOUSERSITE="${PYTHONNOUSERSITE:-0}"
 
 export LEVANTE_PYTHON_BIN="${LEVANTE_PYTHON_BIN:-$CONDA_ENV_PATH/bin/python}"
 if [[ ! -x "$LEVANTE_PYTHON_BIN" ]]; then

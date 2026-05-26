@@ -213,6 +213,7 @@ PY
       fi
       if ! "$job_conda_env/bin/python" - <<'PY' >/dev/null 2>&1
 import transformers  # noqa: F401
+from transformers import AutoProcessor  # noqa: F401
 from transformers import AutoModelForImageTextToText  # noqa: F401
 from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
 if "qwen3_5" not in CONFIG_MAPPING_NAMES:
@@ -221,9 +222,10 @@ PY
       then
         if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then
           echo "ERROR: Qwen preflight failed in env: $job_conda_env" >&2
-          echo "This env cannot load qwen3_5 checkpoints yet." >&2
-          echo "Install a transformers build with qwen3_5 support, e.g.:" >&2
-          echo "  $job_conda_env/bin/python -m pip install --no-user --upgrade git+https://github.com/huggingface/transformers.git" >&2
+          echo "This env cannot import the full Qwen runtime stack (transformers + AutoProcessor + qwen3_5)." >&2
+          echo "If you recently installed a transformers dev build, pin back to stable <5 compatible with your torch build." >&2
+          echo "Example:" >&2
+          echo "  $job_conda_env/bin/python -m pip install --no-user --upgrade --force-reinstall 'transformers>=4.58,<5'" >&2
           exit 1
         else
           echo "WARNING: Qwen preflight failed in $job_conda_env; proceeding anyway (STRICT_QWEN_PREFLIGHT=0)." >&2

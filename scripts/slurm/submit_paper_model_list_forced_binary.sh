@@ -48,6 +48,9 @@ qwen_env_supports_qwen35() {
   "$env_path/bin/python" - <<'PY' >/dev/null 2>&1
 import transformers  # noqa: F401
 from transformers import AutoModelForImageTextToText  # noqa: F401
+from transformers.models.auto.configuration_auto import CONFIG_MAPPING_NAMES
+if "qwen3_5" not in CONFIG_MAPPING_NAMES:
+    raise SystemExit(1)
 PY
 }
 
@@ -226,7 +229,9 @@ for target in "${TARGETS[@]}"; do
 
   if [[ "$model" == "qwen35" ]] && ! qwen_env_supports_qwen35 "$QWEN_CONDA_ENV_PATH"; then
     if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then
-      echo "Skipping unsupported Qwen target (Qwen preflight failed in $QWEN_CONDA_ENV_PATH): $target"
+      echo "Skipping unsupported Qwen target (missing qwen3_5 support in $QWEN_CONDA_ENV_PATH): $target"
+      echo "Install newer transformers in that env first, e.g.:" >&2
+      echo "  $QWEN_CONDA_ENV_PATH/bin/python -m pip install --no-user --upgrade git+https://github.com/huggingface/transformers.git" >&2
       skipped_unsupported=$((skipped_unsupported + 1))
       continue
     else

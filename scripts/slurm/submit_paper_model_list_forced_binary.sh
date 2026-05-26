@@ -52,19 +52,31 @@ PY
 }
 
 if [[ -z "$QWEN_CONDA_ENV_PATH" ]]; then
-  CANDIDATES=(
+  PREFERRED_CANDIDATES=(
     "$PROJECT_ROOT/envs/${USER:-unknown}-qwen-py311"
     "$PROJECT_ROOT/envs/david81-qwen-py311"
+  )
+  COMPAT_CANDIDATES=(
     "$PROJECT_ROOT/envs/${USER:-unknown}-levante-py311"
     "$PROJECT_ROOT/envs/david81-levante-py311"
     "$CONDA_ENV_PATH"
   )
-  for candidate in "${CANDIDATES[@]}"; do
-    if qwen_env_supports_qwen35 "$candidate"; then
+  # Prefer explicit qwen env naming when present, even if online probe is flaky.
+  for candidate in "${PREFERRED_CANDIDATES[@]}"; do
+    if [[ -x "$candidate/bin/python" ]]; then
       QWEN_CONDA_ENV_PATH="$candidate"
       break
     fi
   done
+  # If no dedicated qwen env exists, pick first env that passes compatibility probe.
+  if [[ -z "$QWEN_CONDA_ENV_PATH" ]]; then
+    for candidate in "${COMPAT_CANDIDATES[@]}"; do
+      if qwen_env_supports_qwen35 "$candidate"; then
+        QWEN_CONDA_ENV_PATH="$candidate"
+        break
+      fi
+    done
+  fi
 fi
 QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 

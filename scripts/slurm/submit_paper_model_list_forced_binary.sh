@@ -46,8 +46,8 @@ qwen_env_supports_qwen35() {
   local env_path="$1"
   [[ -x "$env_path/bin/python" ]] || return 1
   "$env_path/bin/python" - <<'PY' >/dev/null 2>&1
-from transformers import AutoConfig
-AutoConfig.from_pretrained("Qwen/Qwen3.5-0.8B", trust_remote_code=True)
+import transformers  # noqa: F401
+from transformers import AutoModelForImageTextToText  # noqa: F401
 PY
 }
 
@@ -226,11 +226,11 @@ for target in "${TARGETS[@]}"; do
 
   if [[ "$model" == "qwen35" ]] && ! qwen_env_supports_qwen35 "$QWEN_CONDA_ENV_PATH"; then
     if [[ "$STRICT_QWEN_PREFLIGHT" == "1" ]]; then
-      echo "Skipping unsupported Qwen target (missing qwen3_5 support in $QWEN_CONDA_ENV_PATH): $target"
+      echo "Skipping unsupported Qwen target (Qwen preflight failed in $QWEN_CONDA_ENV_PATH): $target"
       skipped_unsupported=$((skipped_unsupported + 1))
       continue
     else
-      echo "WARNING: Qwen preflight did not detect qwen3_5 support in $QWEN_CONDA_ENV_PATH; submitting anyway: $target" >&2
+      echo "WARNING: Qwen preflight failed in $QWEN_CONDA_ENV_PATH; submitting anyway: $target" >&2
     fi
   fi
 

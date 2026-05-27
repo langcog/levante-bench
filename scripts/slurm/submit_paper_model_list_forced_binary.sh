@@ -41,6 +41,13 @@ QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-}"
 FORCE_BINARY_LABEL_SCORING="${FORCE_BINARY_LABEL_SCORING:-1}"
 COGVLM_LABEL_SCORING_MODE="${COGVLM_LABEL_SCORING_MODE:-binary}"
 STRICT_QWEN_PREFLIGHT="${STRICT_QWEN_PREFLIGHT:-0}"
+MAX_TIME_LIMIT="${MAX_TIME_LIMIT:-04:00:00}"
+
+hhmmss_to_seconds() {
+  local value="$1"
+  IFS=: read -r hh mm ss <<< "$value"
+  echo $((10#$hh * 3600 + 10#$mm * 60 + 10#$ss))
+}
 
 qwen_env_supports_qwen35() {
   local env_path="$1"
@@ -204,6 +211,7 @@ echo "  FORCE_BINARY_LABEL_SCORING=$FORCE_BINARY_LABEL_SCORING"
 echo "  COGVLM_LABEL_SCORING_MODE=$COGVLM_LABEL_SCORING_MODE"
 echo "  QWEN_CONDA_ENV_PATH=$QWEN_CONDA_ENV_PATH"
 echo "  STRICT_QWEN_PREFLIGHT=$STRICT_QWEN_PREFLIGHT"
+echo "  MAX_TIME_LIMIT=$MAX_TIME_LIMIT"
 echo ""
 
 submitted=0
@@ -249,6 +257,9 @@ for target in "${TARGETS[@]}"; do
   batch_size="${BATCH_SIZE_MAP[$target]:-1}"
   mem_limit="${MEM_MAP[$target]:-96G}"
   time_limit="${TIME_MAP[$target]:-04:00:00}"
+  if (( $(hhmmss_to_seconds "$time_limit") > $(hhmmss_to_seconds "$MAX_TIME_LIMIT") )); then
+    time_limit="$MAX_TIME_LIMIT"
+  fi
 
   echo "Submitting $target (batch_size=$batch_size mem=$mem_limit time=$time_limit)"
   DRY_RUN="$DRY_RUN" \

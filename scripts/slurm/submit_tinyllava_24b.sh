@@ -2,6 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENSURE_SBATCH_SCRIPT="$SCRIPT_DIR/_ensure_sbatch.sh"
+if [[ ! -f "$ENSURE_SBATCH_SCRIPT" ]]; then
+  echo "ERROR: missing sbatch helper: $ENSURE_SBATCH_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$ENSURE_SBATCH_SCRIPT"
+ensure_sbatch_available
 SBATCH_SCRIPT="$SCRIPT_DIR/run_local_model_experiment.sbatch"
 
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/m000102}"

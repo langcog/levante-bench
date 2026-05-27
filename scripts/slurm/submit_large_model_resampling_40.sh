@@ -12,6 +12,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENSURE_SBATCH_SCRIPT="$SCRIPT_DIR/_ensure_sbatch.sh"
+if [[ ! -f "$ENSURE_SBATCH_SCRIPT" ]]; then
+  echo "ERROR: missing sbatch helper: $ENSURE_SBATCH_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$ENSURE_SBATCH_SCRIPT"
 SBATCH_SCRIPT="$SCRIPT_DIR/run_local_model_experiment.sbatch"
 
 if [[ ! -f "$SBATCH_SCRIPT" ]]; then
@@ -34,10 +41,8 @@ if [[ ! "$MAX_SUBMISSIONS" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-if [[ "$DRY_RUN" != "1" ]] && ! command -v sbatch >/dev/null 2>&1; then
-  echo "ERROR: sbatch not found in PATH." >&2
-  echo "Run this script on a Marlowe login/head node, or set DRY_RUN=1." >&2
-  exit 127
+if [[ "$DRY_RUN" != "1" ]]; then
+  ensure_sbatch_available
 fi
 
 DEFAULT_TARGETS=(

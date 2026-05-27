@@ -1,13 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-if ! command -v sbatch >/dev/null 2>&1; then
-  echo "ERROR: sbatch not found in PATH." >&2
-  echo "Run this on a Marlowe login node." >&2
-  exit 127
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENSURE_SBATCH_SCRIPT="$SCRIPT_DIR/_ensure_sbatch.sh"
+if [[ ! -f "$ENSURE_SBATCH_SCRIPT" ]]; then
+  echo "ERROR: missing sbatch helper: $ENSURE_SBATCH_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$ENSURE_SBATCH_SCRIPT"
+ensure_sbatch_available
 SBATCH_SCRIPT="$SCRIPT_DIR/run_local_model_experiment.sbatch"
 
 if [[ ! -f "$SBATCH_SCRIPT" ]]; then

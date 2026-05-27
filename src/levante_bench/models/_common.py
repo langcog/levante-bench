@@ -2,7 +2,7 @@
 
 import re
 import sys
-from typing import Optional
+from typing import Callable, Optional, TypeVar
 
 import torch
 from PIL import Image
@@ -101,5 +101,28 @@ def warn_attn_fallback(model_name: str, requested: str, exc: Exception) -> None:
         ),
         file=sys.stderr,
     )
+
+
+T = TypeVar("T")
+
+
+def is_cudnn_not_initialized(exc: Exception) -> bool:
+    """Return True when a RuntimeError is cuDNN init related."""
+    return "cudnn_status_not_initialized" in str(exc).lower()
+
+
+def run_with_cudnn_retry(fn: Callable[[], T]) -> T:
+    """Retry once with cuDNN disabled for transient init failures."""
+    try:
+        return fn()
+    except RuntimeError as exc:
+        if not is_cudnn_not_initialized(exc):
+            raise
+        prev = torch.backends.cudnn.enabled
+        torch.backends.cudnn.enabled = False
+        try:
+            return fn()
+        finally:
+            torch.backends.cudnn.enabled = prev
 
 

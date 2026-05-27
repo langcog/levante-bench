@@ -10,6 +10,7 @@ from levante_bench.models._common import (
     DTYPE_MAP,
     build_pil_content,
     load_pil_images,
+    run_with_cudnn_retry,
     should_fallback_to_sdpa,
     warn_attn_fallback,
 )
@@ -86,20 +87,24 @@ class InternVL35Model(VLMModel):
         text = self.processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        inputs = self.processor(
-            text=[text],
-            images=pil_images if pil_images else None,
-            return_tensors="pt",
-            padding=True,
-        ).to(self.device)
+        processor_kwargs = {
+            "text": [text],
+            "return_tensors": "pt",
+            "padding": True,
+        }
+        if pil_images:
+            processor_kwargs["images"] = pil_images
+        inputs = self.processor(**processor_kwargs).to(self.device)
 
         input_len = inputs["input_ids"].shape[1]
         with torch.no_grad():
-            output_ids = self.model.generate(
-                **inputs,
-                do_sample=False,
-                max_new_tokens=max_new_tokens,
-                pad_token_id=self._pad_token_id(),
+            output_ids = run_with_cudnn_retry(
+                lambda: self.model.generate(
+                    **inputs,
+                    do_sample=False,
+                    max_new_tokens=max_new_tokens,
+                    pad_token_id=self._pad_token_id(),
+                )
             )
 
         generated_ids = output_ids[:, input_len:]
@@ -138,17 +143,18 @@ class InternVL35Model(VLMModel):
                 for m in messages
             ]
 
-            if all(batch is None for batch in pil_batches):
-                batched_images = None
-            else:
-                batched_images = pil_batches
-
-            inputs = self.processor(
-                text=texts,
-                images=batched_images,
-                return_tensors="pt",
-                padding=True,
-            ).to(self.device)
+            all_none = all(batch is None for batch in pil_batches)
+            any_none = any(batch is None for batch in pil_batches)
+            if any_none and not all_none:
+                raise ValueError("Mixed image/non-image batches are not supported.")
+            processor_kwargs = {
+                "text": texts,
+                "return_tensors": "pt",
+                "padding": True,
+            }
+            if not all_none:
+                processor_kwargs["images"] = pil_batches
+            inputs = self.processor(**processor_kwargs).to(self.device)
 
             if "attention_mask" in inputs:
                 input_lens = inputs["attention_mask"].sum(dim=1).tolist()
@@ -156,11 +162,13 @@ class InternVL35Model(VLMModel):
                 input_lens = [inputs["input_ids"].shape[1]] * len(trials)
 
             with torch.no_grad():
-                output_ids = self.model.generate(
-                    **inputs,
-                    do_sample=False,
-                    max_new_tokens=max_new_tokens,
-                    pad_token_id=self._pad_token_id(),
+                output_ids = run_with_cudnn_retry(
+                    lambda: self.model.generate(
+                        **inputs,
+                        do_sample=False,
+                        max_new_tokens=max_new_tokens,
+                        pad_token_id=self._pad_token_id(),
+                    )
                 )
 
             results: list[dict] = []
@@ -213,12 +221,14 @@ class InternVL35Model(VLMModel):
         text = self.processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        inputs = self.processor(
-            text=[text],
-            images=pil_images if pil_images else None,
-            return_tensors="pt",
-            padding=True,
-        ).to(self.device)
+        processor_kwargs = {
+            "text": [text],
+            "return_tensors": "pt",
+            "padding": True,
+        }
+        if pil_images:
+            processor_kwargs["images"] = pil_images
+        inputs = self.processor(**processor_kwargs).to(self.device)
 
         choice_ids: list[int] = []
         for choice in choice_texts:
@@ -229,7 +239,9 @@ class InternVL35Model(VLMModel):
                 )
             choice_ids.append(toks[0])
 
-        output, elapsed = self._timed_call(lambda: self.model(**inputs))
+        output, elapsed = self._timed_call(
+            lambda: run_with_cudnn_retry(lambda: self.model(**inputs))
+        )
         next_logits = output.logits[:, -1, :].float()
         selected = next_logits[:, choice_ids].squeeze(0)
         probs = torch.softmax(selected, dim=-1)

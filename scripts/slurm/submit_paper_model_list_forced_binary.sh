@@ -34,7 +34,7 @@ FORCE="${FORCE:-0}"
 ALLOW_FRONTIER="${ALLOW_FRONTIER:-0}"
 
 CONDA_ENV_PATH="${CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-bench-py311}"
-SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
+SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-}"
 COGVLM_CONDA_ENV_PATH="${COGVLM_CONDA_ENV_PATH:-$PROJECT_ROOT/envs/levante-cogvlm}"
 QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-}"
 
@@ -90,6 +90,21 @@ if [[ -z "$QWEN_CONDA_ENV_PATH" ]]; then
   fi
 fi
 QWEN_CONDA_ENV_PATH="${QWEN_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
+
+if [[ -z "$SMOLVLM_CONDA_ENV_PATH" ]]; then
+  CANDIDATES=(
+    "$PROJECT_ROOT/envs/${USER:-unknown}-levante-py311"
+    "$PROJECT_ROOT/envs/david81-levante-py311"
+    "$CONDA_ENV_PATH"
+  )
+  for candidate in "${CANDIDATES[@]}"; do
+    if [[ -x "$candidate/bin/python" ]] && "$candidate/bin/python" -c "import num2words" >/dev/null 2>&1; then
+      SMOLVLM_CONDA_ENV_PATH="$candidate"
+      break
+    fi
+  done
+fi
+SMOLVLM_CONDA_ENV_PATH="${SMOLVLM_CONDA_ENV_PATH:-$CONDA_ENV_PATH}"
 
 DEFAULT_TARGETS=(
   "gemma4:E2B-it"

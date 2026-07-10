@@ -33,10 +33,21 @@ DEFAULT_TASK_ORDER = [
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
-        "--forced-root",
-        type=Path,
-        default=REPO_ROOT / "results" / "paper_models_forced_binary",
-        help="Directory containing per-model forced-binary summary.csv files.",
+        "--forced-roots",
+        type=str,
+        default=",".join(
+            [
+                "results/paper_models_forced_binary",
+                "results/forced_binary_other_tasks",
+                "results/vocab_binary_ablation",
+                "results/trog_matrix_binary_ablation",
+                "results/cogvlm_vocab_ablation/binary_default_r2/v1",
+            ]
+        ),
+        help=(
+            "Comma-separated list of directories containing per-model forced-binary "
+            "summary.csv files. Earlier roots take precedence for overlapping model/task pairs."
+        ),
     )
     p.add_argument(
         "--baseline-root",
@@ -102,14 +113,25 @@ def resolve_baseline_summary_path(baseline_root: Path, model_slug: str) -> Path 
     return None
 
 
-def collect_rows(forced_root: Path, baseline_root: Path) -> list[dict[str, str | float]]:
+def collect_rows(forced_roots: list[Path], baseline_root: Path) -> list[dict[str, str | float]]:
     rows: list[dict[str, str | float]] = []
-    for model_dir in sorted(p for p in forced_root.iterdir() if p.is_dir()):
-        forced_summary_path = model_dir / "summary.csv"
-        forced = read_summary(forced_summary_path)
-        if not forced:
+    # Merge model/task forced accuracies across roots with first-root precedence.
+    forced_by_model: dict[str, dict[str, float]] = {}
+    for forced_root in forced_roots:
+        if not forced_root.exists():
             continue
-        baseline_path = resolve_baseline_summary_path(baseline_root, model_dir.name)
+        for model_dir in sorted(p for p in forced_root.iterdir() if p.is_dir()):
+            forced_summary_path = model_dir / "summary.csv"
+            forced = read_summary(forced_summary_path)
+            if not forced:
+                continue
+            bucket = forced_by_model.setdefault(model_dir.name, {})
+            for task, acc in forced.items():
+                if task not in bucket:
+                    bucket[task] = acc
+
+    for model_name, forced in sorted(forced_by_model.items()):
+        baseline_path = resolve_baseline_summary_path(baseline_root, model_name)
         if baseline_path is None:
             continue
         baseline = read_summary(baseline_path)
@@ -119,7 +141,7 @@ def collect_rows(forced_root: Path, baseline_root: Path) -> list[dict[str, str |
             base_acc = baseline[task]
             rows.append(
                 {
-                    "model": model_dir.name,
+                    "model": model_name,
                     "task": task,
                     "baseline_accuracy": base_acc,
                     "forced_binary_accuracy": forced_acc,
@@ -261,12 +283,18 @@ def build_outputs(
 
 def main() -> int:
     args = parse_args()
-    forced_root = args.forced_root.resolve()
+    forced_roots = []
+    for item in args.forced_roots.split(","):
+        rel = item.strip()
+        if not rel:
+            continue
+        p = Path(rel)
+        forced_roots.append((p if p.is_absolute() else REPO_ROOT / p).resolve())
     baseline_root = args.baseline_root.resolve()
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    rows = collect_rows(forced_root, baseline_root)
+    rows = collect_rows(forced_roots, baseline_root)
     if not rows:
         print("No comparable forced-vs-baseline rows found.")
         return 1

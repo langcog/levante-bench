@@ -14,6 +14,7 @@ from levante_bench.tasks import theory_of_mind_manifest  # noqa: F401
 from levante_bench.tasks import trog  # noqa: F401
 from levante_bench.tasks import vocab  # noqa: F401
 from levante_bench.tasks import synthetic_vocab  # noqa: F401
+from levante_bench.tasks import same_different_selection  # noqa: F401
 
 __all__ = [
     "get_task_dataset",

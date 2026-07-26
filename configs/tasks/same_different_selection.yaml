@@ -1,0 +1,9 @@
+# same-different-selection task config (keyed single-select / test-dimensions).
+
+task_id: same-different-selection
+benchmark_name: Same and Different
+internal_name: same-different-selection
+corpus_file: same-different-selection-item-bank.csv
+context_type: none
+option_type: image
+n_options: 4

@@ -1,0 +1,17 @@
+# Same-Different Selection — keyed test-dimensions items
+# Placeholders: {prompt_phrase}, {image1}..{image4}, {labels}
+
+task_id: same-different-selection
+n_options: 4
+labels: "A, B, C, or D"
+
+schema_version: 1
+default_template_id: instruction_match.default
+
+prompt_templates:
+  instruction_match.default:
+    description: "Choose the card that matches the spoken/text instruction"
+    template: >
+      Instruction: "{prompt_phrase}"
+      Choose the one card that satisfies the instruction. Answer with {labels}.
+      A: {image1}; B: {image2}; C: {image3}; D: {image4}

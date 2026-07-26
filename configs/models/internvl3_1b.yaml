@@ -1,0 +1,5 @@
+name: internvl35
+hf_name: OpenGVLab/InternVL3-1B-hf
+params_b: 1.0
+family: internvl35
+attn_implementation: flash_attention_2

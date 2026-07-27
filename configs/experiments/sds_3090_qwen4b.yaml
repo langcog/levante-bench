@@ -1,0 +1,14 @@
+models:
+  - name: qwen35
+    size: 4B
+    thinking_budget: 0
+    max_new_tokens: 512
+    use_json_format: false
+tasks:
+  - same-different-selection
+data_root: data
+output_dir: results
+version: v1
+device: cuda
+true_random_option_order: true
+num_runs: 1

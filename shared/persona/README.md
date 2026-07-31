@@ -8,6 +8,8 @@ LEVANTE accuracy-by-age data. The same two artifacts are consumed by both repos:
 |------|---------|
 | `age_task_accuracy.json` | Per-task mean accuracy by age (`{task_id: {ageYears: meanAccuracy}}`) — the empirical "difficulty" target (always used when persona is on). |
 | `age_task_ability.json` | Per-task mean IRT ability θ by age (`{task_id: {ageYears: {theta, n}}}`) — optional add-on when `QA_PERSONA_ABILITY=irt`. |
+| `age_task_accuracy_by_country.json` | Same as accuracy, stratified by country (`de`/`co`/`ca` from pilot sites). Used when `QA_SIM_COUNTRY` / `QA_PERSONA_COUNTRY` is set. |
+| `age_task_ability_by_country.json` | Same as ability, stratified by country. |
 | `persona_template.txt` | The persona prompt wording, with `{age_phrase}`, `{difficulty_block}`, and `{ability_block}` placeholders. |
 
 - **Canonical copies live here** (`levante-bench/shared/persona/`), because the
@@ -22,20 +24,30 @@ LEVANTE accuracy-by-age data. The same two artifacts are consumed by both repos:
 ```bash
 python scripts/build_age_accuracy_profile.py
 python scripts/build_age_ability_profile.py
-# options: --trials <path> --out <path> --min-samples 30 (accuracy) / --min-runs 15 (ability)
+# options: --trials <path> --out <path> --out-by-country <path>
+#          --min-samples 30 (accuracy) / --min-runs 15 (ability)
 ```
 
 **Accuracy profile:** bins trials by `task_id` and rounded age (whole years), drops cells with fewer
-than `--min-samples` trials, and writes `age_task_accuracy.json`.
+than `--min-samples` trials, and writes `age_task_accuracy.json` plus
+`age_task_accuracy_by_country.json` (site → `de`/`co`/`ca` via `scripts/site_country.py`).
 
-**Ability profile:** joins `trials.csv` (age per `run_id`) with `irt_models/*_ability_scores.csv`,
-bins by rounded age, and writes `age_task_ability.json` (tasks that have IRT ability only).
+**Ability profile:** joins `trials.csv` (age + site per `run_id`) with `irt_models/*_ability_scores.csv`,
+bins by rounded age, and writes `age_task_ability.json` plus `age_task_ability_by_country.json`
+(tasks that have IRT ability only).
 
 Included tasks for accuracy:
 `egma-math, matrix-reasoning, mental-rotation, theory-of-mind, trog, vocab,
 hearts-and-flowers, same-different-selection, memory-game`.
 
 After regenerating, in levante-qa: `LEVANTE_BENCH_DIR=/path/to/levante-bench pnpm persona:sync`.
+
+Check Child Twins grid coverage (flags country cells that would fall back to global):
+
+```bash
+python scripts/validate_country_age_profiles.py
+python scripts/validate_country_age_profiles.py --ages 6,8,10 --countries de,co,ca
+```
 
 ---
 

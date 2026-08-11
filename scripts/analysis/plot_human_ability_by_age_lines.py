@@ -44,8 +44,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--version",
-        default="v1",
-        help="Data version under data/responses (default: v1).",
+        default="v2",
+        help="Data version under data/responses (default: v2).",
     )
     parser.add_argument(
         "--project-root",

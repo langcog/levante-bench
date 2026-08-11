@@ -21,7 +21,8 @@ The file `src/levante_bench/config/irt_model_mapping.csv` maps each task to its 
 1. **Preprocess human data (once):** Run the R download script to fetch trials, download IRT models, extract item difficulties and ability scores, and write ability-binned human proportions:
 
    ```bash
-   Rscript scripts/download_levante_data.R [--version 2026-02-22] \
+   Rscript scripts/download_levante_data.R [--version v2] \
+     [--dataset levante_data_latest:e9pf:v1_2] \
      [--irt-dataset levante_metadata_scoring:e97h:v1_11] \
      [--irt-table model_registry:rqwv]
    ```

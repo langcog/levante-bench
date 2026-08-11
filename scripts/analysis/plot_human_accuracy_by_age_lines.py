@@ -47,8 +47,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--trials-csv",
         type=Path,
-        default=Path("data/responses/v1/trials.csv"),
-        help="Path to trials.csv (default: data/responses/v1/trials.csv).",
+        default=Path("data/responses/v2/trials.csv"),
+        help="Path to trials.csv (default: data/responses/v2/trials.csv).",
     )
     p.add_argument(
         "--output",

@@ -5,7 +5,9 @@
       "pilot_uniandes_co": "co",
       "pilot_western_ca": "ca"
     },
-    "min_samples": 30
+    "min_samples": 30,
+    "responses_version": "v2",
+    "trials": "/home/david/levante/levante-bench/data/responses/v2/trials.csv"
   },
   "ca": {
     "egma-math": {

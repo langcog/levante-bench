@@ -13,8 +13,8 @@ LEVANTE accuracy-by-age data. The same two artifacts are consumed by both repos:
 | `persona_template.txt` | The persona prompt wording, with `{age_phrase}`, `{difficulty_block}`, and `{ability_block}` placeholders. |
 
 - **Canonical copies live here** (`levante-bench/shared/persona/`), because the
-  child trial data (`data/responses/v1/trials.csv`) and the generator live in
-  this repo.
+  child trial data (`data/responses/v2/trials.csv` by default; use `--version v1`
+  for the frozen April tree) and the generator live in this repo.
 - **levante-qa vendors a copy** at `cypress/support/persona/` and pulls updates
   with `pnpm persona:sync` (from levante-qa). Re-sync whenever the profile or
   template changes here so both repos render identical persona prompts.
@@ -22,8 +22,9 @@ LEVANTE accuracy-by-age data. The same two artifacts are consumed by both repos:
 ## Regenerating the profile
 
 ```bash
-python scripts/build_age_accuracy_profile.py
+python scripts/build_age_accuracy_profile.py              # default: data/responses/v2
 python scripts/build_age_ability_profile.py
+python scripts/build_age_accuracy_profile.py --version v1 # frozen April tree
 # options: --trials <path> --out <path> --out-by-country <path>
 #          --min-samples 30 (accuracy) / --min-runs 15 (ability)
 ```

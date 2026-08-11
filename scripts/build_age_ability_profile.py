@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build age->mean IRT ability (theta) profile from LEVANTE child trial + IRT data.
 
-Joins data/responses/v1/trials.csv (run_id, task_id, age, site) with per-task
+Joins data/responses/<version>/trials.csv (default: v2) with per-task
 irt_models/*_ability_scores.csv (run_id, ability, se), then bins by rounded age
 in whole years and writes shared/persona/age_task_ability.json:
 
@@ -17,6 +17,7 @@ models keep accuracy-only persona hints.
 
 Usage:
     python scripts/build_age_ability_profile.py
+    python scripts/build_age_ability_profile.py --version v1
 """
 from __future__ import annotations
 
@@ -33,6 +34,7 @@ if str(_SCRIPTS) not in sys.path:
 from site_country import SITE_TO_COUNTRY, site_to_country  # noqa: E402
 
 MIN_RUNS_DEFAULT = 15
+DEFAULT_RESPONSES_VERSION = "v2"
 
 INCLUDED_TASKS = {
     "egma-math",
@@ -79,8 +81,13 @@ def _write_profile(path: Path, profile: dict) -> None:
 def main() -> None:
     here = Path(__file__).resolve().parent.parent
     ap = argparse.ArgumentParser()
-    ap.add_argument("--trials", type=Path, default=here / "data" / "responses" / "v1" / "trials.csv")
-    ap.add_argument("--irt-dir", type=Path, default=here / "data" / "responses" / "v1" / "irt_models")
+    ap.add_argument(
+        "--version",
+        default=DEFAULT_RESPONSES_VERSION,
+        help=f"data/responses/<version> (default: {DEFAULT_RESPONSES_VERSION})",
+    )
+    ap.add_argument("--trials", type=Path, default=None)
+    ap.add_argument("--irt-dir", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=here / "shared" / "persona" / "age_task_ability.json")
     ap.add_argument(
         "--out-by-country",
@@ -89,6 +96,11 @@ def main() -> None:
     )
     ap.add_argument("--min-runs", type=int, default=MIN_RUNS_DEFAULT)
     args = ap.parse_args()
+    resp = here / "data" / "responses" / args.version
+    if args.trials is None:
+        args.trials = resp / "trials.csv"
+    if args.irt_dir is None:
+        args.irt_dir = resp / "irt_models"
 
     # (task_id, run_id) -> ages / sites
     run_age: dict[tuple[str, str], list[float]] = defaultdict(list)
@@ -160,6 +172,9 @@ def main() -> None:
         "_meta": {
             "site_to_country": SITE_TO_COUNTRY,
             "min_runs": args.min_runs,
+            "responses_version": args.version,
+            "trials": str(args.trials),
+            "irt_dir": str(args.irt_dir),
         },
         **{c: dict(sorted(tasks.items())) for c, tasks in sorted(by_country.items())},
     }

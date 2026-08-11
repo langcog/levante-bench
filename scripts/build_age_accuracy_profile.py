@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Build the canonical age->task accuracy profile from LEVANTE child trial data.
 
-Reads data/responses/v1/trials.csv, bins trials by task_id and rounded age (in
-whole years), and writes shared/persona/age_task_accuracy.json shaped as:
+Reads data/responses/<version>/trials.csv (default: v2), bins trials by task_id
+and rounded age (in whole years), and writes shared/persona/age_task_accuracy.json
+shaped as:
 
     { "<task_id>": { "<ageYears>": meanAccuracy, ... }, ... }
 
@@ -17,6 +18,7 @@ produces a misleading "expected accuracy".
 
 Usage:
     python scripts/build_age_accuracy_profile.py
+    python scripts/build_age_accuracy_profile.py --version v1
     python scripts/build_age_accuracy_profile.py --trials path/to/trials.csv --min-samples 30
 """
 from __future__ import annotations
@@ -34,6 +36,7 @@ if str(_SCRIPTS) not in sys.path:
 from site_country import SITE_TO_COUNTRY, site_to_country  # noqa: E402
 
 MIN_SAMPLES_DEFAULT = 30
+DEFAULT_RESPONSES_VERSION = "v2"
 
 # Tasks that levante-qa / levante-bench actually drive. Other task_ids in the
 # CSV (sre, swr, pa, ...) are ignored.
@@ -67,7 +70,12 @@ def _write_profile(path: Path, profile: dict) -> None:
 def main() -> None:
     here = Path(__file__).resolve().parent.parent
     ap = argparse.ArgumentParser()
-    ap.add_argument("--trials", type=Path, default=here / "data" / "responses" / "v1" / "trials.csv")
+    ap.add_argument(
+        "--version",
+        default=DEFAULT_RESPONSES_VERSION,
+        help=f"data/responses/<version> (default: {DEFAULT_RESPONSES_VERSION})",
+    )
+    ap.add_argument("--trials", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=here / "shared" / "persona" / "age_task_accuracy.json")
     ap.add_argument(
         "--out-by-country",
@@ -76,6 +84,8 @@ def main() -> None:
     )
     ap.add_argument("--min-samples", type=int, default=MIN_SAMPLES_DEFAULT)
     args = ap.parse_args()
+    if args.trials is None:
+        args.trials = here / "data" / "responses" / args.version / "trials.csv"
 
     # (task_id, ageYears) -> [n_correct, n_total]
     agg: dict[tuple[str, int], list[int]] = defaultdict(lambda: [0, 0])
@@ -121,6 +131,8 @@ def main() -> None:
         "_meta": {
             "site_to_country": SITE_TO_COUNTRY,
             "min_samples": args.min_samples,
+            "responses_version": args.version,
+            "trials": str(args.trials),
         },
         **{c: dict(sorted(tasks.items())) for c, tasks in sorted(by_country.items())},
     }
@@ -132,7 +144,7 @@ def main() -> None:
     print(f"wrote {args.out} ({n_global} age/task cells across {len(profile)} tasks)")
     print(
         f"wrote {args.out_by_country} ({n_country} country/age/task cells "
-        f"across {len(by_country)} countries)"
+        f"across {len(by_country)} countries) from {args.trials}"
     )
 
 

@@ -312,3 +312,20 @@ The 100-item pilot (`new-vocab-photo-pilot-100-v1`) uses 400 unique option terms
 Thumbnails are 96×96 JPEG previews of the Imagen 4 photographs, committed under `docs/assets/synth_vocab_thumbs/` and linked in the appendix via GitHub raw URLs on `v2` so they render outside the repo. Original PNGs live in `data/assets/synth_vocab/assets/new-vocab-photo-pilot-100-v1/visual/vocab/` (not stored in git; download with `scripts/data_prep/download_synth_vocab_assets.py`).
 
 **Full table with all 400 thumbnails:** [synthetic_vocab_appendix.md](synthetic_vocab_appendix.md)
+
+---
+
+## Appendix B. Relation to the LEVANTE core-tasks manuscript
+
+We did **not** use a paper supplement. The December 2025 LEVANTE core-tasks manuscript (`references/LEVANTE_manuscript_dec16.pdf`) has no supplement attached, and the generator never read SI tables.
+
+That paper’s Vocabulary section (main text) describes the **child** 4-choice picture-vocabulary task: a 108-item THINGS+ core with close / far / unrelated distractors (Long et al., 2025), then extra DAIVT and hand-built items to reach 170. Data and code are pointed at [`levante-framework/levante-pilots`](https://github.com/levante-framework/levante-pilots), not an SI file.
+
+This synthetic VLM bank is a separate construction. It followed the same main-text design (4-choice, ~170 items, similarity-tiered distractors, THINGS/THINGSplus) but:
+
+- took the original 108 labels from the DevBench GitHub manifest and **excluded** them so the banks do not overlap
+- added Kuperman age-of-acquisition norms (not in that vocab paragraph)
+- did **not** use DAIVT or the pilots item list
+- generated new Imagen photographs
+
+In short: we used the same public resources and design idea as the manuscript main text, not a supplement.

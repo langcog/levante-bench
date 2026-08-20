@@ -36,7 +36,7 @@ if str(_SCRIPTS) not in sys.path:
 from site_country import SITE_TO_COUNTRY, site_to_country  # noqa: E402
 
 MIN_SAMPLES_DEFAULT = 30
-DEFAULT_RESPONSES_VERSION = "v2"
+DEFAULT_RESPONSES_VERSION = "v3"
 
 # Tasks that levante-qa / levante-bench actually drive. Other task_ids in the
 # CSV (sre, swr, pa, ...) are ignored.

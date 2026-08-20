@@ -8,12 +8,12 @@ Trials data are obtained from Redivis via the **redivis** R package (not rlevant
 
 ```r
 user <- redivis$user("levante")
-dataset <- user$dataset("levante_data_latest:e9pf:v1_2")
+dataset <- user$dataset("levante-data-pilots:68kn:v3_0")
 table <- dataset$table("trials")
 d <- table$to_tibble()
 ```
 
-The result is a tibble of trial-level data. The **dataset** identifier (e.g. `levante_data_latest:e9pf:v1_2`) and **table** name (e.g. `trials`) may change for new releases; the R script accepts these as arguments or from config.
+The result is a tibble of trial-level data. The **dataset** identifier (e.g. `levante-data-pilots:68kn:v3_0`; optional `levante_data_latest:e9pf:v1_2`) and **table** name (e.g. `trials`) may change for new releases; the R script accepts these as arguments or from config.
 
 ### Trials table columns
 

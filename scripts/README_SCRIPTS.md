@@ -6,9 +6,9 @@ This directory contains data acquisition, benchmark pipelines, analysis utilitie
 
 - `download_levante_data.R`
   - **Purpose:** download Redivis trials + IRT assets; build response summaries
-  - **Inputs:** `--version` (default: `v2` for Redivis `v2_0`; refuses writing Redivis v2 into local `v1`), `--irt-dataset`, `--irt-table`, optional `--no-write-split-manifests`
+  - **Inputs:** `--version` (default: `v3` for Redivis pilots v3.0; `--dataset levante_data_latest:e9pf:v1_2` lands in local `v2`; refuses writing current pulls into local `v1`), `--irt-dataset`, `--irt-table`, optional `--no-write-split-manifests`
   - **Outputs:** `data/responses/<version>/...` (trials, IRT files, responses_by_ability), split manifests under `data/responses/<version>/manifests/` (Parquet primary with CSV fallback), `SOURCE.json`, and `SHA256SUMS.txt`
-  - **Example:** `Rscript scripts/data_prep/download_levante_data.R --version v2`
+  - **Example:** `Rscript scripts/data_prep/download_levante_data.R --version v3`
 - `data_prep/download_levante_assets.py`
   - **Purpose:** download corpus + visual assets from the LEVANTE bucket
   - **Inputs:** `--version` (default when unset: `LEVANTE_DATA_VERSION` if set, else `v1`), `--workers`, optional `--no-write-split-manifests`

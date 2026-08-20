@@ -22,25 +22,35 @@ has_flag <- function(name) {
   paste0("--", name) %in% args
 }
 
-# Prefer unified latest (all sites). Pin v1_2+ (v1.0 had the IRT column-order bug).
-# Override with --dataset if you need the frozen pilots export.
-dataset_id    <- get_arg("dataset", "levante_data_latest:e9pf:v1_2")
-table_name    <- get_arg("table", "trials:bxf8")
-scores_table  <- get_arg("scores-table", "scores:d0hm")
+# Prefer pilots v3.0. Unified latest is --dataset levante_data_latest:e9pf:v1_2
+# (sometimes newer; still lands in local v2). Pin latest at v1_2+ (v1.0 had the
+# IRT column-order bug). Table names are unqualified so they resolve on either
+# dataset; pass trials:bxf8 / scores:d0hm to pin the latest tables.
+dataset_id    <- get_arg("dataset", "levante-data-pilots:68kn:v3_0")
+table_name    <- get_arg("table", "trials")
+scores_table  <- get_arg("scores-table", "scores")
 irt_dataset   <- get_arg("irt-dataset", "levante_metadata_scoring:e97h:v1_11")
 irt_table     <- get_arg("irt-table", "model_registry:rqwv")
 version_arg   <- get_arg("version", NA_character_)
 
 # Local folder version (data/responses/<version>/) is independent of the Redivis
-# release tag in dataset_id. Current/unified pulls land in local v2; the frozen
-# April tree in data/responses/v1/ is never overwritten by default.
+# release tag in dataset_id. Pilots v3 → local v3; latest / old pilots v2 →
+# local v2. The frozen April tree in data/responses/v1/ is never overwritten
+# by default.
 infer_local_version <- function(dataset) {
   if (grepl("levante_data_latest", dataset, ignore.case = TRUE)) {
     return("v2")
   }
+  if (grepl(":v3([_.]|$)|_v3([_.]|$)", dataset, ignore.case = TRUE) ||
+      grepl("v3_0", dataset, ignore.case = TRUE)) {
+    return("v3")
+  }
   if (grepl(":v2([_.]|$)|_v2([_.]|$)", dataset, ignore.case = TRUE) ||
       grepl("v2_0", dataset, ignore.case = TRUE)) {
     return("v2")
+  }
+  if (grepl("data-pilots|data_pilots", dataset, ignore.case = TRUE)) {
+    return("v3")
   }
   "v1"
 }
@@ -52,11 +62,12 @@ if (is.na(version_arg) || nchar(version_arg) == 0L) {
 }
 
 writes_current_tree <- grepl("levante_data_latest", dataset_id, ignore.case = TRUE) ||
-  grepl("v2_0|:v2([_.]|$)", dataset_id, ignore.case = TRUE)
+  grepl("data-pilots|data_pilots", dataset_id, ignore.case = TRUE) ||
+  grepl("v3_0|:v3([_.]|$)|v2_0|:v2([_.]|$)", dataset_id, ignore.case = TRUE)
 if (writes_current_tree && identical(version, "v1")) {
   stop(
     "Refusing to write Redivis dataset '", dataset_id, "' into data/responses/v1/. ",
-    "Use --version v2 (or omit --version) so the frozen v1 tree stays intact.",
+    "Use --version v3 or v2 (or omit --version) so the frozen v1 tree stays intact.",
     call. = FALSE
   )
 }

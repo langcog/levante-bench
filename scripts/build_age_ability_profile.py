@@ -34,7 +34,7 @@ if str(_SCRIPTS) not in sys.path:
 from site_country import SITE_TO_COUNTRY, site_to_country  # noqa: E402
 
 MIN_RUNS_DEFAULT = 15
-DEFAULT_RESPONSES_VERSION = "v2"
+DEFAULT_RESPONSES_VERSION = "v3"
 
 INCLUDED_TASKS = {
     "egma-math",

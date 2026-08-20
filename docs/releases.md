@@ -10,12 +10,14 @@ Trials data are accessed via the **redivis** R package. Install and authenticate
 
 ```r
 user <- redivis$user("levante")
-dataset <- user$dataset("levante_data_latest:e9pf:v1_2")   # pin v1_2+; dataset id may change
-table <- dataset$table("trials:bxf8")                       # table name may change
+dataset <- user$dataset("levante-data-pilots:68kn:v3_0")   # default; dataset id may change
+table <- dataset$table("trials")                             # table name may change
 d <- table$to_tibble()
 ```
 
-The R script `scripts/data_prep/download_levante_data.R` accepts **dataset** (default `levante_data_latest:e9pf:v1_2`), **table** (default `trials:bxf8`), and optional **version** (default: local `v2` for latest / pilots v2). It writes trials (including key columns such as `task_id`, `trial_id`, `item_uid`, `response`, `correct`) to `data/responses/<version>/` and emits `data/responses/<version>/SHA256SUMS.txt` plus `SOURCE.json` for reproducibility.
+The R script `scripts/data_prep/download_levante_data.R` accepts **dataset** (default `levante-data-pilots:68kn:v3_0`), **table** (default `trials`), and optional **version** (default: local `v3` for pilots v3.0). It writes trials (including key columns such as `task_id`, `trial_id`, `item_uid`, `response`, `correct`) to `data/responses/<version>/` and emits `data/responses/<version>/SHA256SUMS.txt` plus `SOURCE.json` for reproducibility.
+
+Unified all-sites `levante_data_latest:e9pf:v1_2` is an option (`--dataset`); it still writes to local `v2`. That bind is the default for **internal QA** (levante-qa) because it is refreshed more often. This repo defaults to pilots v3.0 because that is the latest **public** release.
 
 ### New releases
 
@@ -35,11 +37,11 @@ Run `scripts/download_levante_assets.py` with optional `--version YYYY-MM-DD` (d
 
 | Data | Version key | Location |
 |------|-------------|----------|
-| Trials (Redivis) | local folder via `--version` (default **v2** for Redivis `v2_0`) | `data/responses/<version>/` |
+| Trials (Redivis) | local folder via `--version` (default **v3** for pilots v3.0) | `data/responses/<version>/` |
 | Assets (bucket) | Download date (YYYY-MM-DD) | `data/assets/<version>/` |
 
-**Redivis release tag ≠ local folder.** `levante_data_latest:e9pf:v1_2` (unified all-sites; preferred) and the older pilots `v2_0` export both write to **`data/responses/v2/`**. The frozen April tree stays at **`data/responses/v1/`**. The download script refuses to write current/latest pulls into local `v1/`.
+**Redivis release tag ≠ local folder.** Default `levante-data-pilots:68kn:v3_0` writes to **`data/responses/v3/`**. Unified `levante_data_latest:e9pf:v1_2` and the older pilots `v2_0` export write to **`data/responses/v2/`**. The frozen April tree stays at **`data/responses/v1/`**. The download script refuses to write current/latest/pilots-v3 pulls into local `v1/`.
 
 Each download writes `data/responses/<version>/SOURCE.json` with dataset/table/IRT ids and timestamp.
 
-When running evaluation or comparison, use a consistent version (or "latest") so that trials and assets align (e.g. same task set and item_uid space). Default analysis / persona builders use **responses v2**.
+When running evaluation or comparison, use a consistent version (or "latest") so that trials and assets align (e.g. same task set and item_uid space). Default analysis / persona builders use **responses v3**.

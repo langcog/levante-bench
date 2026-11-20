@@ -8,6 +8,8 @@ This directory contains user-facing and developer documentation for the LEVANTE 
 - **[adding_models.md](adding_models.md)** – How to add a VLM to the benchmark.
 - **[prompting_and_parsing.md](prompting_and_parsing.md)** – Prompt templates, `use_json_format` paths, and how option letters flow from dataset trials into the instructions.
 - **[runtime_exports.md](runtime_exports.md)** – Public runtime API for external repos (`load_model`, `run_trials`, `run-trials-jsonl`).
+- **[synthetic_vocab.md](synthetic_vocab.md)** – How the synthetic vocabulary corpus and images were generated (`v2` branch), and how to reproduce or run the task.
+- **[synthetic_vocab_appendix.md](synthetic_vocab_appendix.md)** – 100-item photo-vocab bank with thumbnails of all 400 option images.
 
 ## Quick start
 

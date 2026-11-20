@@ -22,16 +22,57 @@ has_flag <- function(name) {
   paste0("--", name) %in% args
 }
 
-dataset_id    <- get_arg("dataset", "levante_data_pilots:68kn:v2_0")
-table_name    <- get_arg("table", "trials:ztnm")
-scores_table  <- get_arg("scores-table", "scores:pgms")
+# Prefer pilots v3.0. Unified latest is --dataset levante_data_latest:e9pf:v1_2
+# (sometimes newer; still lands in local v2). Pin latest at v1_2+ (v1.0 had the
+# IRT column-order bug). Table names are unqualified so they resolve on either
+# dataset; pass trials:bxf8 / scores:d0hm to pin the latest tables.
+dataset_id    <- get_arg("dataset", "levante-data-pilots:68kn:v3_0")
+table_name    <- get_arg("table", "trials")
+scores_table  <- get_arg("scores-table", "scores")
 irt_dataset   <- get_arg("irt-dataset", "levante_metadata_scoring:e97h:v1_11")
 irt_table     <- get_arg("irt-table", "model_registry:rqwv")
-version       <- get_arg("version", "v1")
+version_arg   <- get_arg("version", NA_character_)
 
-if (is.na(version) || nchar(version) == 0L) {
-  version <- "v1"
+# Local folder version (data/responses/<version>/) is independent of the Redivis
+# release tag in dataset_id. Pilots v3 → local v3; latest / old pilots v2 →
+# local v2. The frozen April tree in data/responses/v1/ is never overwritten
+# by default.
+infer_local_version <- function(dataset) {
+  if (grepl("levante_data_latest", dataset, ignore.case = TRUE)) {
+    return("v2")
+  }
+  if (grepl(":v3([_.]|$)|_v3([_.]|$)", dataset, ignore.case = TRUE) ||
+      grepl("v3_0", dataset, ignore.case = TRUE)) {
+    return("v3")
+  }
+  if (grepl(":v2([_.]|$)|_v2([_.]|$)", dataset, ignore.case = TRUE) ||
+      grepl("v2_0", dataset, ignore.case = TRUE)) {
+    return("v2")
+  }
+  if (grepl("data-pilots|data_pilots", dataset, ignore.case = TRUE)) {
+    return("v3")
+  }
+  "v1"
 }
+
+if (is.na(version_arg) || nchar(version_arg) == 0L) {
+  version <- infer_local_version(dataset_id)
+} else {
+  version <- version_arg
+}
+
+writes_current_tree <- grepl("levante_data_latest", dataset_id, ignore.case = TRUE) ||
+  grepl("data-pilots|data_pilots", dataset_id, ignore.case = TRUE) ||
+  grepl("v3_0|:v3([_.]|$)|v2_0|:v2([_.]|$)", dataset_id, ignore.case = TRUE)
+if (writes_current_tree && identical(version, "v1")) {
+  stop(
+    "Refusing to write Redivis dataset '", dataset_id, "' into data/responses/v1/. ",
+    "Use --version v3 or v2 (or omit --version) so the frozen v1 tree stays intact.",
+    call. = FALSE
+  )
+}
+
+message("Redivis dataset: ", dataset_id, " -> local data/responses/", version, "/")
 write_split_manifests <- !has_flag("no-write-split-manifests")
 parquet_available <- write_split_manifests && requireNamespace("arrow", quietly = TRUE)
 
@@ -446,4 +487,25 @@ if (write_split_manifests) {
 }
 
 write_sha256_manifest(data_raw)
+
+source_path <- file.path(data_raw, "SOURCE.json")
+escape_json <- function(x) {
+  x <- gsub("\\\\", "\\\\\\\\", x, fixed = FALSE)
+  x <- gsub("\"", "\\\"", x, fixed = TRUE)
+  x
+}
+source_lines <- c(
+  "{",
+  sprintf('  "dataset": "%s",', escape_json(dataset_id)),
+  sprintf('  "table": "%s",', escape_json(table_name)),
+  sprintf('  "scores_table": "%s",', escape_json(scores_table)),
+  sprintf('  "irt_dataset": "%s",', escape_json(irt_dataset)),
+  sprintf('  "irt_table": "%s",', escape_json(irt_table)),
+  sprintf('  "local_version": "%s",', escape_json(version)),
+  sprintf('  "downloaded_at": "%s"', escape_json(format(Sys.time(), tz = "UTC", usetz = TRUE))),
+  "}"
+)
+writeLines(source_lines, source_path)
+message("Wrote provenance ", source_path)
+
 message("Data version: ", version, " at ", data_raw)
